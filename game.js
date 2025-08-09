@@ -11,6 +11,17 @@
   const resumeBtn = document.getElementById('resume');
   const restartBtn = document.getElementById('restart');
   const muteToggle = document.getElementById('muteToggle');
+  // --- FORCE HIDE PAUSE OVERLAY & SHOW VERSION TAG ---
+  function forceHidePauseOverlay(){
+    try { pauseMenu.hidden = true; } catch(e){}
+  }
+  // Hide it immediately and after any user interaction (covers iOS oddities)
+  forceHidePauseOverlay();
+  window.addEventListener('touchstart', forceHidePauseOverlay);
+  window.addEventListener('mousedown', forceHidePauseOverlay);
+  // Tag for visual verification
+  const __UVZU_VERSION__ = 'v7';
+
 
   // Controls
   const joystick = document.getElementById('joystick');
@@ -479,6 +490,8 @@
   }
 
   function draw(now){
+    // version tag
+    ctx.save(); ctx.globalAlpha=0.7; ctx.fillStyle='#fff'; ctx.font='12px system-ui, sans-serif'; ctx.fillText(__UVZU_VERSION__, 6, 16); ctx.restore();
     ctx.fillStyle = '#052c58';
     ctx.fillRect(0,0,canvas.width,canvas.height);
     rainbowBackground(now);
@@ -513,4 +526,5 @@
     requestAnimationFrame(loop);
   }
   init();
+  setTimeout(()=>{ try{ pauseMenu.hidden=true; }catch(e){}; }, 0);
 })();
