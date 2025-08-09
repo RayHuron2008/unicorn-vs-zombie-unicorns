@@ -28,7 +28,21 @@
     </div>
   </div>
 
-  <!-- No pause modal included. Renamed JS to break cache -->
-  <script src="game8.js?v=1"></script>
+  <div id="pauseMenu" hidden>
+    <div class="card">
+      <h2>Paused</h2>
+      <label class="mute">
+        <input id="muteToggle" type="checkbox">
+        Mute audio
+      </label>
+      <div class="small">Tip: tap A/B or Resume once to start music on mobile.</div>
+      <div class="row">
+        <button id="resume">Resume</button>
+        <button id="restart">Restart</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="game9.js?v=1"></script>
 </body>
 </html>
