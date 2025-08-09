@@ -1,0 +1,24 @@
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:#111;color:#fff;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial}
+#game{display:block;margin:0 auto;background:#000;touch-action:none}
+#hud{position:fixed;top:8px;left:8px;right:8px;display:flex;gap:12px;align-items:center;justify-content:space-between;pointer-events:none}
+#lives,#score,#powerWrap{background:rgba(0,0,0,.35);padding:6px 10px;border-radius:8px;pointer-events:auto}
+#powerWrap{display:flex;align-items:center;gap:8px}
+#powerBar{width:180px;height:12px;background:#333;border-radius:6px;overflow:hidden}
+#powerFill{height:100%;width:0%;background:linear-gradient(90deg, #ff004c, #ff8a00, #ffe600, #19ff00, #00c3ff, #8a2be2)}
+#pauseBtn{pointer-events:auto;background:rgba(0,0,0,.4);border:1px solid #777;color:#fff;padding:6px 10px;border-radius:8px;font-size:16px}
+#controls{position:fixed;bottom:18px;left:18px;right:18px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;pointer-events:none}
+#joystick{pointer-events:auto;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,.1);border:2px solid rgba(255,255,255,.25);position:relative;touch-action:none}
+#stick{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.2);border:2px solid rgba(255,255,255,.35);position:absolute;left:47px;top:47px}
+#buttons{pointer-events:auto;display:flex;gap:16px}
+.btn{width:80px;height:80px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;font-size:24px}
+.btn:active{transform:scale(0.96)}
+#pauseMenu{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center}
+#pauseMenu .card{background:#1b1b1b;border:1px solid #444;padding:24px 28px;border-radius:12px;min-width:280px;text-align:center}
+#pauseMenu .card .row{display:flex;gap:12px;justify-content:center;margin-top:10px}
+#pauseMenu .card .small{opacity:.8;font-size:12px;margin-top:8px}
+#pauseMenu .card .mute{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:8px}
+#rotateHint{position:fixed;inset:0;display:none;place-items:center;text-align:center;background:#000;color:#fff;padding:24px;z-index:99}
+@media (orientation:portrait){
+  #rotateHint{display:grid}
+  #game,#hud,#controls{filter:blur(2px)}
+}
