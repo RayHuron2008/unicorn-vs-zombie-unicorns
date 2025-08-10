@@ -23,20 +23,22 @@
   [audio.main,audio.boss,audio.win,audio.over].forEach(a=>a.volume=0.7);
   function startAudioIfNeeded(){ if(audio.started) return; audio.started=true; try{ audio.main.currentTime=0; audio.main.play(); }catch(_){} }
 
-  // --- STATE / CONSTANTS ---
+  // --- CONSTANTS / HELPERS ---
   const W = canvas.width, H = canvas.height;
   const GROUND_Y = Math.floor(H * 0.78);
-  const GROUND_BAND = 56;
+  const GROUND_BAND = 56;                  // vertical room to move
   const MIN_Y = GROUND_Y - GROUND_BAND;
   const MAX_Y = GROUND_Y;
   const rand = (a,b)=>a+Math.random()*(b-a);
   const dist = (x1,y1,x2,y2)=>Math.hypot(x2-x1,y2-y1);
 
-  // spawn tuning
-  const MAX_ENEMIES = 4;         // hard cap (your request)
-  const SAFE_RADIUS = 200;       // keep spawns away from player
-  const START_GRACE = 2.5;       // slower first few seconds
+  // Spawn/spacing tuning
+  const MAX_ENEMIES   = 4;    // hard cap on-screen
+  const MIN_ENEMY_SEP = 120;  // keep enemies apart
+  const SAFE_RADIUS   = 200;  // don’t spawn right on player
+  const START_GRACE   = 2.5;  // slower first seconds
 
+  // --- STATE ---
   let state = {
     running: true,
     score: 0,
@@ -56,8 +58,8 @@
   const player = {
     x: W*0.25, y: GROUND_Y-8, speed: 2.2, size: 18,
     dashCD: 0, face: 1,
-    dashTimer: 0,        // while >0, headbutt is active
-    invuln: 0            // while >0, cannot take damage
+    dashTimer: 0,        // during dash
+    invuln: 0            // damage immunity
   };
 
   // --- INPUT (D-pad + A/B) ---
@@ -82,7 +84,7 @@
     btnB.addEventListener('mouseup', ()=>{ input.sprint=false; });
   }
 
-  // --- SPAWNING (gentle + capped) ---
+  // --- SPAWNING (gentle + anti-cluster + capped) ---
   function spawnWaveInitial(){
     const n = 2; // gentle start
     for(let i=0;i<n;i++) spawnEnemy(false, true);
@@ -96,13 +98,27 @@
     let x = fromLeft ? -20 : W + 20;
     let y = rand(MIN_Y, MAX_Y);
 
-    // keep off the player at spawn
+    // try to find a clean spot (away from player + other enemies)
     let tries = 0;
-    while (dist(x,y,player.x,player.y) < SAFE_RADIUS && tries++ < 12){
+    while (tries++ < 20) {
+      let ok = true;
+      if (dist(x,y,player.x,player.y) < SAFE_RADIUS) ok = false;
+      if (ok) {
+        for (const e of state.enemies) {
+          if (dist(x,y,e.x,e.y) < MIN_ENEMY_SEP) { ok = false; break; }
+        }
+      }
+      if (ok) break;
       y = rand(MIN_Y, MAX_Y);
     }
 
-    state.enemies.push({ x, y, vx:0, vy:0, hp: special?3:1, special, cd: rand(0.6,1.2), face: fromLeft?1:-1 });
+    state.enemies.push({
+      x, y, vx:0, vy:0,
+      hp: special ? 3 : 1,
+      special,
+      cd: Math.random()*1.2 + 0.6,
+      face: fromLeft ? 1 : -1
+    });
   }
 
   // --- ATTACKS ---
@@ -122,9 +138,9 @@
         player.y = Math.max(MIN_Y, Math.min(MAX_Y, player.y + dashY));
         if (dashX !== 0) player.face = dashX < 0 ? -1 : 1;
 
-        // Activate safe window
-        player.dashTimer = 0.22;   // active dash frames
-        player.invuln    = 0.35;   // brief invulnerability
+        // Safe window
+        player.dashTimer = 0.22;
+        player.invuln    = 0.35;
 
         // Damage enemies on contact during dash
         for(const e of state.enemies){
@@ -165,14 +181,47 @@
     }
   }
 
+  // --- DAMAGE / GAME OVER / RESTART ---
   function damagePlayer(){
     if (player.invuln > 0) return; // ignore damage while invulnerable
     state.lives -= 1;
     if(state.lives<=0){ gameOver(); }
   }
+
+  function resetGame(){
+    // reset state
+    state.running = true;
+    state.score = 0;
+    state.lives = 3;
+    state.power = 0;
+    state.wave = 1;
+    state.enemies = [];
+    state.bolts = [];
+    state.confetti = [];
+    state.specialTimer = 0;
+    state.kills = 0;
+    state.spawnTimer = 0;
+    state.time = 0;
+
+    // reset player
+    player.x = W * 0.25;
+    player.y = GROUND_Y - 8;
+    player.face = 1;
+    player.dashCD = 0;
+    player.dashTimer = 0;
+    player.invuln = 0;
+
+    // music
+    try { audio.boss.pause(); audio.main.currentTime = 0; audio.main.play(); } catch(e){}
+
+    // small grace period then spawn
+    setTimeout(spawnWaveInitial, 100);
+  }
+
   function gameOver(){
     state.running = false;
     try{ audio.main.pause(); audio.boss.pause(); audio.over.currentTime=0; audio.over.play(); }catch(_){}
+    setTimeout(resetGame, 1500); // auto-restart after jingle
   }
 
   // --- UPDATE ---
@@ -189,11 +238,11 @@
     player.y = Math.max(MIN_Y, Math.min(MAX_Y, player.y + input.dy*spd*52*dt));
     player.dashCD = Math.max(0, player.dashCD - dt);
 
-    // Enemies: chase, tiny vertical drift toward player
+    // Enemies: chase + tiny vertical drift
     for(const e of state.enemies){
       const dirX = Math.sign(player.x - e.x) || e.face || 1;
       const dirY = Math.sign(player.y - e.y);
-      const s = e.special?1.05:0.85;  // slightly slower to make headbutts easier
+      const s = e.special?1.05:0.85;  // slightly slower for easier headbutts
       e.x += dirX * s;
       e.y = Math.max(MIN_Y, Math.min(MAX_Y, e.y + dirY * 0.35));
       e.face = dirX;
@@ -208,9 +257,24 @@
         }
       }
 
-      // Touch damage (disabled while invulnerable/dashing)
+      // Touch damage (off while invulnerable)
       if(Math.hypot(e.x-player.x, e.y-player.y)<26 && player.invuln<=0){
         damagePlayer();
+      }
+    }
+
+    // Soft separation so enemies don't stack
+    for (let i = 0; i < state.enemies.length; i++) {
+      for (let j = i + 1; j < state.enemies.length; j++) {
+        const a = state.enemies[i], b = state.enemies[j];
+        let dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.hypot(dx, dy);
+        if (d > 0 && d < MIN_ENEMY_SEP) {
+          const push = (MIN_ENEMY_SEP - d) * 0.5;
+          dx /= d; dy /= d;
+          a.x -= dx * push; a.y = Math.max(MIN_Y, Math.min(MAX_Y, a.y - dy * push));
+          b.x += dx * push; b.y = Math.max(MIN_Y, Math.min(MAX_Y, b.y + dy * push));
+        }
       }
     }
 
@@ -222,7 +286,7 @@
       if(!b.enemy){
         for(const e of state.enemies){
           if(Math.hypot(b.x-e.x, b.y-e.y)<18){
-            e.hp-=2; addConfetti(e.x,e.y); // make ray feel strong
+            e.hp-=2; addConfetti(e.x,e.y);
             if(e.hp<=0) onKill(e);
             state.bolts.splice(i,1);
             break;
@@ -242,16 +306,10 @@
     }
 
     // Controlled spawns (slow at start, capped at 4)
-    const spawnInterval = state.time < START_GRACE ? 1.2 : 0.8;
+    const spawnInterval = state.time < START_GRACE ? 1.3 : 0.9;
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES){
-      // try to spawn away from player
-      const fromLeft = Math.random() < 0.5;
-      const sx = fromLeft ? -20 : W + 20;
-      const sy = rand(MIN_Y, MAX_Y);
-      if (dist(player.x,player.y, sx, sy) > SAFE_RADIUS*0.8){
-        spawnEnemy(Math.random()<0.25);
-      }
+      spawnEnemy(Math.random()<0.25);
       state.spawnTimer = spawnInterval + Math.random()*0.4;
     }
 
