@@ -16,30 +16,27 @@
   };
   audio.main.loop = true;
   audio.main.volume = 0.7;
-
-  function startAudioIfNeeded() {
-    if (audio.started) return;
-    audio.started = true;
-    try {
-      audio.main.currentTime = 0;
-      audio.main.play();
-    } catch (_) {}
-  }
+  function startAudioIfNeeded(){ if(audio.started) return; audio.started = true; try{ audio.main.currentTime=0; audio.main.play(); }catch(_){} }
 
   // --- CONSTANTS / HELPERS ---
   const W = canvas.width, H = canvas.height;
   const GROUND_Y = Math.floor(H * 0.78);
-  const GROUND_BAND = 56;                  // vertical room to move
+  const GROUND_BAND = 56;
   const MIN_Y = GROUND_Y - GROUND_BAND;
   const MAX_Y = GROUND_Y;
+
   const rand = (a,b)=>a+Math.random()*(b-a);
   const dist = (x1,y1,x2,y2)=>Math.hypot(x2-x1,y2-y1);
 
   // Spawn/spacing tuning
-  const MAX_ENEMIES   = 4;    // hard cap on-screen
-  const MIN_ENEMY_SEP = 120;  // keep enemies apart (no clusters)
-  const SAFE_RADIUS   = 200;  // don’t spawn right on player
-  const START_GRACE   = 2.5;  // slower first seconds
+  const MAX_ENEMIES   = 4;     // hard cap on-screen
+  const MIN_ENEMY_SEP = 120;   // keep enemies apart (no clusters)
+  const SAFE_RADIUS   = 200;   // don’t spawn on player
+  const START_GRACE   = 2.0;   // slower first seconds
+
+  // Bullets
+  const ENEMY_BULLET_SPEED = 190;
+  const PLAYER_RAY_SPEED   = 280;
 
   // --- STATE ---
   let state = {
@@ -49,20 +46,20 @@
     power: 0,
     wave: 1,
     enemies: [],
-    bolts: [],
+    bolts: [],          // both enemy and player projectiles
     confetti: [],
-    specialTimer: 0, // reserved if you add ray power later
     kills: 0,
     spawnTimer: 0,
     time: 0,
+    specialTimer: 0     // >0 when player has ray power
   };
 
   const input = { dx:0, dy:0, holding:false, sprint:false };
   const player = {
     x: W*0.25, y: GROUND_Y-8, speed: 2.2, size: 18,
     dashCD: 0, face: 1,
-    dashTimer: 0,        // during dash
-    invuln: 0            // damage immunity
+    dashTimer: 0,
+    invuln: 0
   };
 
   // --- INPUT (D-pad + A/B) ---
@@ -89,9 +86,9 @@
 
   // --- SPAWNING (gentle + anti-cluster + capped) ---
   function spawnWaveInitial(){
-    const n = 2; // gentle start
+    const n = 2;
     for(let i=0;i<n;i++) spawnEnemy(false, true);
-    if (Math.random() < 0.25) spawnEnemy(true, true);
+    if (Math.random() < 0.25) spawnEnemy(true, true); // a special early sometimes
   }
 
   function spawnEnemy(special, initial=false){
@@ -116,38 +113,45 @@
     }
 
     state.enemies.push({
-      x, y, vx:0, vy:0,
-      hp: special ? 3 : 1,
+      x, y,
+      vx:0, vy:0,
+      hp: special ? 3 : 2,      // special are tougher but not unfair
       special,
-      cd: Math.random()*1.2 + 0.6,
+      cd: special ? rand(0.8,1.4) : 0, // shoot cooldown for special
       face: fromLeft ? 1 : -1
     });
   }
 
   // --- ATTACKS ---
   function attack(){
-    // Headbutt dash — strong + invulnerable
-    if(player.dashCD<=0){
-      const a = Math.atan2(input.dy, input.dx) || 0;
-      const dashX = Math.cos(a) * 48;
-      const dashY = Math.sin(a) * 18;
-      player.x = Math.max(20, Math.min(W-20, player.x + dashX));
-      player.y = Math.max(MIN_Y, Math.min(MAX_Y, player.y + dashY));
-      if (dashX !== 0) player.face = dashX < 0 ? -1 : 1;
+    if (state.specialTimer > 0){
+      // Ray shot (horizontal), A fires while powered
+      const dirX = (input.dx !== 0 ? Math.sign(input.dx) : player.face) || 1;
+      state.bolts.push({ x: player.x + dirX*24, y: player.y - 10, vx: dirX*PLAYER_RAY_SPEED, vy: 0, enemy:false, life:0.9 });
+    } else {
+      // Headbutt dash — strong + invulnerable
+      if(player.dashCD<=0){
+        const a = Math.atan2(input.dy, input.dx) || 0;
+        const dashX = Math.cos(a) * 48;
+        const dashY = Math.sin(a) * 18;
+        player.x = Math.max(20, Math.min(W-20, player.x + dashX));
+        player.y = Math.max(MIN_Y, Math.min(MAX_Y, player.y + dashY));
+        if (dashX !== 0) player.face = dashX < 0 ? -1 : 1;
 
-      // Safe window
-      player.dashTimer = 0.22;
-      player.invuln    = 0.35;
+        // Safe window
+        player.dashTimer = 0.22;
+        player.invuln    = 0.35;
 
-      // Damage enemies on contact during dash
-      for(const e of state.enemies){
-        if (Math.hypot(e.x-player.x, e.y-player.y) < 32){
-          e.hp -= 2; // make headbutt lethal
-          addConfetti(e.x,e.y);
-          if(e.hp<=0) onKill(e);
+        // Damage enemies on contact during dash
+        for(const e of state.enemies){
+          if (Math.hypot(e.x-player.x, e.y-player.y) < 32){
+            e.hp -= 2; // headbutt is lethal-ish
+            addConfetti(e.x,e.y);
+            if(e.hp<=0) onKill(e);
+          }
         }
+        player.dashCD = 0.32;
       }
-      player.dashCD = 0.32;
     }
   }
 
@@ -156,9 +160,15 @@
     state.score += e.special ? 500 : 100;
     state.power = Math.min(100, state.power+12);
     if (state.kills % 10 === 0) state.lives += 1;
+
+    // If it was a ray-gun zombie, grant ray power to player
+    if (e.special){
+      state.specialTimer = 25; // seconds of ray power
+    }
     e.hp = 0;
   }
 
+  // --- FX ---
   function addConfetti(x,y){
     for(let i=0;i<14;i++){
       state.confetti.push({
@@ -173,7 +183,7 @@
 
   // --- DAMAGE / GAME OVER / RESTART ---
   function damagePlayer(){
-    if (player.invuln > 0) return; // ignore damage while invulnerable
+    if (player.invuln > 0) return; // ignore while invulnerable
     state.lives -= 1;
     if(state.lives<=0){ gameOver(); }
   }
@@ -188,10 +198,10 @@
     state.enemies = [];
     state.bolts = [];
     state.confetti = [];
-    state.specialTimer = 0;
     state.kills = 0;
     state.spawnTimer = 0;
     state.time = 0;
+    state.specialTimer = 0;
 
     // reset player
     player.x = W * 0.25;
@@ -201,16 +211,12 @@
     player.dashTimer = 0;
     player.invuln = 0;
 
-    // ensure main theme is playing (keeps looping)
     startAudioIfNeeded();
-
-    // small grace period then spawn
     setTimeout(spawnWaveInitial, 100);
   }
 
   function gameOver(){
     state.running = false;
-    // keep music running; just restart game after a brief pause
     setTimeout(resetGame, 1000);
   }
 
@@ -220,6 +226,7 @@
     state.time += dt;
     player.invuln = Math.max(0, player.invuln - dt);
     player.dashTimer = Math.max(0, player.dashTimer - dt);
+    if (state.specialTimer > 0) state.specialTimer = Math.max(0, state.specialTimer - dt);
 
     // Player movement (wider space)
     const spd = player.speed * (input.sprint?1.6:1);
@@ -232,12 +239,21 @@
     for(const e of state.enemies){
       const dirX = Math.sign(player.x - e.x) || e.face || 1;
       const dirY = Math.sign(player.y - e.y);
-      const s = e.special?1.05:0.85;  // slightly slower for easier headbutts
+      const s = e.special?0.95:0.80;   // special a touch faster, still fair
       e.x += dirX * s;
       e.y = Math.max(MIN_Y, Math.min(MAX_Y, e.y + dirY * 0.35));
       e.face = dirX;
 
-      // Touch damage (off while invulnerable)
+      // Special shooters fire horizontally
+      if(e.special){
+        e.cd -= dt;
+        if(e.cd<=0){
+          const vx = dirX * ENEMY_BULLET_SPEED;
+          state.bolts.push({ x:e.x + dirX*22, y:e.y - 10, vx, vy:0, enemy:true, life:1.5 });
+          e.cd = rand(1.0, 1.6); // slower rate so it's fair
+        }
+      }
+
       if(Math.hypot(e.x-player.x, e.y-player.y)<26 && player.invuln<=0){
         damagePlayer();
       }
@@ -258,6 +274,30 @@
       }
     }
 
+    // Bolts (player + enemy)
+    for(let i=state.bolts.length-1;i>=0;i--){
+      const b = state.bolts[i];
+      b.x += b.vx*dt; b.y += (b.vy||0)*dt; b.life -= dt;
+      if(b.life<=0 || b.x<0||b.x>W||b.y<0||b.y>H){ state.bolts.splice(i,1); continue; }
+
+      if(!b.enemy){
+        // Player ray hits enemies
+        for(const e of state.enemies){
+          if(Math.hypot(b.x-e.x, b.y-e.y)<18){
+            e.hp-=2; addConfetti(e.x,e.y);
+            if(e.hp<=0) onKill(e);
+            state.bolts.splice(i,1);
+            break;
+          }
+        }
+      } else {
+        // Enemy bullet hits player
+        if(player.invuln<=0 && Math.hypot(b.x-player.x, b.y-player.y)<16){
+          damagePlayer(); state.bolts.splice(i,1);
+        }
+      }
+    }
+
     // Clean & confetti lifetimes
     state.enemies = state.enemies.filter(e=>e.hp>0);
     for(let i=state.confetti.length-1;i>=0;i--){
@@ -268,14 +308,18 @@
     const spawnInterval = state.time < START_GRACE ? 1.3 : 0.9;
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES){
-      spawnEnemy(Math.random()<0.25);
+      // 25% chance new spawn is a special shooter
+      const makeSpecial = Math.random() < 0.25;
+      spawnEnemy(makeSpecial);
       state.spawnTimer = spawnInterval + Math.random()*0.4;
     }
 
     // HUD
     HUD.lives.textContent = `🦄 x ${state.lives}`;
     HUD.score.textContent = `Score: ${state.score}`;
-    HUD.powerFill.style.width = `${state.power}%`;
+    // use HUD power as a simple “ray timer” indicator
+    const pct = state.specialTimer > 0 ? (state.specialTimer/25)*100 : state.power;
+    HUD.powerFill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
   }
 
   // --- DRAW ---
@@ -309,10 +353,10 @@
   }
 
   function drawUnicornFacing(x, y, face, main='#ff9bd4', mane=['#ff3b6b','#ffb86b','#ffe27a','#9dff8b','#6be3ff','#c59bff']){
-    const baseY = y - 22; // align hooves to ground
+    const baseY = y - 22; // hooves to ground
     ctx.save();
     ctx.translate(x, baseY);
-    ctx.scale(face, 1); // face: 1 right, -1 left
+    ctx.scale(face, 1); // 1 right, -1 left
     ctx.imageSmoothingEnabled = false;
 
     // body + head
@@ -332,18 +376,27 @@
   }
 
   function drawZombie(e){
-    drawUnicornFacing(e.x, e.y, e.face || 1, '#86e6b6', ['#b0ffcf','#8ce6c1','#6cd4b2']);
+    // special = green shooter; normal = lighter green walker
+    const mane = e.special ? ['#a6ffc8','#7feeb2','#52d8a0'] : ['#b0ffcf','#8ce6c1','#6cd4b2'];
+    drawUnicornFacing(e.x, e.y, e.face || 1, '#86e6b6', mane);
   }
 
   function draw(now){
     ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
     drawBackground();
 
+    // bolts
+    for(const b of state.bolts){
+      ctx.fillStyle = b.enemy? '#ff6b6b' : '#ffffff';
+      ctx.fillRect(Math.floor(b.x)-2, Math.floor(b.y)-2, 4,4);
+    }
+
     // confetti
     for(const c of state.confetti){
       ctx.fillStyle = `hsl(${c.hue},90%,60%)`;
       ctx.fillRect(Math.floor(c.x), Math.floor(c.y), 3,3);
     }
+
     // enemies + player
     for(const e of state.enemies) drawZombie(e);
     drawUnicornFacing(player.x, player.y, player.face);
@@ -361,8 +414,8 @@
   function init(){ bindInputs(); spawnWaveInitial(); requestAnimationFrame(loop); }
   init();
 
-  // Start music on first input (d-pad or A/B)
-  const first = () => { startAudioIfNeeded(); window.removeEventListener('touchstart', first); window.removeEventListener('mousedown', first); };
-  window.addEventListener('touchstart', first, { once:true });
-  window.addEventListener('mousedown', first, { once:true });
+  // Start music on first input (any gesture)
+  ['touchstart','pointerdown','mousedown','click','keydown'].forEach(ev=>{
+    window.addEventListener(ev, startAudioIfNeeded, { once:false });
+  });
 })();
