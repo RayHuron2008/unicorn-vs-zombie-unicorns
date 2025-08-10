@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Unicorn vs Zombie Unicorns — V2 (Picture Style, No Pause)</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <canvas id="game" width="960" height="540"></canvas>
+
+  <div id="hud" class="pixel">
+    <div class="lives" id="lives"><span>🦄</span> x 3</div>
+    <div class="score" id="score">Score: 0</div>
+    <div class="power">
+      <div class="label">Power</div>
+      <div class="bar"><div class="fill" id="powerFill"></div></div>
+    </div>
+  </div>
+
+  <div id="controls">
+    <div id="dpad" class="pixel">
+      <button class="dir up"   data-dx="0"  data-dy="-1"></button>
+      <button class="dir left" data-dx="-1" data-dy="0"></button>
+      <button class="dir right"data-dx="1"  data-dy="0"></button>
+      <button class="dir down" data-dx="0"  data-dy="1"></button>
+    </div>
+    <div id="ab">
+      <button id="btnA" class="ab pixel">A</button>
+      <button id="btnB" class="ab pixel">B</button>
+    </div>
+  </div>
+
+  <script src="game.js?v=1"></script>
+</body>
+</html>
