@@ -29,14 +29,15 @@
   const dist = (x1,y1,x2,y2)=>Math.hypot(x2-x1,y2-y1);
 
   // Spawn/spacing tuning
-  const MAX_ENEMIES   = 4;     // hard cap on-screen
-  const MIN_ENEMY_SEP = 120;   // keep enemies apart (no clusters)
-  const SAFE_RADIUS   = 200;   // don’t spawn on player
+  const MAX_ENEMIES   = 4;     // on-screen cap
+  const MIN_ENEMY_SEP = 120;   // enemy spacing
+  const SAFE_RADIUS   = 200;   // don't spawn on player
   const START_GRACE   = 2.0;   // slower first seconds
 
-  // Bullets
+  // Projectiles
   const ENEMY_BULLET_SPEED = 190;
   const PLAYER_RAY_SPEED   = 280;
+  const PLAYER_RAY_SPEED_MEGA = 360;
 
   // --- STATE ---
   let state = {
@@ -51,7 +52,10 @@
     kills: 0,
     spawnTimer: 0,
     time: 0,
-    specialTimer: 0     // >0 when player has ray power
+    specialTimer: 0,    // >0 when player has ray power
+    megaTimer: 0,       // >0 when player is in MEGA mode
+    toast: null,        // small on-screen message
+    toastT: 0
   };
 
   const input = { dx:0, dy:0, holding:false, sprint:false };
@@ -84,15 +88,28 @@
     btnB.addEventListener('mouseup', ()=>{ input.sprint=false; });
   }
 
-  // --- SPAWNING (gentle + anti-cluster + capped) ---
+  // --- TOAST / ICON HELPERS ---
+  function showToast(text, seconds=1.4){
+    state.toast = text;
+    state.toastT = seconds;
+  }
+
+  // --- SPAWNING (gentle + anti-cluster + capped + 1 special max) ---
+  function countSpecials(){
+    let c=0; for(const e of state.enemies) if(e.special) c++; return c;
+  }
+
   function spawnWaveInitial(){
     const n = 2;
     for(let i=0;i<n;i++) spawnEnemy(false, true);
-    if (Math.random() < 0.25) spawnEnemy(true, true); // a special early sometimes
+    if (Math.random() < 0.25) spawnEnemy(true, true); // sometimes one early
   }
 
   function spawnEnemy(special, initial=false){
     if (state.enemies.length >= MAX_ENEMIES) return;
+
+    // enforce at most one special on screen
+    if (special && countSpecials() >= 1) special = false;
 
     const fromLeft = Math.random() < 0.5;
     let x = fromLeft ? -20 : W + 20;
@@ -115,9 +132,9 @@
     state.enemies.push({
       x, y,
       vx:0, vy:0,
-      hp: special ? 3 : 2,      // special are tougher but not unfair
+      hp: special ? 3 : 2,      // killable but tougher
       special,
-      cd: special ? rand(0.8,1.4) : 0, // shoot cooldown for special
+      cd: special ? rand(0.9,1.4) : 0, // shoot cooldown for special
       face: fromLeft ? 1 : -1
     });
   }
@@ -125,9 +142,10 @@
   // --- ATTACKS ---
   function attack(){
     if (state.specialTimer > 0){
-      // Ray shot (horizontal), A fires while powered
+      // Ray shot (horizontal)
       const dirX = (input.dx !== 0 ? Math.sign(input.dx) : player.face) || 1;
-      state.bolts.push({ x: player.x + dirX*24, y: player.y - 10, vx: dirX*PLAYER_RAY_SPEED, vy: 0, enemy:false, life:0.9 });
+      const spd = state.megaTimer > 0 ? PLAYER_RAY_SPEED_MEGA : PLAYER_RAY_SPEED;
+      state.bolts.push({ x: player.x + dirX*24, y: player.y - 10, vx: dirX*spd, vy: 0, enemy:false, life:0.9, mega:(state.megaTimer>0) });
     } else {
       // Headbutt dash — strong + invulnerable
       if(player.dashCD<=0){
@@ -145,7 +163,7 @@
         // Damage enemies on contact during dash
         for(const e of state.enemies){
           if (Math.hypot(e.x-player.x, e.y-player.y) < 32){
-            e.hp -= 2; // headbutt is lethal-ish
+            e.hp -= 2; // headbutt is potent
             addConfetti(e.x,e.y);
             if(e.hp<=0) onKill(e);
           }
@@ -161,10 +179,18 @@
     state.power = Math.min(100, state.power+12);
     if (state.kills % 10 === 0) state.lives += 1;
 
-    // If it was a ray-gun zombie, grant ray power to player
+    // Ray-gun pickup
     if (e.special){
       state.specialTimer = 25; // seconds of ray power
+      showToast('🔫 RAY POWER!', 1.6);
     }
+
+    // MEGA mode every 20 kills
+    if (state.kills > 0 && state.kills % 20 === 0){
+      state.megaTimer = 20;     // 20 seconds big mode
+      showToast('🌈 MEGA MODE!', 1.6);
+    }
+
     e.hp = 0;
   }
 
@@ -202,6 +228,8 @@
     state.spawnTimer = 0;
     state.time = 0;
     state.specialTimer = 0;
+    state.megaTimer = 0;
+    state.toast = null; state.toastT = 0;
 
     // reset player
     player.x = W * 0.25;
@@ -227,9 +255,11 @@
     player.invuln = Math.max(0, player.invuln - dt);
     player.dashTimer = Math.max(0, player.dashTimer - dt);
     if (state.specialTimer > 0) state.specialTimer = Math.max(0, state.specialTimer - dt);
+    if (state.megaTimer > 0) state.megaTimer = Math.max(0, state.megaTimer - dt);
+    if (state.toastT > 0) state.toastT = Math.max(0, state.toastT - dt);
 
     // Player movement (wider space)
-    const spd = player.speed * (input.sprint?1.6:1);
+    const spd = player.speed * (input.sprint?1.6:1) * (state.megaTimer>0 ? 1.05 : 1);
     if (input.dx !== 0) player.face = Math.sign(input.dx);
     player.x = Math.max(20, Math.min(W-20, player.x + input.dx*spd*60*dt));
     player.y = Math.max(MIN_Y, Math.min(MAX_Y, player.y + input.dy*spd*52*dt));
@@ -239,7 +269,7 @@
     for(const e of state.enemies){
       const dirX = Math.sign(player.x - e.x) || e.face || 1;
       const dirY = Math.sign(player.y - e.y);
-      const s = e.special?0.95:0.80;   // special a touch faster, still fair
+      const s = e.special?0.95:0.80;   // special a touch faster
       e.x += dirX * s;
       e.y = Math.max(MIN_Y, Math.min(MAX_Y, e.y + dirY * 0.35));
       e.face = dirX;
@@ -250,7 +280,7 @@
         if(e.cd<=0){
           const vx = dirX * ENEMY_BULLET_SPEED;
           state.bolts.push({ x:e.x + dirX*22, y:e.y - 10, vx, vy:0, enemy:true, life:1.5 });
-          e.cd = rand(1.0, 1.6); // slower rate so it's fair
+          e.cd = rand(1.0, 1.6);
         }
       }
 
@@ -281,10 +311,11 @@
       if(b.life<=0 || b.x<0||b.x>W||b.y<0||b.y>H){ state.bolts.splice(i,1); continue; }
 
       if(!b.enemy){
-        // Player ray hits enemies
+        // Player ray hits enemies (mega rays do more)
         for(const e of state.enemies){
           if(Math.hypot(b.x-e.x, b.y-e.y)<18){
-            e.hp-=2; addConfetti(e.x,e.y);
+            e.hp -= (b.mega ? 3 : 2);
+            addConfetti(e.x,e.y);
             if(e.hp<=0) onKill(e);
             state.bolts.splice(i,1);
             break;
@@ -308,16 +339,15 @@
     const spawnInterval = state.time < START_GRACE ? 1.3 : 0.9;
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES){
-      // 25% chance new spawn is a special shooter
-      const makeSpecial = Math.random() < 0.25;
-      spawnEnemy(makeSpecial);
+      const trySpecial = Math.random() < 0.25;
+      spawnEnemy(trySpecial);
       state.spawnTimer = spawnInterval + Math.random()*0.4;
     }
 
     // HUD
     HUD.lives.textContent = `🦄 x ${state.lives}`;
     HUD.score.textContent = `Score: ${state.score}`;
-    // use HUD power as a simple “ray timer” indicator
+    // power bar shows ray timer if active; otherwise generic power
     const pct = state.specialTimer > 0 ? (state.specialTimer/25)*100 : state.power;
     HUD.powerFill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
   }
@@ -359,6 +389,10 @@
     ctx.scale(face, 1); // 1 right, -1 left
     ctx.imageSmoothingEnabled = false;
 
+    // Apply MEGA scale (slight)
+    const scale = state.megaTimer > 0 ? 1.25 : 1.0;
+    ctx.scale(scale, scale);
+
     // body + head
     ctx.fillStyle = main; ctx.fillRect(-18,-10, 34,20);
     ctx.fillRect(14,-8, 12,14);
@@ -376,9 +410,50 @@
   }
 
   function drawZombie(e){
-    // special = green shooter; normal = lighter green walker
     const mane = e.special ? ['#a6ffc8','#7feeb2','#52d8a0'] : ['#b0ffcf','#8ce6c1','#6cd4b2'];
     drawUnicornFacing(e.x, e.y, e.face || 1, '#86e6b6', mane);
+  }
+
+  function drawPickupsUI(){
+    // Ray icon when active
+    if (state.specialTimer > 0){
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#111'; ctx.fillRect(10, 40, 120, 32);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(10, 40, 120, 32);
+      ctx.fillStyle = '#fff'; ctx.font = '12px monospace';
+      ctx.fillText('RAY POWER', 20, 60);
+
+      // tiny timer bar
+      const w = Math.max(0, Math.min(1, state.specialTimer/25)) * 100;
+      ctx.fillStyle = '#00d4ff'; ctx.fillRect(20, 64, w, 4);
+      ctx.restore();
+    }
+
+    // Mega icon when active
+    if (state.megaTimer > 0){
+      ctx.save();
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#111'; ctx.fillRect(10, 76, 120, 32);
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.strokeRect(10, 76, 120, 32);
+      ctx.fillStyle = '#fff'; ctx.font = '12px monospace';
+      ctx.fillText('MEGA MODE', 20, 96);
+
+      const w = Math.max(0, Math.min(1, state.megaTimer/20)) * 100;
+      ctx.fillStyle = '#ff69ff'; ctx.fillRect(20, 100, w, 4);
+      ctx.restore();
+    }
+
+    // Toast (short messages)
+    if (state.toast && state.toastT > 0){
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, state.toastT / 0.4);
+      ctx.fillStyle = '#111'; ctx.fillRect(W/2-80, 24, 160, 30);
+      ctx.strokeStyle = '#fff'; ctx.strokeRect(W/2-80, 24, 160, 30);
+      ctx.fillStyle = '#fff'; ctx.font = '14px monospace';
+      ctx.fillText(state.toast, W/2-70, 44);
+      ctx.restore();
+    }
   }
 
   function draw(now){
@@ -387,8 +462,9 @@
 
     // bolts
     for(const b of state.bolts){
-      ctx.fillStyle = b.enemy? '#ff6b6b' : '#ffffff';
-      ctx.fillRect(Math.floor(b.x)-2, Math.floor(b.y)-2, 4,4);
+      ctx.fillStyle = b.enemy? '#ff6b6b' : (b.mega ? '#ffd800' : '#ffffff');
+      const w = b.mega ? 6 : 4;
+      ctx.fillRect(Math.floor(b.x)-w/2, Math.floor(b.y)-2, w, 4);
     }
 
     // confetti
@@ -400,6 +476,9 @@
     // enemies + player
     for(const e of state.enemies) drawZombie(e);
     drawUnicornFacing(player.x, player.y, player.face);
+
+    // power icons / timers / toast
+    drawPickupsUI();
   }
 
   // --- LOOP ---
