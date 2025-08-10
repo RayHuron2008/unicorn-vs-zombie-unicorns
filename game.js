@@ -27,6 +27,7 @@
 
   // --- STATE ---
   const W = canvas.width, H = canvas.height;
+  const GROUND_Y = Math.floor(H * 0.78);   // tweak 0.74–0.82 to taste
   const rand = (a,b)=>a+Math.random()*(b-a);
   let state = {
     running: true,
@@ -72,14 +73,19 @@
     if (Math.random() < 0.35) spawnEnemy(true);
   }
   function spawnEnemy(special){
-    const side = Math.floor(Math.random()*4);
-    let x=0,y=0;
-    if(side===0){ x=-20; y=rand(40,H-40); }
-    if(side===1){ x=W+20; y=rand(40,H-40); }
-    if(side===2){ x=rand(40,W-40); y=-20; }
-    if(side===3){ x=rand(40,W-40); y=H+20; }
-    state.enemies.push({ x,y, vx:0, vy:0, hp: special?3:1, special, cd: rand(0.6,1.4) });
-  }
+    function spawnEnemy(special){
+  // always spawn at ground height
+  const fromLeft = Math.random() < 0.5;
+  const x = fromLeft ? -20 : W + 20;
+  const y = GROUND_Y; // keep on the ground
+  state.enemies.push({
+    x, y,
+    vx: 0, vy: 0,
+    hp: special ? 3 : 1,
+    special,
+    cd: Math.random() * 0.8 + 0.6
+  });
+}
 
   function attack(){
     if (state.specialTimer > 0){
