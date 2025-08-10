@@ -9,19 +9,22 @@
     powerFill: document.getElementById('powerFill'),
   };
 
-  // --- AUDIO (root files) ---
+  // --- AUDIO (only main theme) ---
   const audio = {
     main: new Audio('bgm_main.mp3'),
-    boss: new Audio('bgm_boss.mp3'),
-    win:  new Audio('jingle_victory.mp3'),
-    over: new Audio('jingle_gameover.mp3'),
-    ray:  new Audio('sfx_ray.mp3'),
-    bonk: new Audio('sfx_headbutt.mp3'),
-    started:false
+    started: false
   };
-  audio.main.loop = audio.boss.loop = true;
-  [audio.main,audio.boss,audio.win,audio.over].forEach(a=>a.volume=0.7);
-  function startAudioIfNeeded(){ if(audio.started) return; audio.started=true; try{ audio.main.currentTime=0; audio.main.play(); }catch(_){} }
+  audio.main.loop = true;
+  audio.main.volume = 0.7;
+
+  function startAudioIfNeeded() {
+    if (audio.started) return;
+    audio.started = true;
+    try {
+      audio.main.currentTime = 0;
+      audio.main.play();
+    } catch (_) {}
+  }
 
   // --- CONSTANTS / HELPERS ---
   const W = canvas.width, H = canvas.height;
@@ -34,7 +37,7 @@
 
   // Spawn/spacing tuning
   const MAX_ENEMIES   = 4;    // hard cap on-screen
-  const MIN_ENEMY_SEP = 120;  // keep enemies apart
+  const MIN_ENEMY_SEP = 120;  // keep enemies apart (no clusters)
   const SAFE_RADIUS   = 200;  // don’t spawn right on player
   const START_GRACE   = 2.5;  // slower first seconds
 
@@ -48,7 +51,7 @@
     enemies: [],
     bolts: [],
     confetti: [],
-    specialTimer: 0,
+    specialTimer: 0, // reserved if you add ray power later
     kills: 0,
     spawnTimer: 0,
     time: 0,
@@ -67,7 +70,7 @@
     const dpad = document.getElementById('dpad');
     dpad.querySelectorAll('.dir').forEach(btn => {
       const dx = parseFloat(btn.dataset.dx), dy = parseFloat(btn.dataset.dy);
-      const start = e => { input.dx=dx; input.dy=dy; input.holding=true; startAudioIfNeeded(); e.preventDefault(); };
+      const start = e => { startAudioIfNeeded(); input.dx=dx; input.dy=dy; input.holding=true; e.preventDefault(); };
       const end = () => { input.holding=false; input.dx=input.dy=0; };
       btn.addEventListener('touchstart', start, {passive:false});
       btn.addEventListener('touchend', end);
@@ -76,11 +79,11 @@
       btn.addEventListener('mouseleave', end);
     });
     const btnA=document.getElementById('btnA'), btnB=document.getElementById('btnB');
-    btnA.addEventListener('touchstart', e=>{ attack(); e.preventDefault(); startAudioIfNeeded(); });
-    btnA.addEventListener('mousedown', ()=>attack());
-    btnB.addEventListener('touchstart', e=>{ input.sprint=true; e.preventDefault(); startAudioIfNeeded(); });
+    btnA.addEventListener('touchstart', e=>{ startAudioIfNeeded(); attack(); e.preventDefault(); });
+    btnA.addEventListener('mousedown', ()=>{ startAudioIfNeeded(); attack(); });
+    btnB.addEventListener('touchstart', e=>{ startAudioIfNeeded(); input.sprint=true; e.preventDefault(); });
     btnB.addEventListener('touchend', ()=>{ input.sprint=false; });
-    btnB.addEventListener('mousedown', ()=>{ input.sprint=true; });
+    btnB.addEventListener('mousedown', ()=>{ startAudioIfNeeded(); input.sprint=true; });
     btnB.addEventListener('mouseup', ()=>{ input.sprint=false; });
   }
 
@@ -123,36 +126,28 @@
 
   // --- ATTACKS ---
   function attack(){
-    if (state.specialTimer > 0){
-      // Ray shot (horizontal)
-      const dirX = (input.dx !== 0 ? Math.sign(input.dx) : player.face) || 1;
-      state.bolts.push({ x: player.x + dirX*24, y: player.y - 10, vx: dirX*280, vy: 0, enemy:false, life:0.9 });
-      try { audio.ray.currentTime = 0; audio.ray.play(); } catch(e){}
-    } else {
-      // Headbutt dash — strong + invulnerable
-      if(player.dashCD<=0){
-        const a = Math.atan2(input.dy, input.dx) || 0;
-        const dashX = Math.cos(a) * 48;
-        const dashY = Math.sin(a) * 18;
-        player.x = Math.max(20, Math.min(W-20, player.x + dashX));
-        player.y = Math.max(MIN_Y, Math.min(MAX_Y, player.y + dashY));
-        if (dashX !== 0) player.face = dashX < 0 ? -1 : 1;
+    // Headbutt dash — strong + invulnerable
+    if(player.dashCD<=0){
+      const a = Math.atan2(input.dy, input.dx) || 0;
+      const dashX = Math.cos(a) * 48;
+      const dashY = Math.sin(a) * 18;
+      player.x = Math.max(20, Math.min(W-20, player.x + dashX));
+      player.y = Math.max(MIN_Y, Math.min(MAX_Y, player.y + dashY));
+      if (dashX !== 0) player.face = dashX < 0 ? -1 : 1;
 
-        // Safe window
-        player.dashTimer = 0.22;
-        player.invuln    = 0.35;
+      // Safe window
+      player.dashTimer = 0.22;
+      player.invuln    = 0.35;
 
-        // Damage enemies on contact during dash
-        for(const e of state.enemies){
-          if (Math.hypot(e.x-player.x, e.y-player.y) < 32){
-            e.hp -= 2; // make headbutt lethal
-            addConfetti(e.x,e.y);
-            try { audio.bonk.currentTime = 0; audio.bonk.play(); } catch(e){}
-            if(e.hp<=0) onKill(e);
-          }
+      // Damage enemies on contact during dash
+      for(const e of state.enemies){
+        if (Math.hypot(e.x-player.x, e.y-player.y) < 32){
+          e.hp -= 2; // make headbutt lethal
+          addConfetti(e.x,e.y);
+          if(e.hp<=0) onKill(e);
         }
-        player.dashCD = 0.32;
       }
+      player.dashCD = 0.32;
     }
   }
 
@@ -161,11 +156,6 @@
     state.score += e.special ? 500 : 100;
     state.power = Math.min(100, state.power+12);
     if (state.kills % 10 === 0) state.lives += 1;
-    if (e.special){
-      state.specialTimer = 30;
-      try{ audio.main.pause(); audio.boss.currentTime=0; audio.boss.play(); }catch(_){}
-      setTimeout(()=>{ if(state.specialTimer<=0){ try{ audio.boss.pause(); audio.main.play(); }catch(_){}} }, 30500);
-    }
     e.hp = 0;
   }
 
@@ -211,8 +201,8 @@
     player.dashTimer = 0;
     player.invuln = 0;
 
-    // music
-    try { audio.boss.pause(); audio.main.currentTime = 0; audio.main.play(); } catch(e){}
+    // ensure main theme is playing (keeps looping)
+    startAudioIfNeeded();
 
     // small grace period then spawn
     setTimeout(spawnWaveInitial, 100);
@@ -220,8 +210,8 @@
 
   function gameOver(){
     state.running = false;
-    try{ audio.main.pause(); audio.boss.pause(); audio.over.currentTime=0; audio.over.play(); }catch(_){}
-    setTimeout(resetGame, 1500); // auto-restart after jingle
+    // keep music running; just restart game after a brief pause
+    setTimeout(resetGame, 1000);
   }
 
   // --- UPDATE ---
@@ -247,16 +237,6 @@
       e.y = Math.max(MIN_Y, Math.min(MAX_Y, e.y + dirY * 0.35));
       e.face = dirX;
 
-      // Special shooters fire horizontally
-      if(e.special){
-        e.cd -= dt;
-        if(e.cd<=0){
-          const vx = dirX * 190;
-          state.bolts.push({ x:e.x + dirX*22, y:e.y - 10, vx, vy:0, enemy:true, life:1.4 });
-          e.cd = 1.0 + Math.random()*0.7;
-        }
-      }
-
       // Touch damage (off while invulnerable)
       if(Math.hypot(e.x-player.x, e.y-player.y)<26 && player.invuln<=0){
         damagePlayer();
@@ -278,28 +258,7 @@
       }
     }
 
-    // Bolts
-    for(let i=state.bolts.length-1;i>=0;i--){
-      const b = state.bolts[i];
-      b.x += b.vx*dt; b.y += b.vy*dt; b.life -= dt;
-      if(b.life<=0 || b.x<0||b.x>W||b.y<0||b.y>H){ state.bolts.splice(i,1); continue; }
-      if(!b.enemy){
-        for(const e of state.enemies){
-          if(Math.hypot(b.x-e.x, b.y-e.y)<18){
-            e.hp-=2; addConfetti(e.x,e.y);
-            if(e.hp<=0) onKill(e);
-            state.bolts.splice(i,1);
-            break;
-          }
-        }
-      } else {
-        if(player.invuln<=0 && Math.hypot(b.x-player.x, b.y-player.y)<16){
-          damagePlayer(); state.bolts.splice(i,1);
-        }
-      }
-    }
-
-    // Clean & confetti
+    // Clean & confetti lifetimes
     state.enemies = state.enemies.filter(e=>e.hp>0);
     for(let i=state.confetti.length-1;i>=0;i--){
       const c = state.confetti[i]; c.x+=c.vx; c.y+=c.vy; c.t-=dt; if(c.t<=0) state.confetti.splice(i,1);
@@ -380,11 +339,6 @@
     ctx.fillStyle = '#000'; ctx.fillRect(0,0,W,H);
     drawBackground();
 
-    // bolts
-    for(const b of state.bolts){
-      ctx.fillStyle = b.enemy? '#ff6b6b' : '#ffffff';
-      ctx.fillRect(Math.floor(b.x)-2, Math.floor(b.y)-2, 4,4);
-    }
     // confetti
     for(const c of state.confetti){
       ctx.fillStyle = `hsl(${c.hue},90%,60%)`;
@@ -407,7 +361,7 @@
   function init(){ bindInputs(); spawnWaveInitial(); requestAnimationFrame(loop); }
   init();
 
-  // Start music on first input
+  // Start music on first input (d-pad or A/B)
   const first = () => { startAudioIfNeeded(); window.removeEventListener('touchstart', first); window.removeEventListener('mousedown', first); };
   window.addEventListener('touchstart', first, { once:true });
   window.addEventListener('mousedown', first, { once:true });
