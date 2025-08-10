@@ -526,5 +526,13 @@
     requestAnimationFrame(loop);
   }
   init();
-  setTimeout(()=>{ try{ pauseMenu.hidden=true; }catch(e){}; }, 0);
+  // --- start unpaused + dismiss overlay on first touch ---
+setTimeout(() => { try { setPaused(false); pauseMenu.hidden = true; } catch(e){} }, 0);
+
+const firstStart = () => {
+  try { setPaused(false); pauseMenu.hidden = true; } catch(e){}
+  try { startAudioIfNeeded && startAudioIfNeeded(); } catch(e){}
+};
+window.addEventListener('touchstart', firstStart, { once:true });
+window.addEventListener('mousedown', firstStart, { once:true });
 })();
