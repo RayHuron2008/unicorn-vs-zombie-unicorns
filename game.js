@@ -9,7 +9,7 @@
     powerFill: document.getElementById('powerFill'),
   };
 
-  // --- AUDIO (root files, no /assets) ---
+  // --- AUDIO (root files) ---
   const audio = {
     main: new Audio('bgm_main.mp3'),
     boss: new Audio('bgm_boss.mp3'),
@@ -21,16 +21,16 @@
   };
   audio.main.loop = audio.boss.loop = true;
   [audio.main,audio.boss,audio.win,audio.over].forEach(a=>a.volume=0.7);
-  function startAudioIfNeeded(){
-    if(audio.started) return;
-    audio.started = true;
-    try{ audio.main.currentTime=0; audio.main.play(); }catch(_){}
-  }
+  function startAudioIfNeeded(){ if(audio.started) return; audio.started=true; try{ audio.main.currentTime=0; audio.main.play(); }catch(_){} }
 
-  // --- STATE ---
+  // --- STATE / CONSTANTS ---
   const W = canvas.width, H = canvas.height;
-  const GROUND_Y = Math.floor(H * 0.78); // tweak 0.74–0.82 to line up with your grass
+  const GROUND_Y = Math.floor(H * 0.78);            // ground line
+  const GROUND_BAND = 56;                            // how much vertical space you can move in (bigger = more room)
+  const MIN_Y = GROUND_Y - GROUND_BAND;              // top of movement band
+  const MAX_Y = GROUND_Y;                            // feet on the ground
   const rand = (a,b)=>a+Math.random()*(b-a);
+  const dist = (x1,y1,x2,y2)=>Math.hypot(x2-x1,y2-y1);
 
   let state = {
     running: true,
@@ -43,10 +43,12 @@
     confetti: [],
     specialTimer: 0,
     kills: 0,
+    spawnTimer: 0,
+    time: 0,
   };
 
   const input = { dx:0, dy:0, holding:false, sprint:false };
-  const player = { x: W*0.25, y: GROUND_Y, speed: 2.2, size: 18, dashCD: 0 };
+  const player = { x: W*0.25, y: GROUND_Y-8, speed: 2.2, size: 18, dashCD: 0, face: 1 };
 
   // --- INPUT (D-pad + A/B) ---
   function bindInputs(){
@@ -70,52 +72,54 @@
     btnB.addEventListener('mouseup', ()=>{ input.sprint=false; });
   }
 
-  // --- RULES: spawns, attack, scoring ---
-  function spawnWave(){
-    const n = 6 + state.wave*2;
-    for(let i=0;i<n;i++) spawnEnemy(false);
-    if (Math.random() < 0.35) spawnEnemy(true);
+  // --- SPAWNING (gentle start, capped) ---
+  const MAX_ENEMIES = 8;                 // hard cap so you’re not swarmed
+  const SAFE_RADIUS = 160;               // don’t spawn too close to player
+  const START_GRACE = 2.0;               // seconds with lighter spawns at the start
+
+  function spawnWaveInitial(){
+    // smaller first wave
+    const n = 3; // <-- gentle start
+    for(let i=0;i<n;i++) spawnEnemy(false, true);
+    if (Math.random() < 0.25) spawnEnemy(true, true);
   }
 
-  // ALWAYS spawn on the ground
-  function spawnEnemy(special){
-    const side = Math.floor(Math.random()*4);
-    let x = 0;
-    if (side === 0) x = -20;            // left edge
-    else if (side === 1) x = W + 20;    // right edge
-    else x = rand(40, W - 40);          // top/bottom choices: random X
-    const y = GROUND_Y;                  // lock to ground
+  function spawnEnemy(special, initial=false){
+    if (state.enemies.length >= MAX_ENEMIES) return;
 
-    state.enemies.push({
-      x, y,
-      vx: 0, vy: 0,
-      hp: special ? 3 : 1,
-      special,
-      cd: Math.random()*0.8 + 0.6
-    });
+    // edges only so they walk in (side-view feel)
+    const fromLeft = Math.random() < 0.5;
+    let x = fromLeft ? -20 : W + 20;
+    // spawn somewhere within the ground band (so they’re not identical rows)
+    let y = rand(MIN_Y, MAX_Y);
+
+    // keep off the player at spawn
+    let tries = 0;
+    while (dist(x,y,player.x,player.y) < SAFE_RADIUS && tries++ < 10){
+      y = rand(MIN_Y, MAX_Y);
+    }
+
+    state.enemies.push({ x, y, vx:0, vy:0, hp: special?3:1, special, cd: rand(0.6,1.2), face: fromLeft?1:-1 });
   }
 
+  // --- ATTACKS ---
   function attack(){
     if (state.specialTimer > 0){
-      // Ray shot (horizontal, just above ground)
-      const a = Math.atan2(input.dy, input.dx) || 0;
-      const dirX = Math.sign(Math.cos(a)) || 1;   // left/right
-      state.bolts.push({
-        x: player.x + dirX*24,
-        y: GROUND_Y - 20,
-        vx: dirX*260,
-        vy: 0,
-        enemy:false,
-        life:0.9
-      });
+      // Ray shot (horizontal, slight lift)
+      const dirX = (input.dx !== 0 ? Math.sign(input.dx) : player.face) || 1;
+      state.bolts.push({ x: player.x + dirX*24, y: player.y - 10, vx: dirX*260, vy: 0, enemy:false, life:0.9 });
       try { audio.ray.currentTime = 0; audio.ray.play(); } catch(e){}
     } else {
-      // Headbutt dash (mostly horizontal) and damage on contact
+      // Headbutt dash
       if(player.dashCD<=0){
         const a = Math.atan2(input.dy, input.dx) || 0;
         const dashX = Math.cos(a) * 42;
+        const dashY = Math.sin(a) * 18; // small vertical dash allowed
         player.x = Math.max(20, Math.min(W-20, player.x + dashX));
-        player.y = GROUND_Y; // stay on ground
+        player.y = Math.max(MIN_Y, Math.min(MAX_Y, player.y + dashY));
+        player.face = dashX < 0 ? -1 : (dashX > 0 ? 1 : player.face);
+
+        // hit check
         for(const e of state.enemies){
           if (Math.hypot(e.x-player.x, e.y-player.y) < 30){
             e.hp -= 1; addConfetti(e.x,e.y);
@@ -162,36 +166,38 @@
     try{ audio.main.pause(); audio.boss.pause(); audio.over.currentTime=0; audio.over.play(); }catch(_){}
   }
 
-  // --- UPDATE (pins Y to ground) ---
+  // --- UPDATE ---
   function update(dt){
     if(!state.running) return;
+    state.time += dt;
 
-    // Player
+    // Player movement (bigger space)
     const spd = player.speed * (input.sprint?1.6:1);
+    if (input.dx !== 0) player.face = Math.sign(input.dx);
     player.x = Math.max(20, Math.min(W-20, player.x + input.dx*spd*60*dt));
-    player.y = GROUND_Y;                          // <-- pin to ground
+    player.y = Math.max(MIN_Y, Math.min(MAX_Y, player.y + input.dy*spd*52*dt));
     player.dashCD = Math.max(0, player.dashCD - dt);
 
-    // Enemies
+    // Enemies: chase horizontally, nudge vertically toward player inside band
     for(const e of state.enemies){
-      // Horizontal chase
-      const dir = Math.sign(player.x - e.x) || 0;
+      const dirX = Math.sign(player.x - e.x) || e.face || 1;
+      const dirY = Math.sign(player.y - e.y);
       const s = e.special?1.2:0.9;
-      e.x += dir * s;
-      e.y = GROUND_Y;                              // <-- pin to ground
+      e.x += dirX * s;
+      e.y = Math.max(MIN_Y, Math.min(MAX_Y, e.y + dirY * 0.4)); // tiny vertical drift
+      e.face = dirX;
 
-      // Special shooters: fire horizontally
+      // Special shooters fire horizontally
       if(e.special){
         e.cd -= dt;
         if(e.cd<=0){
-          const vx = (dir || 1) * 200;
-          state.bolts.push({ x:e.x + (dir||1)*22, y:GROUND_Y - 20, vx, vy:0, enemy:true, life:1.6 });
+          const vx = dirX * 200;
+          state.bolts.push({ x:e.x + dirX*22, y:e.y - 10, vx, vy:0, enemy:true, life:1.6 });
           e.cd = 0.9 + Math.random()*0.6;
         }
       }
 
-      // Touch damage
-      if(Math.abs(e.x - player.x) < 26) damagePlayer();
+      if(Math.hypot(e.x-player.x, e.y-player.y)<26) damagePlayer();
     }
 
     // Bolts
@@ -213,14 +219,22 @@
       }
     }
 
-    // Clean and confetti
+    // Clean & confetti
     state.enemies = state.enemies.filter(e=>e.hp>0);
     for(let i=state.confetti.length-1;i>=0;i--){
       const c = state.confetti[i]; c.x+=c.vx; c.y+=c.vy; c.t-=dt; if(c.t<=0) state.confetti.splice(i,1);
     }
 
-    if(state.specialTimer>0) state.specialTimer=Math.max(0,state.specialTimer-dt);
-    if(state.enemies.length < 6+state.wave){ if(Math.random()<0.02) spawnEnemy(Math.random()<0.25); }
+    // Controlled spawns (slower at start)
+    const spawnInterval = state.time < START_GRACE ? 1.0 : 0.55; // slower first seconds
+    state.spawnTimer -= dt;
+    if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES){
+      // don’t spawn right on top of you
+      if (dist(player.x,player.y, (Math.random()<0.5?-20:W+20), GROUND_Y-8) > SAFE_RADIUS*0.8){
+        spawnEnemy(Math.random()<0.25);
+      }
+      state.spawnTimer = spawnInterval + Math.random()*0.4;
+    }
 
     // HUD
     HUD.lives.textContent = `🦄 x ${state.lives}`;
@@ -258,11 +272,15 @@
     ctx.fillRect(0, GROUND_Y, W, 8);
   }
 
-  function drawUnicorn(x, y, dir, main='#ff9bd4', mane=['#ff3b6b','#ffb86b','#ffe27a','#9dff8b','#6be3ff','#c59bff']){
-    // y is the ground line; lift the sprite so hooves touch ground
-    const baseY = y - 22; // adjust 20–26 to fine-tune foot contact
-    ctx.save(); ctx.translate(x, baseY); ctx.rotate(dir);
+  // Sprite draw using horizontal flip (no upside-down)
+  function drawUnicornFacing(x, y, face, main='#ff9bd4', mane=['#ff3b6b','#ffb86b','#ffe27a','#9dff8b','#6be3ff','#c59bff']){
+    // y is feet line; lift sprite so hooves touch ground
+    const baseY = y - 22;
+    ctx.save();
+    ctx.translate(x, baseY);
+    ctx.scale(face, 1); // face: 1 = right, -1 = left
     ctx.imageSmoothingEnabled = false;
+
     // body + head
     ctx.fillStyle = main; ctx.fillRect(-18,-10, 34,20);
     ctx.fillRect(14,-8, 12,14);
@@ -278,9 +296,9 @@
     ctx.fillStyle = '#000'; ctx.fillRect(22,-2,2,2);
     ctx.restore();
   }
+
   function drawZombie(e){
-    const dir = Math.atan2(0, Math.sign(player.x - e.x) || 1);
-    drawUnicorn(e.x, e.y, dir, '#86e6b6', ['#b0ffcf','#8ce6c1','#6cd4b2']);
+    drawUnicornFacing(e.x, e.y, e.face || 1, '#86e6b6', ['#b0ffcf','#8ce6c1','#6cd4b2']);
   }
 
   function draw(now){
@@ -299,8 +317,7 @@
     }
     // enemies + player
     for(const e of state.enemies) drawZombie(e);
-    const a = Math.atan2(input.dy, input.dx);
-    drawUnicorn(player.x, GROUND_Y, a);
+    drawUnicornFacing(player.x, player.y, player.face);
   }
 
   // --- LOOP ---
@@ -312,7 +329,7 @@
     requestAnimationFrame(loop);
   }
 
-  function init(){ bindInputs(); spawnWave(); requestAnimationFrame(loop); }
+  function init(){ bindInputs(); spawnWaveInitial(); requestAnimationFrame(loop); }
   init();
 
   // Start music on first input
