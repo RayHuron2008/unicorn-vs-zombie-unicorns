@@ -89,16 +89,14 @@
   }
 
   // --- HORN TIP WORLD COORDS ---
-  // Sprite anchor: translate(x, y-22). Horn rect drawn at local (24,-10) size 2x8.
   function hornTip(entity, isPlayer=false){
     const face = entity.face || 1;
     const scale = (isPlayer && state.megaTimer>0) ? 1.25 : 1.0;
     const baseY = entity.y - 22;
-    const lx = 26;        // horn tip local X (24 + width 2)
-    const ly = -10;       // top of horn
+    const lx = 26, ly = -10; // local horn tip
     const wx = entity.x + face * (lx * scale);
-    const wy = baseY + ly * scale;
-    return { x: wx, y: wy + 4*scale }; // center-ish along the horn
+    const wy = baseY + ly * scale + 4*scale;
+    return { x: wx, y: wy };
   }
 
   // --- ATTACKS ---
@@ -220,15 +218,23 @@
       if(b.life<=0 || b.x<0||b.x>W||b.y<0||b.y>H){ state.bolts.splice(i,1); continue; }
 
       if(!b.enemy){
+        // --- FIX: aim at enemy torso center (y - 10), larger hit radius ---
         for(const e of state.enemies){
-          if(dist(b.x,b.y,e.x,e.y)<18){
-            e.hp -= (b.mega?3:2); addConfetti(e.x,e.y);
+          const hitX = e.x;
+          const hitY = e.y - 10;           // torso center, not feet
+          const R   = b.mega ? 24 : 20;    // slightly generous radius
+          if(dist(b.x,b.y,hitX,hitY) < R){
+            e.hp -= (b.mega ? 3 : 2);
+            addConfetti(e.x,e.y);
             if(e.hp<=0) onKill(e);
-            state.bolts.splice(i,1); break;
+            state.bolts.splice(i,1);
+            break;
           }
         }
       } else {
-        if(player.invuln<=0 && dist(b.x,b.y,player.x,player.y)<16){ damagePlayer(); state.bolts.splice(i,1); }
+        if(player.invuln<=0 && dist(b.x,b.y,player.x,player.y)<16){
+          damagePlayer(); state.bolts.splice(i,1);
+        }
       }
     }
 
@@ -304,9 +310,9 @@
         ctx.fillStyle = b.color || '#ff2a2a'; // enemy = red
         ctx.fillRect(Math.floor(b.x)-3, Math.floor(b.y)-2, 6, 4);
       } else {
-        // player rainbow beam (simple hue cycle)
+        // player rainbow beam
         if(b.rainbow){
-          const t = (state.time - (b.born||0)) * 360; // degrees per sec
+          const t = (state.time - (b.born||0)) * 360;
           ctx.fillStyle = `hsl(${(t%360)|0}, 90%, 60%)`;
         } else {
           ctx.fillStyle = b.mega ? '#ffd800' : '#ffffff';
