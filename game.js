@@ -16,7 +16,8 @@
     rayIcon = document.createElement('div');
     rayIcon.id = 'rayIcon';
     rayIcon.textContent = '🔫';
-    rayIcon.style.cssText = 'background:rgba(0,0,0,.35);padding:6px 10px;border:2px solid rgba(255,255,255,.25);border-radius:8px;margin:0 6px;display:none;color:#fff;font-family:-apple-system,system-ui,Arial;font-size:14px;';
+    rayIcon.style.cssText =
+      'background:rgba(0,0,0,.35);padding:6px 10px;border:2px solid rgba(255,255,255,.25);border-radius:8px;margin:0 6px;display:none;color:#fff;font-family:-apple-system,system-ui,Arial;font-size:14px;';
     HUD.root.insertBefore(rayIcon, HUD.root.children[2] || null); // after lives/score
   }
 
@@ -27,7 +28,11 @@
   };
   audio.main.loop = true;
   audio.main.volume = 0.7;
-  function startAudioIfNeeded(){ if(audio.started) return; audio.started = true; try{ audio.main.currentTime=0; audio.main.play(); }catch(_){} }
+  function startAudioIfNeeded(){
+    if(audio.started) return;
+    audio.started = true;
+    try{ audio.main.currentTime=0; audio.main.play(); }catch(_){}
+  }
 
   // --- CONSTANTS / HELPERS ---
   const W = canvas.width, H = canvas.height;
@@ -60,11 +65,12 @@
     enemies: [],
     bolts: [],
     confetti: [],
-    kills: 0,
+    kills: 0,            // total kills (still grants +1 life every 10)
+    killsForMega: 0,     // ONLY counts when no power-ups are active
     spawnTimer: 0,
     time: 0,
-    specialTimer: 0,   // 25s ray power after killing a special
-    megaTimer: 0,      // 20s bigger blaster every 20 kills
+    specialTimer: 0,     // 25s ray power after killing a special (only if not powered)
+    megaTimer: 0,        // 20s bigger blaster after 20 valid kills
     toast: null, toastT: 0
   };
 
@@ -100,7 +106,7 @@
   // --- TOAST ---
   function showToast(text, seconds=1.4){ state.toast = text; state.toastT = seconds; }
 
-  // --- SPECIAL COUNT & SPAWN ---
+  // --- SPECIAL COUNT & SPAWN (max one special alive) ---
   const countSpecials = () => state.enemies.reduce((n,e)=>n+(e.special?1:0),0);
 
   function spawnWaveInitial(){
@@ -149,7 +155,10 @@
       // Ray shot (horizontal)
       const dirX = (input.dx !== 0 ? Math.sign(input.dx) : player.face) || 1;
       const spd = state.megaTimer > 0 ? PLAYER_RAY_SPEED_MEGA : PLAYER_RAY_SPEED;
-      state.bolts.push({ x: player.x + dirX*24, y: player.y - 10, vx: dirX*spd, vy: 0, enemy:false, life:0.9, mega:(state.megaTimer>0) });
+      state.bolts.push({
+        x: player.x + dirX*24, y: player.y - 10,
+        vx: dirX*spd, vy: 0, enemy:false, life:0.9, mega:(state.megaTimer>0)
+      });
     } else {
       // Headbutt dash — strong + invulnerable
       if(player.dashCD<=0){
@@ -176,18 +185,28 @@
   }
 
   function onKill(e){
+    // Always track total kills + score (lives every 10)
     state.kills += 1;
     state.score += e.special ? 500 : 100;
-    state.power = Math.min(100, state.power+12);
     if (state.kills % 10 === 0) state.lives += 1;
 
-    if (e.special){
-      state.specialTimer = 25;         // keep same duration
-      showToast('🔫 RAY POWER!', 1.6);
+    // Are we currently under any power-up?
+    const inPower = (state.specialTimer > 0) || (state.megaTimer > 0);
+
+    // Mega progress: ONLY when not powered
+    if (!inPower) {
+      state.killsForMega += 1;
+      if (state.killsForMega >= 20) {
+        state.killsForMega = 0;        // reset progress after triggering
+        state.megaTimer = 20;          // 20s mega
+        showToast('🌈 MEGA MODE!', 1.6);
+      }
     }
-    if (state.kills > 0 && state.kills % 20 === 0){
-      state.megaTimer = 20;            // 20s mega every 20 kills
-      showToast('🌈 MEGA MODE!', 1.6);
+
+    // Ray-gun pickup: ONLY when not powered
+    if (e.special && !inPower) {
+      state.specialTimer = 25;         // same duration as before
+      showToast('🔫 RAY POWER!', 1.6);
     }
 
     e.hp = 0;
@@ -223,6 +242,7 @@
     state.bolts = [];
     state.confetti = [];
     state.kills = 0;
+    state.killsForMega = 0;   // reset MEGA progress
     state.spawnTimer = 0;
     state.time = 0;
     state.specialTimer = 0;
@@ -274,7 +294,7 @@
       e.y = Math.max(MIN_Y, Math.min(MAX_Y, e.y + dirY * 0.35));
       e.face = dirX;
 
-      // Special shooters fire horizontally
+      // Special shooters fire horizontally (only if they exist)
       if(e.special){
         e.cd -= dt;
         if(e.cd<=0){
@@ -289,7 +309,7 @@
       }
     }
 
-    // Soft separation
+    // Soft separation (de-clump)
     for (let i = 0; i < state.enemies.length; i++) {
       for (let j = i + 1; j < state.enemies.length; j++) {
         const a = state.enemies[i], b = state.enemies[j];
@@ -338,7 +358,6 @@
     state.spawnTimer -= dt;
     if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES){
       const wantSpecial = Math.random() < 0.25;
-      // pass true only if none currently alive
       spawnEnemy(wantSpecial && countSpecials()===0);
       state.spawnTimer = spawnInterval + Math.random()*0.4;
     }
@@ -346,6 +365,7 @@
     // HUD
     HUD.lives.textContent = `🦄 x ${state.lives}`;
     HUD.score.textContent = `Score: ${state.score}`;
+    // power bar shows ray timer if active; otherwise generic power
     const pct = state.specialTimer > 0 ? (state.specialTimer/25)*100 : state.power;
     HUD.powerFill.style.width = `${Math.max(0, Math.min(100, pct))}%`;
   }
