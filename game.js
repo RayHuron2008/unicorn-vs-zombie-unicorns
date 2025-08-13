@@ -48,7 +48,7 @@
     running:true, score:0, lives:3, power:0, wave:1,
     enemies:[], bolts:[], confetti:[],
     kills:0, killsForMega:0,
-    spawnTimer:0, time:0,            // high-resolution seconds (float)
+    spawnTimer:0, time:0,
     specialTimer:0,  // Ray power (25s)
     megaTimer:0,     // Mega (20s)
     toast:null, toastT:0,
@@ -155,7 +155,7 @@
     }
     e.hp=0;
 
-    // Final wave clear check (FIX: only count alive finals)
+    // Final wave clear check (count only alive finals)
     if(state.phase==='final'){
       const aliveFinal = state.enemies.some(en => en.final && en.hp > 0);
       if(!aliveFinal){
@@ -205,7 +205,8 @@
     // human walks in from right
     state.human = {
       x: W + 30, y: GROUND_Y - 18, face: -1,
-      vx: -1.2, talkTime: 3.0, riding:false,
+      vx: -120,  // px/sec (dt-based now)
+      talkTime: 3.0, riding:false,
       text: "You killed all of the zombies here! Thank you! I was so scared."
     };
     // clear stray bullets & powers
@@ -218,7 +219,8 @@
     const h = state.human;
     if(!h) return;
     if(!h.riding){
-      if (h.x > player.x + 28) { h.x += h.vx; }
+      // Move toward player with dt-based speed
+      if (h.x > player.x + 28) { h.x += h.vx * dt; }
       else {
         h.vx = 0;
         h.talkTime -= dt;
@@ -240,7 +242,6 @@
 
   function startVictory(){
     state.phase = 'victory';
-    // fireworks
     state.fireworks = [];
     for(let i=0;i<10;i++) state.fireworks.push(newFirework());
     setTimeout(resetGame, 5000);
@@ -280,10 +281,10 @@
     return `${m}:${s<10?'0':''}${s}`;
   }
   function drawTimer(){
-    const t = Math.floor(Math.min(state.time, LEVEL_LIMIT)); // cap at limit for display
+    const t = Math.floor(Math.min(state.time, LEVEL_LIMIT)); // cap for display
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    const padX=10, padY=6;
+    const padX=10;
     const label = `Time  ${formatMMSS(t)} / ${formatMMSS(LEVEL_LIMIT)}`;
     ctx.font = '16px -apple-system, Arial, monospace';
     const w = ctx.measureText(label).width + padX*2;
@@ -404,7 +405,7 @@
       }
     }
 
-    // Phase-specific updates
+    // Phase-specific updates (ONLY here — no duplicates in loop)
     if(state.phase==='rescue')  updateRescue(dt);
     if(state.phase==='ride')    updateRide(dt);
     if(state.phase==='victory') updateFireworks(dt);
@@ -569,9 +570,6 @@
   function loop(now){
     const dt=Math.min(0.033,(now-last)/1000); last=now;
     if(state.running){
-      if(state.phase==='rescue') updateRescue(dt);
-      if(state.phase==='ride')   updateRide(dt);
-      if(state.phase==='victory') updateFireworks(dt);
       update(dt);
     }
     requestAnimationFrame(loop);
