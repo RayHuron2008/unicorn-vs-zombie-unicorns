@@ -55,7 +55,8 @@
 
     phase:'play',        // 'play' -> 'final' -> 'rescue' -> 'ride' -> 'victory'
     finalSpawned:false,
-    _rescueStarted:false,  // <— new guard
+    _rescueStarted:false,     // guard so we only start rescue once
+    _finalCheckQueued:false,  // microtask re-check guard
     human:null,
     fireworks:[]
   };
@@ -104,7 +105,7 @@
     state.enemies.push({ x,y,vx:0,vy:0, hp:special?3:2, special, cd:special?rand(0.9,1.4):0, face: fromLeft?1:-1, final:special && forceSpecial });
   }
 
-  // --- HORN TIP WORLD COORDS ---
+  // --- HORN TIP ---
   function hornTip(entity, isPlayer=false){
     const face = entity.face || 1;
     const scale = (isPlayer && state.megaTimer>0) ? 1.25 : 1.0;
@@ -137,6 +138,7 @@
     }
   }
 
+  // --- KILL / FINAL CLEAR ---
   function onKill(e){
     state.kills+=1; state.score+= e.special?500:100;
     if(state.kills%10===0) state.lives+=1;
@@ -151,12 +153,25 @@
     if(e.special && !inPower && (state.phase==='play' || state.phase==='final')){
       state.specialTimer=25; showToast('🔫 RAY POWER!',1.6);
     }
+
+    // mark dead now
     e.hp=0;
 
-    // inline final-clear check (may be bypassed if two die same frame; we also have a global failsafe)
-    if(state.phase==='final'){
-      const aliveFinal = state.enemies.some(en => en.final && en.hp > 0);
-      if(!aliveFinal && !state._rescueStarted){ startRescueScene(); }
+    // queue a microtask re-check in FINAL, to survive same-frame double deaths or array timing
+    if(state.phase==='final' && !state._rescueStarted && !state._finalCheckQueued){
+      state._finalCheckQueued = true;
+      setTimeout(() => {
+        state._finalCheckQueued = false;
+        maybeEnsureRescue();
+      }, 0);
+    }
+  }
+
+  function maybeEnsureRescue(){
+    if(state.phase!=='final' || state._rescueStarted) return;
+    const anyFinalAlive = state.enemies.some(en => en.final && en.hp > 0);
+    if(!anyFinalAlive){
+      startRescueScene();
     }
   }
 
@@ -180,7 +195,7 @@
     state.kills=0; state.killsForMega=0;
     state.spawnTimer=0; state.time=0;
     state.specialTimer=0; state.megaTimer=0; state.toast=null; state.toastT=0;
-    state.phase='play'; state.finalSpawned=false; state._rescueStarted=false;
+    state.phase='play'; state.finalSpawned=false; state._rescueStarted=false; state._finalCheckQueued=false;
     state.human=null; state.fireworks=[];
     player.x=W*0.25; player.y=GROUND_Y-8; player.face=1; player.dashCD=0; player.dashTimer=0; player.invuln=0;
     startAudioIfNeeded(); setTimeout(spawnWaveInitial,100);
@@ -198,8 +213,9 @@
   }
 
   function startRescueScene(){
-    state.phase='rescue';
+    if(state._rescueStarted) return;
     state._rescueStarted = true;
+    state.phase='rescue';
     input.dx = input.dy = 0; input.holding=false; input.sprint=false;
     state.human = {
       x: W + 30, y: GROUND_Y - 18, face: -1,
@@ -402,12 +418,9 @@
       }
     }
 
-    // --- GLOBAL FINAL-WAVE FAILSAFE ---
-    if(state.phase==='final'){
-      const anyFinalAlive = state.enemies.some(e=>e.final && e.hp>0);
-      if(!anyFinalAlive && !state._rescueStarted){
-        startRescueScene();
-      }
+    // GLOBAL FINAL-WAVE FAILSAFE: kick rescue the instant finals are all dead.
+    if(state.phase==='final' && !state._rescueStarted){
+      maybeEnsureRescue();
     }
 
     // Phase-specific updates
