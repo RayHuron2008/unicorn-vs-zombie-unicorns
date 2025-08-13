@@ -21,12 +21,12 @@
     HUD.root.insertBefore(rayIcon, HUD.root.children[2] || null);
   }
 
-  // --- AUDIO (only main theme) ---
+  // --- AUDIO (main theme only) ---
   const audio = { main: new Audio('bgm_main.mp3'), started: false };
   audio.main.loop = true; audio.main.volume = 0.7;
   function startAudioIfNeeded(){ if(audio.started) return; audio.started=true; try{ audio.main.currentTime=0; audio.main.play(); }catch(_){} }
 
-  // --- CONSTANTS / HELPERS ---
+  // --- constants/helpers ---
   const W = canvas.width, H = canvas.height;
   const GROUND_Y = Math.floor(H * 0.78);
   const GROUND_BAND = 56;
@@ -35,28 +35,27 @@
 
   const rand=(a,b)=>a+Math.random()*(b-a);
   const dist=(x1,y1,x2,y2)=>Math.hypot(x2-x1,y2-y1);
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 
   const MAX_ENEMIES=4, MIN_ENEMY_SEP=120, SAFE_RADIUS=200, START_GRACE=2.0;
   const ENEMY_BULLET_SPEED=190, PLAYER_RAY_SPEED=280, PLAYER_RAY_SPEED_MEGA=360;
 
-  // --- Level timer (override with ?limit=SECONDS) ---
+  // timer (override with ?limit=SECONDS)
   const params = new URLSearchParams(location.search);
   const LEVEL_LIMIT = Math.max(5, parseInt(params.get('limit')||'', 10)) || 60;
 
-  // --- STATE ---
+  // --- state ---
   let state = {
     running:true, score:0, lives:3, power:0, wave:1,
     enemies:[], bolts:[], confetti:[],
-    kills:0, killsForMega:0,
-    spawnTimer:0, time:0,
-    specialTimer:0,  // Ray power (25s)
-    megaTimer:0,     // Mega (20s)
+    kills:0, killsForMega:0, spawnTimer:0, time:0,
+    specialTimer:0, megaTimer:0,
     toast:null, toastT:0,
 
-    phase:'play',        // 'play' -> 'final' -> 'rescue' -> 'ride' -> 'victory'
+    phase:'play',            // 'play' -> 'final' -> 'rescue' -> 'ride' -> 'victory'
     finalSpawned:false,
-    _rescueStarted:false,     // guard so we only start rescue once
-    _finalCheckQueued:false,  // microtask re-check guard
+    _rescueStarted:false,
+    _finalCheckQueued:false,
     human:null,
     fireworks:[]
   };
@@ -64,7 +63,7 @@
   const input = { dx:0, dy:0, holding:false, sprint:false };
   const player = { x:W*0.25, y:GROUND_Y-8, speed:2.2, size:18, dashCD:0, face:1, dashTimer:0, invuln:0 };
 
-  // --- INPUT ---
+  // --- input ---
   function bindInputs(){
     const dpad=document.getElementById('dpad');
     dpad.querySelectorAll('.dir').forEach(btn=>{
@@ -83,16 +82,15 @@
     btnB.addEventListener('mouseup',()=>{ input.sprint=false; });
   }
 
-  // --- TOAST ---
+  // toast
   function showToast(t,sec=1.4){ state.toast=t; state.toastT=sec; }
 
-  // --- SPAWN HELPERS ---
+  // spawns
   const countSpecials=()=>state.enemies.reduce((n,e)=>n+(e.special?1:0),0);
   function spawnWaveInitial(){ for(let i=0;i<2;i++) spawnEnemy(false,true); if(Math.random()<0.25) spawnEnemy(true,true); }
 
   function spawnEnemy(trySpecial,initial=false, forceSpecial=false){
     if(state.enemies.length>=MAX_ENEMIES && !forceSpecial) return;
-
     let special = !!trySpecial && countSpecials()===0;
     if (forceSpecial) special = true;
 
@@ -105,18 +103,16 @@
     state.enemies.push({ x,y,vx:0,vy:0, hp:special?3:2, special, cd:special?rand(0.9,1.4):0, face: fromLeft?1:-1, final:special && forceSpecial });
   }
 
-  // --- HORN TIP ---
+  // horn world coord
   function hornTip(entity, isPlayer=false){
     const face = entity.face || 1;
     const scale = (isPlayer && state.megaTimer>0) ? 1.25 : 1.0;
     const baseY = entity.y - 22;
     const lx = 26, ly = -10;
-    const wx = entity.x + face * (lx * scale);
-    const wy = baseY + ly * scale + 4*scale;
-    return { x: wx, y: wy };
+    return { x: entity.x + face*(lx*scale), y: baseY + ly*scale + 4*scale };
   }
 
-  // --- ATTACKS ---
+  // attacks
   function attack(){
     if (state.phase!=='play' && state.phase!=='final') return;
     if (state.specialTimer > 0){
@@ -127,8 +123,8 @@
     } else if (player.dashCD<=0){
       const a = Math.atan2(input.dy, input.dx) || 0;
       const dx = Math.cos(a)*48, dy = Math.sin(a)*18;
-      player.x = Math.max(20, Math.min(W-20, player.x+dx));
-      player.y = Math.max(MIN_Y, Math.min(MAX_Y, player.y+dy));
+      player.x = clamp(player.x+dx, 20, W-20);
+      player.y = clamp(player.y+dy, MIN_Y, MAX_Y);
       if (dx!==0) player.face = dx<0?-1:1;
       player.dashTimer=0.22; player.invuln=0.35;
       for(const e of state.enemies){
@@ -138,62 +134,52 @@
     }
   }
 
-  // --- KILL / FINAL CLEAR ---
+  // on kill
   function onKill(e){
     state.kills+=1; state.score+= e.special?500:100;
     if(state.kills%10===0) state.lives+=1;
 
     const inPower = (state.specialTimer>0) || (state.megaTimer>0);
-
     if(!inPower && (state.phase==='play' || state.phase==='final')){
       state.killsForMega+=1;
       if(state.killsForMega>=20){ state.killsForMega=0; state.megaTimer=20; showToast('🌈 MEGA MODE!',1.6); }
     }
-
     if(e.special && !inPower && (state.phase==='play' || state.phase==='final')){
       state.specialTimer=25; showToast('🔫 RAY POWER!',1.6);
     }
 
-    // mark dead now
     e.hp=0;
 
-    // queue a microtask re-check in FINAL, to survive same-frame double deaths or array timing
+    // re-check next tick in case both finals die on same frame
     if(state.phase==='final' && !state._rescueStarted && !state._finalCheckQueued){
       state._finalCheckQueued = true;
-      setTimeout(() => {
-        state._finalCheckQueued = false;
-        maybeEnsureRescue();
-      }, 0);
+      setTimeout(() => { state._finalCheckQueued=false; maybeEnsureRescue(); }, 0);
     }
   }
 
   function maybeEnsureRescue(){
     if(state.phase!=='final' || state._rescueStarted) return;
     const anyFinalAlive = state.enemies.some(en => en.final && en.hp > 0);
-    if(!anyFinalAlive){
-      startRescueScene();
-    }
+    if(!anyFinalAlive) startRescueScene();
   }
 
-  // --- FX ---
+  // fx
   function addConfetti(x,y){
     for(let i=0;i<14;i++){
       state.confetti.push({ x,y, vx:Math.cos(i/14*Math.PI*2)*(0.6+Math.random()*1.4), vy:Math.sin(i/14*Math.PI*2)*(0.6+Math.random()*1.4), t:0.4+Math.random()*0.5, hue:Math.floor(Math.random()*360) });
     }
   }
 
-  // --- DAMAGE / GAME OVER ---
+  // damage
   function damagePlayer(){
     if(player.invuln>0) return;
     if(state.phase==='ride' || state.phase==='victory' || state.phase==='rescue') return;
     state.lives-=1; if(state.lives<=0) gameOver();
   }
-
   function resetGame(){
     state.running=true; state.score=0; state.lives=3; state.power=0; state.wave=1;
     state.enemies=[]; state.bolts=[]; state.confetti=[];
-    state.kills=0; state.killsForMega=0;
-    state.spawnTimer=0; state.time=0;
+    state.kills=0; state.killsForMega=0; state.spawnTimer=0; state.time=0;
     state.specialTimer=0; state.megaTimer=0; state.toast=null; state.toastT=0;
     state.phase='play'; state.finalSpawned=false; state._rescueStarted=false; state._finalCheckQueued=false;
     state.human=null; state.fireworks=[];
@@ -202,7 +188,7 @@
   }
   function gameOver(){ state.running=false; setTimeout(resetGame,1000); }
 
-  // --- RESCUE / VICTORY SEQUENCE ---
+  // --- final wave / rescue / victory ---
   function startFinalWave(){
     state.phase='final';
     state.enemies.length = 0;
@@ -212,30 +198,50 @@
     state.finalSpawned = true;
   }
 
+  // >>> FIXED: NPC entrance from the far side + bubble always on-screen
   function startRescueScene(){
     if(state._rescueStarted) return;
     state._rescueStarted = true;
     state.phase='rescue';
-    input.dx = input.dy = 0; input.holding=false; input.sprint=false;
+
+    // keep player fully visible
+    player.x = clamp(player.x, 40, W-40);
+    player.y = GROUND_Y-8;
+
+    // decide which side the human enters from (farther side looks better)
+    const fromLeft = (player.x > W*0.5); // if player is on right half, enter from left
+    const startX = fromLeft ? -30 : W + 30;
+    const face = fromLeft ? 1 : -1;
+
     state.human = {
-      x: W + 30, y: GROUND_Y - 18, face: -1,
-      vx: -120,             // px/sec (dt-based)
-      talkTime: 2.0,        // ~2 seconds speech bubble
+      x: startX,
+      y: GROUND_Y - 22,  // slightly higher so feet sit on ground line
+      face,
+      vx: fromLeft ? 140 : -140,  // px/sec; uses dt
+      talkTime: 2.2,              // ~2 seconds
       riding:false,
       text: "You killed all of the zombies here! Thank you! I was so scared."
     };
+
+    // freeze action stuff
+    input.dx = input.dy = 0; input.holding=false; input.sprint=false;
     state.bolts = [];
     state.specialTimer = 0;
     state.megaTimer = 0;
   }
 
   function updateRescue(dt){
-    const h = state.human;
-    if(!h) return;
+    const h = state.human; if(!h) return;
+
     if(!h.riding){
-      if (h.x > player.x + 28) { h.x += h.vx * dt; }
-      else {
+      // move toward a spot near the player
+      const targetX = player.x - 16;
+      if ((h.vx > 0 && h.x < targetX) || (h.vx < 0 && h.x > targetX)) {
+        h.x += h.vx * dt;
+      } else {
+        // reached player: stop & talk
         h.vx = 0;
+        h.x = clamp(h.x, 20, W-20);
         h.talkTime -= dt;
         if (h.talkTime <= 0){
           h.riding = true;
@@ -287,7 +293,7 @@
     state.fireworks = state.fireworks.slice(-20);
   }
 
-  // --- TIMER (format + draw) ---
+  // --- timer HUD ---
   function formatMMSS(sec){
     const m = Math.floor(sec/60);
     const s = Math.floor(sec%60);
@@ -310,17 +316,17 @@
     ctx.restore();
   }
 
-  // --- UPDATE ---
+  // --- update ---
   function update(dt){
     if(!state.running) return;
     state.time += dt;
 
-    // Switch to final wave at time limit
+    // switch to final wave at limit
     if(state.phase==='play' && state.time >= LEVEL_LIMIT){
       if(!state.finalSpawned) startFinalWave();
     }
 
-    // Timers
+    // timers
     player.invuln=Math.max(0,player.invuln-dt);
     player.dashTimer=Math.max(0,player.dashTimer-dt);
     if(state.specialTimer>0) state.specialTimer=Math.max(0,state.specialTimer-dt);
@@ -330,22 +336,22 @@
     // HUD icon
     rayIcon.style.display = state.specialTimer > 0 ? 'block' : 'none';
 
-    // Player movement
+    // player movement
     if(state.phase==='play' || state.phase==='final'){
       const spd = player.speed*(input.sprint?1.6:1)*(state.megaTimer>0?1.05:1);
       if(input.dx!==0) player.face=Math.sign(input.dx);
-      player.x=Math.max(20,Math.min(W-20,player.x+input.dx*spd*60*dt));
-      player.y=Math.max(MIN_Y,Math.min(MAX_Y,player.y+input.dy*spd*52*dt));
+      player.x=clamp(player.x+input.dx*spd*60*dt, 20, W-20);
+      player.y=clamp(player.y+input.dy*spd*52*dt, MIN_Y, MAX_Y);
       player.dashCD=Math.max(0,player.dashCD-dt);
     }
 
-    // Enemies
+    // enemies
     if(state.phase==='play' || state.phase==='final'){
       for(const e of state.enemies){
         const dirX = Math.sign(player.x-e.x)||e.face||1;
         const dirY = Math.sign(player.y-e.y);
         const s = e.special?0.95:0.80;
-        e.x+=dirX*s; e.y=Math.max(MIN_Y,Math.min(MAX_Y,e.y+dirY*0.35)); e.face=dirX;
+        e.x+=dirX*s; e.y=clamp(e.y+dirY*0.35, MIN_Y, MAX_Y); e.face=dirX;
 
         if(e.special){
           e.cd-=dt;
@@ -356,25 +362,24 @@
             e.cd=rand(1.0,1.6);
           }
         }
-
         if (dist(e.x,e.y,player.x,player.y)<26 && player.invuln<=0) damagePlayer();
       }
 
-      // Separation
+      // separation
       for(let i=0;i<state.enemies.length;i++){
         for(let j=i+1;j<state.enemies.length;j++){
           const a=state.enemies[i], b=state.enemies[j];
           let dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy);
           if(d>0 && d<MIN_ENEMY_SEP){
             const push=(MIN_ENEMY_SEP-d)*0.5; dx/=d; dy/=d;
-            a.x-=dx*push; a.y=Math.max(MIN_Y,Math.min(MAX_Y,a.y-dy*push));
-            b.x+=dx*push; b.y=Math.max(MIN_Y,Math.min(MAX_Y,b.y+dy*push));
+            a.x-=dx*push; a.y=clamp(a.y-dy*push, MIN_Y, MAX_Y);
+            b.x+=dx*push; b.y=clamp(b.y+dy*push, MIN_Y, MAX_Y);
           }
         }
       }
     }
 
-    // Bolts
+    // bolts
     for(let i=state.bolts.length-1;i>=0;i--){
       const b=state.bolts[i];
       b.x+=b.vx*dt; b.y+=(b.vy||0)*dt; b.life-=dt;
@@ -398,15 +403,12 @@
       }
     }
 
-    // Clean & confetti
-    if(state.phase==='play' || state.phase==='final'){
-      state.enemies = state.enemies.filter(e=>e.hp>0);
-    } else {
-      state.enemies.length = 0;
-    }
+    // cleanup & confetti
+    if(state.phase==='play' || state.phase==='final'){ state.enemies = state.enemies.filter(e=>e.hp>0); }
+    else { state.enemies.length = 0; }
     for(let i=state.confetti.length-1;i>=0;i--){ const c=state.confetti[i]; c.x+=c.vx; c.y+=c.vy; c.t-=dt; if(c.t<=0) state.confetti.splice(i,1); }
 
-    // Spawns (disabled in final)
+    // spawns (disabled in final)
     if(state.phase==='play'){
       const spawnInterval = state.time<START_GRACE ? 1.3 : 0.9;
       state.spawnTimer-=dt;
@@ -418,18 +420,16 @@
       }
     }
 
-    // GLOBAL FINAL-WAVE FAILSAFE: kick rescue the instant finals are all dead.
-    if(state.phase==='final' && !state._rescueStarted){
-      maybeEnsureRescue();
-    }
+    // global final failsafe
+    if(state.phase==='final' && !state._rescueStarted){ maybeEnsureRescue(); }
 
-    // Phase-specific updates
+    // phase updates
     if(state.phase==='rescue')  updateRescue(dt);
     if(state.phase==='ride')    updateRide(dt);
     if(state.phase==='victory') updateFireworks(dt);
   }
 
-  // --- DRAW ---
+  // --- draw ---
   function drawBackground(){
     const bands=['#82d8ff','#a8e4ff','#d0f1ff','#e9f9ff'];
     for(let i=0;i<bands.length;i++){ ctx.fillStyle=bands[i]; ctx.fillRect(0,i*(H/6),W,H/6); }
@@ -462,44 +462,44 @@
 
   function drawProjectiles(){
     for(const b of state.bolts){
-      if(b.enemy){
-        ctx.fillStyle = b.color || '#ff2a2a';
-        ctx.fillRect(Math.floor(b.x)-3, Math.floor(b.y)-2, 6, 4);
-      } else {
-        if(b.rainbow){
-          const t = (state.time - (b.born||0)) * 360;
-          ctx.fillStyle = `hsl(${(t%360)|0}, 90%, 60%)`;
-        } else {
-          ctx.fillStyle = b.mega ? '#ffd800' : '#ffffff';
-        }
-        const w = b.mega ? 6 : 4;
-        ctx.fillRect(Math.floor(b.x)-w/2, Math.floor(b.y)-2, w, 4);
+      if(b.enemy){ ctx.fillStyle = b.color || '#ff2a2a'; ctx.fillRect(Math.floor(b.x)-3, Math.floor(b.y)-2, 6, 4); }
+      else {
+        if(b.rainbow){ const t = (state.time - (b.born||0)) * 360; ctx.fillStyle = `hsl(${(t%360)|0}, 90%, 60%)`; }
+        else { ctx.fillStyle = b.mega ? '#ffd800' : '#ffffff'; }
+        const w = b.mega ? 6 : 4; ctx.fillRect(Math.floor(b.x)-w/2, Math.floor(b.y)-2, w, 4);
       }
     }
   }
 
   function drawHuman(h){
+    // body
     ctx.save();
     ctx.translate(h.x, h.y-16);
     ctx.fillStyle='#ffe0bd'; ctx.fillRect(-4, -10, 8, 10);
     ctx.fillStyle='#2c3e50'; ctx.fillRect(-5, 0, 10, 12);
-    ctx.fillStyle='#000'; ctx.fillRect(-3, -6, 2, 2);
-    ctx.fillRect(1, -6, 2, 2);
+    ctx.fillStyle='#000'; ctx.fillRect(-3, -6, 2, 2); ctx.fillRect(1, -6, 2, 2);
     ctx.restore();
+
+    // speech bubble always on-screen above the head
     if(!h.riding && h.talkTime > 0){
-      drawSpeechBubble(h.x - 90, h.y - 40, 180, 38, h.text);
+      const bw = 220, bh = 48;
+      const x = clamp(h.x - bw/2, 8, W - bw - 8);
+      const y = clamp(h.y - 54, 8, GROUND_Y - bh - 8);
+      drawSpeechBubble(x, y, bw, bh, h.text, h.x, h.y-16);
     }
   }
 
-  function drawSpeechBubble(x,y,w,h,text){
+  function drawSpeechBubble(x,y,w,h,text,tailToX,tailToY){
     ctx.save();
     ctx.fillStyle='rgba(255,255,255,0.95)';
     ctx.strokeStyle='#333'; ctx.lineWidth=2;
     roundRect(ctx, x, y, w, h, 8, true, true);
+    // tail to character head
+    const tx = clamp(tailToX, x+10, x+w-10);
     ctx.beginPath();
-    ctx.moveTo(x+w*0.5-6, y+h);
-    ctx.lineTo(x+w*0.5+6, y+h);
-    ctx.lineTo(x+w*0.5, y+h+8);
+    ctx.moveTo(tx-6, y+h);
+    ctx.lineTo(tx+6, y+h);
+    ctx.lineTo(tx,   y+h+8);
     ctx.closePath();
     ctx.fill(); ctx.stroke();
     ctx.fillStyle='#222'; ctx.font='12px -apple-system,Arial,monospace';
@@ -547,6 +547,7 @@
     ctx.restore();
   }
 
+  // --- draw frame ---
   function draw(now){
     ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
     drawBackground();
@@ -578,16 +579,16 @@
     }
   }
 
-  // --- LOOP ---
+  // --- loop ---
   let last=performance.now();
-  function loop(now){
+  function updateLoop(now){
     const dt=Math.min(0.033,(now-last)/1000); last=now;
     if(state.running){ update(dt); }
-    requestAnimationFrame(loop);
+    requestAnimationFrame(updateLoop);
     draw(now);
   }
 
-  function init(){ bindInputs(); spawnWaveInitial(); requestAnimationFrame(loop); }
+  function init(){ bindInputs(); spawnWaveInitial(); requestAnimationFrame(updateLoop); }
   init();
   ['touchstart','pointerdown','mousedown','click','keydown'].forEach(ev=>window.addEventListener(ev,startAudioIfNeeded,{once:false}));
 })();
