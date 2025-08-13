@@ -39,17 +39,16 @@
   const MAX_ENEMIES=4, MIN_ENEMY_SEP=120, SAFE_RADIUS=200, START_GRACE=2.0;
   const ENEMY_BULLET_SPEED=190, PLAYER_RAY_SPEED=280, PLAYER_RAY_SPEED_MEGA=360;
 
-  // --- Level timer: default 300s, override via ?limit=SECONDS ---
+  // --- Level timer: default 60s for quick testing; override via ?limit=SECONDS ---
   const params = new URLSearchParams(location.search);
-  const LEVEL_LIMIT = Math.max(5, parseInt(params.get('limit')||'', 10)) || 300;
+  const LEVEL_LIMIT = Math.max(5, parseInt(params.get('limit')||'', 10)) || 60;
 
   // --- STATE ---
   let state = {
     running:true, score:0, lives:3, power:0, wave:1,
     enemies:[], bolts:[], confetti:[],
     kills:0, killsForMega:0,
-    spawnTimer:0, time:0,            // high-resolution time (seconds, float)
-    elapsed:0,                       // whole seconds accumulator for HUD timer
+    spawnTimer:0, time:0,            // high-resolution seconds (float)
     specialTimer:0,  // Ray power (25s)
     megaTimer:0,     // Mega (20s)
     toast:null, toastT:0,
@@ -156,9 +155,9 @@
     }
     e.hp=0;
 
-    // Final wave clear check
+    // Final wave clear check (FIX: only count alive finals)
     if(state.phase==='final'){
-      const aliveFinal = state.enemies.some(en=>en.final);
+      const aliveFinal = state.enemies.some(en => en.final && en.hp > 0);
       if(!aliveFinal){
         startRescueScene();
       }
@@ -182,7 +181,7 @@
   function resetGame(){
     state.running=true; state.score=0; state.lives=3; state.power=0; state.wave=1;
     state.enemies=[]; state.bolts=[]; state.confetti=[]; state.kills=0; state.killsForMega=0;
-    state.spawnTimer=0; state.time=0; state.elapsed=0;
+    state.spawnTimer=0; state.time=0;
     state.specialTimer=0; state.megaTimer=0; state.toast=null; state.toastT=0;
     state.phase='play'; state.finalSpawned=false; state.human=null; state.fireworks=[];
     player.x=W*0.25; player.y=GROUND_Y-8; player.face=1; player.dashCD=0; player.dashTimer=0; player.invuln=0;
@@ -409,12 +408,6 @@
     if(state.phase==='rescue')  updateRescue(dt);
     if(state.phase==='ride')    updateRide(dt);
     if(state.phase==='victory') updateFireworks(dt);
-
-    // HUD text
-    HUD.lives.textContent = `🦄 x ${state.lives}`;
-    HUD.score.textContent = `Score: ${state.score}`;
-    const pct = state.specialTimer>0 ? (state.specialTimer/25)*100 : state.power;
-    HUD.powerFill.style.width = `${Math.max(0,Math.min(100,pct))}%`;
   }
 
   // --- DRAW ---
