@@ -39,7 +39,7 @@
   const MAX_ENEMIES=4, MIN_ENEMY_SEP=120, SAFE_RADIUS=200, START_GRACE=2.0;
   const ENEMY_BULLET_SPEED=190, PLAYER_RAY_SPEED=280, PLAYER_RAY_SPEED_MEGA=360;
 
-  // --- Level timer: default 60s for quick testing; override via ?limit=SECONDS ---
+  // --- Level timer (override with ?limit=SECONDS) ---
   const params = new URLSearchParams(location.search);
   const LEVEL_LIMIT = Math.max(5, parseInt(params.get('limit')||'', 10)) || 60;
 
@@ -55,6 +55,7 @@
 
     phase:'play',        // 'play' -> 'final' -> 'rescue' -> 'ride' -> 'victory'
     finalSpawned:false,
+    _rescueStarted:false,  // <— new guard
     human:null,
     fireworks:[]
   };
@@ -91,7 +92,6 @@
   function spawnEnemy(trySpecial,initial=false, forceSpecial=false){
     if(state.enemies.length>=MAX_ENEMIES && !forceSpecial) return;
 
-    // Normal: max 1 special; Final wave: allow two forced specials.
     let special = !!trySpecial && countSpecials()===0;
     if (forceSpecial) special = true;
 
@@ -109,7 +109,7 @@
     const face = entity.face || 1;
     const scale = (isPlayer && state.megaTimer>0) ? 1.25 : 1.0;
     const baseY = entity.y - 22;
-    const lx = 26, ly = -10; // local horn tip
+    const lx = 26, ly = -10;
     const wx = entity.x + face * (lx * scale);
     const wy = baseY + ly * scale + 4*scale;
     return { x: wx, y: wy };
@@ -143,24 +143,20 @@
 
     const inPower = (state.specialTimer>0) || (state.megaTimer>0);
 
-    // Mega progress only if NOT powered
     if(!inPower && (state.phase==='play' || state.phase==='final')){
       state.killsForMega+=1;
       if(state.killsForMega>=20){ state.killsForMega=0; state.megaTimer=20; showToast('🌈 MEGA MODE!',1.6); }
     }
 
-    // Ray pickup only if NOT powered and you killed a special
     if(e.special && !inPower && (state.phase==='play' || state.phase==='final')){
       state.specialTimer=25; showToast('🔫 RAY POWER!',1.6);
     }
     e.hp=0;
 
-    // Final wave clear check (count only alive finals)
+    // inline final-clear check (may be bypassed if two die same frame; we also have a global failsafe)
     if(state.phase==='final'){
       const aliveFinal = state.enemies.some(en => en.final && en.hp > 0);
-      if(!aliveFinal){
-        startRescueScene();
-      }
+      if(!aliveFinal && !state._rescueStarted){ startRescueScene(); }
     }
   }
 
@@ -180,10 +176,12 @@
 
   function resetGame(){
     state.running=true; state.score=0; state.lives=3; state.power=0; state.wave=1;
-    state.enemies=[]; state.bolts=[]; state.confetti=[]; state.kills=0; state.killsForMega=0;
+    state.enemies=[]; state.bolts=[]; state.confetti=[];
+    state.kills=0; state.killsForMega=0;
     state.spawnTimer=0; state.time=0;
     state.specialTimer=0; state.megaTimer=0; state.toast=null; state.toastT=0;
-    state.phase='play'; state.finalSpawned=false; state.human=null; state.fireworks=[];
+    state.phase='play'; state.finalSpawned=false; state._rescueStarted=false;
+    state.human=null; state.fireworks=[];
     player.x=W*0.25; player.y=GROUND_Y-8; player.face=1; player.dashCD=0; player.dashTimer=0; player.invuln=0;
     startAudioIfNeeded(); setTimeout(spawnWaveInitial,100);
   }
@@ -192,8 +190,8 @@
   // --- RESCUE / VICTORY SEQUENCE ---
   function startFinalWave(){
     state.phase='final';
-    state.enemies.length = 0;     // clear field
-    // Exactly TWO specials for the final wave
+    state.enemies.length = 0;
+    state._rescueStarted = false;
     spawnEnemy(true,false,true);
     spawnEnemy(true,false,true);
     state.finalSpawned = true;
@@ -201,8 +199,8 @@
 
   function startRescueScene(){
     state.phase='rescue';
+    state._rescueStarted = true;
     input.dx = input.dy = 0; input.holding=false; input.sprint=false;
-    // human walks in from right
     state.human = {
       x: W + 30, y: GROUND_Y - 18, face: -1,
       vx: -120,             // px/sec (dt-based)
@@ -210,7 +208,6 @@
       riding:false,
       text: "You killed all of the zombies here! Thank you! I was so scared."
     };
-    // clear stray bullets & powers
     state.bolts = [];
     state.specialTimer = 0;
     state.megaTimer = 0;
@@ -220,7 +217,6 @@
     const h = state.human;
     if(!h) return;
     if(!h.riding){
-      // Move toward player with dt-based speed
       if (h.x > player.x + 28) { h.x += h.vx * dt; }
       else {
         h.vx = 0;
@@ -243,7 +239,6 @@
 
   function startVictory(){
     state.phase = 'victory';
-    // fireworks
     state.fireworks = [];
     for(let i=0;i<10;i++) state.fireworks.push(newFirework());
     setTimeout(resetGame, 5000);
@@ -268,7 +263,7 @@
     for(const f of state.fireworks){
       f.t += dt;
       for(const p of f.parts){
-        p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 30*dt; // gravity
+        p.x += p.vx*dt; p.y += p.vy*dt; p.vy += 30*dt;
         p.life -= dt;
       }
     }
@@ -283,7 +278,7 @@
     return `${m}:${s<10?'0':''}${s}`;
   }
   function drawTimer(){
-    const t = Math.floor(Math.min(state.time, LEVEL_LIMIT)); // cap for display
+    const t = Math.floor(Math.min(state.time, LEVEL_LIMIT));
     ctx.save();
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
     const padX=10;
@@ -304,12 +299,12 @@
     if(!state.running) return;
     state.time += dt;
 
-    // Transition to final wave at LEVEL_LIMIT
+    // Switch to final wave at time limit
     if(state.phase==='play' && state.time >= LEVEL_LIMIT){
       if(!state.finalSpawned) startFinalWave();
     }
 
-    // Common timers
+    // Timers
     player.invuln=Math.max(0,player.invuln-dt);
     player.dashTimer=Math.max(0,player.dashTimer-dt);
     if(state.specialTimer>0) state.specialTimer=Math.max(0,state.specialTimer-dt);
@@ -328,7 +323,7 @@
       player.dashCD=Math.max(0,player.dashCD-dt);
     }
 
-    // Enemies (not during rescue/ride/victory)
+    // Enemies
     if(state.phase==='play' || state.phase==='final'){
       for(const e of state.enemies){
         const dirX = Math.sign(player.x-e.x)||e.face||1;
@@ -395,7 +390,7 @@
     }
     for(let i=state.confetti.length-1;i>=0;i--){ const c=state.confetti[i]; c.x+=c.vx; c.y+=c.vy; c.t-=dt; if(c.t<=0) state.confetti.splice(i,1); }
 
-    // Spawns
+    // Spawns (disabled in final)
     if(state.phase==='play'){
       const spawnInterval = state.time<START_GRACE ? 1.3 : 0.9;
       state.spawnTimer-=dt;
@@ -404,6 +399,14 @@
         if(countSpecials()===0) spawnEnemy(wantSpecial);
         else spawnEnemy(false);
         state.spawnTimer = spawnInterval + Math.random()*0.4;
+      }
+    }
+
+    // --- GLOBAL FINAL-WAVE FAILSAFE ---
+    if(state.phase==='final'){
+      const anyFinalAlive = state.enemies.some(e=>e.final && e.hp>0);
+      if(!anyFinalAlive && !state._rescueStarted){
+        startRescueScene();
       }
     }
 
@@ -429,7 +432,7 @@
   function drawUnicornFacing(x,y,face,main='#ff9bd4',mane=['#ff3b6b','#ffb86b','#ffe27a','#9dff8b','#6be3ff','#c59bff'], eye='#000'){
     const baseY=y-22;
     ctx.save(); ctx.translate(x,baseY); ctx.scale(face,1); ctx.imageSmoothingEnabled=false;
-    const scale = state.megaTimer>0 && main==='#ff9bd4' ? 1.25 : 1.0; // only scale player in mega
+    const scale = state.megaTimer>0 && main==='#ff9bd4' ? 1.25 : 1.0;
     ctx.scale(scale,scale);
     ctx.fillStyle=main; ctx.fillRect(-18,-10,34,20); ctx.fillRect(14,-8,12,14);
     ctx.fillStyle='#2b1c3b'; ctx.fillRect(-14,8,6,14); ctx.fillRect(-2,8,6,14); ctx.fillRect(8,8,6,14); ctx.fillRect(18,8,6,14);
@@ -465,9 +468,9 @@
   function drawHuman(h){
     ctx.save();
     ctx.translate(h.x, h.y-16);
-    ctx.fillStyle='#ffe0bd'; ctx.fillRect(-4, -10, 8, 10); // head
-    ctx.fillStyle='#2c3e50'; ctx.fillRect(-5, 0, 10, 12);  // body
-    ctx.fillStyle='#000'; ctx.fillRect(-3, -6, 2, 2);      // eyes
+    ctx.fillStyle='#ffe0bd'; ctx.fillRect(-4, -10, 8, 10);
+    ctx.fillStyle='#2c3e50'; ctx.fillRect(-5, 0, 10, 12);
+    ctx.fillStyle='#000'; ctx.fillRect(-3, -6, 2, 2);
     ctx.fillRect(1, -6, 2, 2);
     ctx.restore();
     if(!h.riding && h.talkTime > 0){
@@ -544,20 +547,15 @@
     if(state.phase==='play' || state.phase==='final'){
       for(const e of state.enemies) drawZombie(e);
       drawUnicornFacing(player.x,player.y,player.face);
-    } else if(state.phase==='rescue'){
-      drawUnicornFacing(player.x,player.y,player.face);
-      if(state.human) drawHuman(state.human);
-    } else if(state.phase==='ride'){
+    } else if(state.phase==='rescue' || state.phase==='ride'){
       drawUnicornFacing(player.x,player.y,player.face);
       if(state.human) drawHuman(state.human);
     } else if(state.phase==='victory'){
       drawFireworks();
     }
 
-    // Timer overlay (always visible for testing)
     drawTimer();
 
-    // Toasts
     if(state.toast && state.toastT>0){
       ctx.save(); ctx.globalAlpha=Math.min(1,state.toastT/0.4);
       ctx.fillStyle='#111'; ctx.fillRect(W/2-80,24,160,30);
@@ -571,9 +569,7 @@
   let last=performance.now();
   function loop(now){
     const dt=Math.min(0.033,(now-last)/1000); last=now;
-    if(state.running){
-      update(dt);
-    }
+    if(state.running){ update(dt); }
     requestAnimationFrame(loop);
     draw(now);
   }
