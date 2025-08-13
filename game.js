@@ -16,7 +16,8 @@
     rayIcon = document.createElement('div');
     rayIcon.id = 'rayIcon';
     rayIcon.textContent = '🔫';
-    rayIcon.style.cssText = 'background:rgba(0,0,0,.35);padding:6px 10px;border:2px solid rgba(255,255,255,.25);border-radius:8px;margin:0 6px;display:none;color:#fff;font-family:-apple-system,system-ui,Arial;font-size:14px;';
+    rayIcon.style.cssText =
+      'background:rgba(0,0,0,.35);padding:6px 10px;border:2px solid rgba(255,255,255,.25);border-radius:8px;margin:0 6px;display:none;color:#fff;font-family:-apple-system,system-ui,Arial;font-size:14px;';
     HUD.root.insertBefore(rayIcon, HUD.root.children[2] || null);
   }
 
@@ -38,14 +39,17 @@
   const MAX_ENEMIES=4, MIN_ENEMY_SEP=120, SAFE_RADIUS=200, START_GRACE=2.0;
   const ENEMY_BULLET_SPEED=190, PLAYER_RAY_SPEED=280, PLAYER_RAY_SPEED_MEGA=360;
 
-  const LEVEL_LIMIT = 300; // 5 minutes in seconds
+  // --- Level timer: default 300s, override via ?limit=SECONDS ---
+  const params = new URLSearchParams(location.search);
+  const LEVEL_LIMIT = Math.max(5, parseInt(params.get('limit')||'', 10)) || 300;
 
   // --- STATE ---
   let state = {
     running:true, score:0, lives:3, power:0, wave:1,
     enemies:[], bolts:[], confetti:[],
     kills:0, killsForMega:0,
-    spawnTimer:0, time:0,
+    spawnTimer:0, time:0,            // high-resolution time (seconds, float)
+    elapsed:0,                       // whole seconds accumulator for HUD timer
     specialTimer:0,  // Ray power (25s)
     megaTimer:0,     // Mega (20s)
     toast:null, toastT:0,
@@ -64,7 +68,7 @@
     const dpad=document.getElementById('dpad');
     dpad.querySelectorAll('.dir').forEach(btn=>{
       const dx=+btn.dataset.dx, dy=+btn.dataset.dy;
-      const start=e=>{ startAudioIfNeeded(); if(state.phase==='play'||state.phase==='final') { input.dx=dx; input.dy=dy; input.holding=true; } e.preventDefault(); };
+      const start=e=>{ startAudioIfNeeded(); if(state.phase==='play'||state.phase==='final'){ input.dx=dx; input.dy=dy; input.holding=true; } e.preventDefault(); };
       const end=()=>{ if(state.phase==='play'||state.phase==='final'){ input.holding=false; input.dx=input.dy=0; } };
       btn.addEventListener('touchstart',start,{passive:false}); btn.addEventListener('touchend',end);
       btn.addEventListener('mousedown',start); btn.addEventListener('mouseup',end); btn.addEventListener('mouseleave',end);
@@ -88,7 +92,7 @@
   function spawnEnemy(trySpecial,initial=false, forceSpecial=false){
     if(state.enemies.length>=MAX_ENEMIES && !forceSpecial) return;
 
-    // In normal play, enforce at most one special. During final wave we may force two.
+    // Normal: max 1 special; Final wave: allow two forced specials.
     let special = !!trySpecial && countSpecials()===0;
     if (forceSpecial) special = true;
 
@@ -146,7 +150,7 @@
       if(state.killsForMega>=20){ state.killsForMega=0; state.megaTimer=20; showToast('🌈 MEGA MODE!',1.6); }
     }
 
-    // Ray pickup only if NOT powered and you killed a special (outside ride/rescue)
+    // Ray pickup only if NOT powered and you killed a special
     if(e.special && !inPower && (state.phase==='play' || state.phase==='final')){
       state.specialTimer=25; showToast('🔫 RAY POWER!',1.6);
     }
@@ -178,8 +182,9 @@
   function resetGame(){
     state.running=true; state.score=0; state.lives=3; state.power=0; state.wave=1;
     state.enemies=[]; state.bolts=[]; state.confetti=[]; state.kills=0; state.killsForMega=0;
-    state.spawnTimer=0; state.time=0; state.specialTimer=0; state.megaTimer=0;
-    state.toast=null; state.toastT=0; state.phase='play'; state.finalSpawned=false; state.human=null; state.fireworks=[];
+    state.spawnTimer=0; state.time=0; state.elapsed=0;
+    state.specialTimer=0; state.megaTimer=0; state.toast=null; state.toastT=0;
+    state.phase='play'; state.finalSpawned=false; state.human=null; state.fireworks=[];
     player.x=W*0.25; player.y=GROUND_Y-8; player.face=1; player.dashCD=0; player.dashTimer=0; player.invuln=0;
     startAudioIfNeeded(); setTimeout(spawnWaveInitial,100);
   }
@@ -189,7 +194,7 @@
   function startFinalWave(){
     state.phase='final';
     state.enemies.length = 0;     // clear field
-    // Spawn exactly TWO specials, even though normal rule is "max 1 special"
+    // Exactly TWO specials for the final wave
     spawnEnemy(true,false,true);
     spawnEnemy(true,false,true);
     state.finalSpawned = true;
@@ -204,20 +209,18 @@
       vx: -1.2, talkTime: 3.0, riding:false,
       text: "You killed all of the zombies here! Thank you! I was so scared."
     };
-    // clear stray bullets
+    // clear stray bullets & powers
     state.bolts = [];
-    state.specialTimer = 0; // remove ray visuals
+    state.specialTimer = 0;
     state.megaTimer = 0;
   }
 
   function updateRescue(dt){
     const h = state.human;
     if(!h) return;
-    // Move in until near player
     if(!h.riding){
       if (h.x > player.x + 28) { h.x += h.vx; }
       else {
-        // stop & talk
         h.vx = 0;
         h.talkTime -= dt;
         if (h.talkTime <= 0){
@@ -229,23 +232,18 @@
   }
 
   function updateRide(dt){
-    // lock inputs, auto-gallop to right
     const gallopSpeed = 2.6;
     player.face = 1;
     player.x += gallopSpeed*60*dt;
     if (state.human){ state.human.x = player.x - 6; state.human.y = player.y - 22; }
-    if (player.x > W + 40){
-      startVictory();
-    }
+    if (player.x > W + 40) startVictory();
   }
 
   function startVictory(){
     state.phase = 'victory';
-    // spawn fireworks
+    // fireworks
     state.fireworks = [];
-    for(let i=0;i<10;i++){
-      state.fireworks.push(newFirework());
-    }
+    for(let i=0;i<10;i++) state.fireworks.push(newFirework());
     setTimeout(resetGame, 5000);
   }
 
@@ -272,18 +270,39 @@
         p.life -= dt;
       }
     }
-    // respawn a new burst occasionally
     if(Math.random() < 0.05) state.fireworks.push(newFirework());
-    // trim old bursts
     state.fireworks = state.fireworks.slice(-20);
+  }
+
+  // --- TIMER (format + draw) ---
+  function formatMMSS(sec){
+    const m = Math.floor(sec/60);
+    const s = Math.floor(sec%60);
+    return `${m}:${s<10?'0':''}${s}`;
+  }
+  function drawTimer(){
+    const t = Math.floor(Math.min(state.time, LEVEL_LIMIT)); // cap at limit for display
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    const padX=10, padY=6;
+    const label = `Time  ${formatMMSS(t)} / ${formatMMSS(LEVEL_LIMIT)}`;
+    ctx.font = '16px -apple-system, Arial, monospace';
+    const w = ctx.measureText(label).width + padX*2;
+    const x = (W - w)/2, y = 8, h = 26;
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.strokeRect(x, y, w, h);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(label, x+padX, y+18);
+    ctx.restore();
   }
 
   // --- UPDATE ---
   function update(dt){
     if(!state.running) return;
-    state.time+=dt;
+    state.time += dt;
 
-    // Phase transitions based on timer
+    // Transition to final wave at LEVEL_LIMIT
     if(state.phase==='play' && state.time >= LEVEL_LIMIT){
       if(!state.finalSpawned) startFinalWave();
     }
@@ -298,7 +317,7 @@
     // HUD icon
     rayIcon.style.display = state.specialTimer > 0 ? 'block' : 'none';
 
-    // Player movement (disabled during rescue/ride/victory)
+    // Player movement
     if(state.phase==='play' || state.phase==='final'){
       const spd = player.speed*(input.sprint?1.6:1)*(state.megaTimer>0?1.05:1);
       if(input.dx!==0) player.face=Math.sign(input.dx);
@@ -315,7 +334,6 @@
         const s = e.special?0.95:0.80;
         e.x+=dirX*s; e.y=Math.max(MIN_Y,Math.min(MAX_Y,e.y+dirY*0.35)); e.face=dirX;
 
-        // Special shooters fire from horn tip (red)
         if(e.special){
           e.cd-=dt;
           if(e.cd<=0){
@@ -329,7 +347,7 @@
         if (dist(e.x,e.y,player.x,player.y)<26 && player.invuln<=0) damagePlayer();
       }
 
-      // Soft separation
+      // Separation
       for(let i=0;i<state.enemies.length;i++){
         for(let j=i+1;j<state.enemies.length;j++){
           const a=state.enemies[i], b=state.enemies[j];
@@ -350,20 +368,17 @@
       if(b.life<=0 || b.x<0||b.x>W||b.y<0||b.y>H){ state.bolts.splice(i,1); continue; }
 
       if(!b.enemy){
-        // collide with enemies
         if(state.phase==='play' || state.phase==='final'){
           for(const e of state.enemies){
-            const hitX = e.x, hitY = e.y - 10; const R = b.mega ? 24 : 20;
-            if(dist(b.x,b.y,hitX,hitY) < R){
-              e.hp -= (b.mega ? 3 : 2);
-              addConfetti(e.x,e.y);
+            const hitX=e.x, hitY=e.y-10; const R=b.mega?24:20;
+            if(dist(b.x,b.y,hitX,hitY)<R){
+              e.hp -= (b.mega?3:2); addConfetti(e.x,e.y);
               if(e.hp<=0) onKill(e);
               state.bolts.splice(i,1); break;
             }
           }
         }
       } else {
-        // enemy bullets hit player unless in non-combat phases
         if((state.phase==='play'||state.phase==='final') && player.invuln<=0 && dist(b.x,b.y,player.x,player.y)<16){
           damagePlayer(); state.bolts.splice(i,1);
         }
@@ -374,7 +389,7 @@
     if(state.phase==='play' || state.phase==='final'){
       state.enemies = state.enemies.filter(e=>e.hp>0);
     } else {
-      state.enemies.length = 0; // ensure none during rescue/ride/victory
+      state.enemies.length = 0;
     }
     for(let i=state.confetti.length-1;i>=0;i--){ const c=state.confetti[i]; c.x+=c.vx; c.y+=c.vy; c.t-=dt; if(c.t<=0) state.confetti.splice(i,1); }
 
@@ -389,14 +404,13 @@
         state.spawnTimer = spawnInterval + Math.random()*0.4;
       }
     }
-    // 'final' phase spawns are handled once by startFinalWave()
 
-    // Rescue / Ride / Victory updates
-    if(state.phase==='rescue') updateRescue(dt);
-    if(state.phase==='ride')   updateRide(dt);
+    // Phase-specific updates
+    if(state.phase==='rescue')  updateRescue(dt);
+    if(state.phase==='ride')    updateRide(dt);
     if(state.phase==='victory') updateFireworks(dt);
 
-    // HUD
+    // HUD text
     HUD.lives.textContent = `🦄 x ${state.lives}`;
     HUD.score.textContent = `Score: ${state.score}`;
     const pct = state.specialTimer>0 ? (state.specialTimer/25)*100 : state.power;
@@ -405,17 +419,13 @@
 
   // --- DRAW ---
   function drawBackground(){
-    // Sky bands
     const bands=['#82d8ff','#a8e4ff','#d0f1ff','#e9f9ff'];
     for(let i=0;i<bands.length;i++){ ctx.fillStyle=bands[i]; ctx.fillRect(0,i*(H/6),W,H/6); }
-    // Hills
     ctx.fillStyle='#2ecc71'; ctx.fillRect(0,H*0.65,W,H*0.35);
     ctx.fillStyle='#27ae60';
     for(let i=0;i<6;i++){ const x=i*180-60; ctx.fillRect(x,H*0.62,160,12); ctx.fillRect(x+20,H*0.60,120,12); ctx.fillRect(x+40,H*0.58,80,12); }
-    // Rainbow
     const arcs=['#ff3b6b','#ff8a00','#ffe600','#19ff00','#00c3ff','#8a2be2'];
     for(let i=0;i<arcs.length;i++){ ctx.strokeStyle=arcs[i]; ctx.lineWidth=18; ctx.beginPath(); ctx.arc(W*0.6,H*0.78,220-i*18,Math.PI,Math.PI*2); ctx.stroke(); }
-    // Ground
     ctx.fillStyle='#7b4e2b'; ctx.fillRect(0,GROUND_Y+8,W,H-(GROUND_Y+8));
     ctx.fillStyle='#2ecc71'; ctx.fillRect(0,GROUND_Y, W,8);
   }
@@ -425,15 +435,10 @@
     ctx.save(); ctx.translate(x,baseY); ctx.scale(face,1); ctx.imageSmoothingEnabled=false;
     const scale = state.megaTimer>0 && main==='#ff9bd4' ? 1.25 : 1.0; // only scale player in mega
     ctx.scale(scale,scale);
-    // body + head
     ctx.fillStyle=main; ctx.fillRect(-18,-10,34,20); ctx.fillRect(14,-8,12,14);
-    // legs
     ctx.fillStyle='#2b1c3b'; ctx.fillRect(-14,8,6,14); ctx.fillRect(-2,8,6,14); ctx.fillRect(8,8,6,14); ctx.fillRect(18,8,6,14);
-    // horn
     ctx.fillStyle='#ffe35a'; ctx.fillRect(24,-10,2,8);
-    // mane
     for(let i=0;i<mane.length;i++){ ctx.fillStyle=mane[i]; ctx.fillRect(-10,-12+i*2,28,2); }
-    // eye
     ctx.fillStyle=eye; ctx.fillRect(22,-2,2,2);
     ctx.restore();
   }
@@ -446,7 +451,7 @@
   function drawProjectiles(){
     for(const b of state.bolts){
       if(b.enemy){
-        ctx.fillStyle = b.color || '#ff2a2a'; // enemy = red
+        ctx.fillStyle = b.color || '#ff2a2a';
         ctx.fillRect(Math.floor(b.x)-3, Math.floor(b.y)-2, 6, 4);
       } else {
         if(b.rainbow){
@@ -462,34 +467,29 @@
   }
 
   function drawHuman(h){
-    // simple tiny human sprite
     ctx.save();
     ctx.translate(h.x, h.y-16);
     ctx.fillStyle='#ffe0bd'; ctx.fillRect(-4, -10, 8, 10); // head
     ctx.fillStyle='#2c3e50'; ctx.fillRect(-5, 0, 10, 12);  // body
-    ctx.fillStyle='#000'; ctx.fillRect(-3, -6, 2, 2);      // eye
-    ctx.fillRect(1, -6, 2, 2);                             // eye
+    ctx.fillStyle='#000'; ctx.fillRect(-3, -6, 2, 2);      // eyes
+    ctx.fillRect(1, -6, 2, 2);
     ctx.restore();
-    // speech bubble (only during rescue before riding)
     if(!h.riding && h.talkTime > 0){
       drawSpeechBubble(h.x - 90, h.y - 40, 180, 38, h.text);
     }
   }
 
   function drawSpeechBubble(x,y,w,h,text){
-    // rounded rect
     ctx.save();
     ctx.fillStyle='rgba(255,255,255,0.95)';
     ctx.strokeStyle='#333'; ctx.lineWidth=2;
     roundRect(ctx, x, y, w, h, 8, true, true);
-    // tail
     ctx.beginPath();
     ctx.moveTo(x+w*0.5-6, y+h);
     ctx.lineTo(x+w*0.5+6, y+h);
     ctx.lineTo(x+w*0.5, y+h+8);
     ctx.closePath();
     ctx.fill(); ctx.stroke();
-
     ctx.fillStyle='#222'; ctx.font='12px -apple-system,Arial,monospace';
     wrapText(text, x+8, y+14, w-16, 14);
     ctx.restore();
@@ -511,9 +511,8 @@
     const words=text.split(' '); let line=''; let yy=y;
     for(let n=0;n<words.length;n++){
       const test=line+words[n]+' ';
-      if(ctx.measureText(test).width>maxW && n>0){
-        ctx.fillText(line, x, yy); line=words[n]+' '; yy+=lh;
-      } else line=test;
+      if(ctx.measureText(test).width>maxW && n>0){ ctx.fillText(line, x, yy); line=words[n]+' '; yy+=lh; }
+      else line=test;
     }
     ctx.fillText(line, x, yy);
   }
@@ -527,7 +526,6 @@
         }
       }
     }
-    // banner text
     ctx.save();
     ctx.fillStyle='#fff';
     ctx.font='20px -apple-system,Arial,monospace';
@@ -554,12 +552,14 @@
       drawUnicornFacing(player.x,player.y,player.face);
       if(state.human) drawHuman(state.human);
     } else if(state.phase==='ride'){
-      // human riding: draw player larger priority then tiny human on back
       drawUnicornFacing(player.x,player.y,player.face);
       if(state.human) drawHuman(state.human);
     } else if(state.phase==='victory'){
       drawFireworks();
     }
+
+    // Timer overlay (always visible for testing)
+    drawTimer();
 
     // Toasts
     if(state.toast && state.toastT>0){
@@ -581,7 +581,8 @@
       if(state.phase==='victory') updateFireworks(dt);
       update(dt);
     }
-    draw(now); requestAnimationFrame(loop);
+    requestAnimationFrame(loop);
+    draw(now);
   }
 
   function init(){ bindInputs(); spawnWaveInitial(); requestAnimationFrame(loop); }
