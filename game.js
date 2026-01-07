@@ -518,6 +518,8 @@
    state.fireworks.timer = 6;
     state.fireworks.bursts.length = 0;
     state.fireworks.cd = 0;
+}
+
 
 
   // ---------- UPDATE ----------
