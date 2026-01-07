@@ -515,10 +515,10 @@
   function startFireworks() {
     state.mode = "FIREWORKS";
     state.fireworks.active = true;
-    state.fireworks.timer = 2.8;
+   state.fireworks.timer = 6;
     state.fireworks.bursts.length = 0;
     state.fireworks.cd = 0;
-  }
+
 
   // ---------- UPDATE ----------
   function update(dt) {
