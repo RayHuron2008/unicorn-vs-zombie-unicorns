@@ -1,196 +1,40 @@
 /* =========================================================
-   Unicorn vs Zombie Unicorns — v23
-   FULL REWRITE WITH HEALTH BAR — but keeps mobile controls working
-
-   Key fixes vs the broken health version:
-   - DOES NOT overwrite canvas width/height (prevents joystick dead zone)
-   - Adds HP bar + HP-based damage (lasers + contact)
-   - Lives still exist; HP resets when you lose a life
-   - Restart on 0 lives
-   - Max 4 enemies
-   - Max 1 ray zombie at a time (except final wave)
-   - Ray power icon on HUD
-   - Powerup kills do NOT count toward earning more powerups / giant
-   - Stage timer test = 60s -> final wave -> human runs in -> talks -> fireworks -> victory
+   Unicorn vs Zombie Unicorns — v25
+   Fix: Ending animation ALWAYS triggers after final wave
+   - Explicit state machine: PLAY -> FINAL -> NPC_IN -> TALK -> EXIT -> FIREWORKS -> VICTORY
+   - Max 4 enemies on screen
+   - Max 1 ray enemy alive at a time during PLAY
+   - Final wave spawns exactly 2 ray zombies and NO MORE after timer ends
+   - HP bar + lives; lasers + contact damage
+   - Headbutt should generally win
+   - Does NOT resize canvas in JS (keeps iOS joystick working)
    ========================================================= */
 
 (() => {
   // ---------- CANVAS ----------
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
-
-  // IMPORTANT: DO NOT FORCE CANVAS SIZE HERE.
-  // This keeps your mobile UI layout (joystick/buttons) working.
   const W = canvas.width;
   const H = canvas.height;
 
-  // ---------- OPTIONAL HUD DOM ----------
+  // ---------- HUD DOM ----------
   const elLives = document.getElementById("lives");
   const elScore = document.getElementById("score");
   const elPowerFill = document.getElementById("powerFill");
   const elPowerLabel = document.getElementById("powerLabel");
   const elTime = document.getElementById("time");
 
-  // ---------- MOBILE CONTROLS ----------
+  // ---------- CONTROLS DOM ----------
   const joystick = document.getElementById("joystick");
   const stick = document.getElementById("stick");
-  const btnA = document.getElementById("btnA");
-  const btnB = document.getElementById("btnB");
+  const btnA = document.getElementById("btnA"); // headbutt
+  const btnB = document.getElementById("btnB"); // shoot when ray power
 
-  // ---------- AUDIO ----------
-  // Keep your same name setup. Change ONLY this string if needed.
-  const MUSIC_MAIN = "bgm_main.mp3.mp3";
-  const audio = { main: new Audio(MUSIC_MAIN), unlocked: false, started: false };
-  audio.main.loop = true;
-  audio.main.volume = 0.55;
-
-  function tryStartMusic() {
-    if (audio.started) return;
-    audio.started = true;
-    audio.main.play().catch(() => (audio.started = false));
-  }
-  function unlockAudio() {
-    if (audio.unlocked) return;
-    audio.unlocked = true;
-    tryStartMusic();
-  }
-  window.addEventListener("touchstart", unlockAudio, { passive: true });
-  window.addEventListener("mousedown", unlockAudio);
-
-  // ---------- GAME TUNING ----------
-  const GROUND_Y = H - 90;
-  const PLAYER_Y_MIN = GROUND_Y - 40;
-  const PLAYER_Y_MAX = GROUND_Y;
-
-  const MAX_ENEMIES = 4;
-  const MAX_RAY_ENEMIES_ALIVE = 1;
-
-  // TEST TIMER (change later to 300 for 5 minutes)
-  const STAGE_TIME_SEC_TEST = 60;
-  const FINAL_RAY_ENEMIES = 2;
-
-  const PLAYER_BASE_SPEED = 240; // px/sec
-  const ENEMY_BASE_SPEED = 90;
-
-  const HEADBUTT_RANGE = 42;
-  const HEADBUTT_COOLDOWN = 0.28;
-
-  // Health system
-  const HP_MAX = 100;
-  const DMG_LASER = 20;
-  const DMG_CONTACT = 35;
-
-  // Invuln windows
-  const INVULN_AFTER_DAMAGE = 0.55;
-  const INVULN_AFTER_LIFE_LOSS = 1.0;
-
-  // Powerups
-  const RAY_DURATION = 10.0;
-  const GIANT_DURATION = 20.0;
-
-  // ---------- INPUT ----------
   const input = { dx: 0, dy: 0, a: false, b: false };
   const keys = {};
 
-  window.addEventListener("keydown", (e) => {
-    keys[e.key.toLowerCase()] = true;
-    unlockAudio();
-  });
-  window.addEventListener("keyup", (e) => {
-    keys[e.key.toLowerCase()] = false;
-  });
-
-  // Joystick
-  let joyActive = false;
-  let joyCenter = null;
-
-  function setStick(x, y) {
-    if (!stick) return;
-    stick.style.transform = `translate(${x}px, ${y}px)`;
-  }
-
-  function getTouchPos(touch) {
-    const r = joystick.getBoundingClientRect();
-    return { x: touch.clientX - r.left, y: touch.clientY - r.top, r };
-  }
-
-  function handleJoystickMove(px, py, radius) {
-    const dx = px - joyCenter.x;
-    const dy = py - joyCenter.y;
-    const dist = Math.hypot(dx, dy);
-    const ndx = dist > 0 ? dx / dist : 0;
-    const ndy = dist > 0 ? dy / dist : 0;
-
-    const clamped = Math.min(dist, radius);
-    setStick(ndx * clamped, ndy * clamped);
-
-    input.dx = ndx * Math.min(1, clamped / radius);
-    input.dy = ndy * Math.min(1, clamped / radius);
-  }
-
-  if (joystick) {
-    joystick.addEventListener(
-      "touchstart",
-      (e) => {
-        unlockAudio();
-        joyActive = true;
-        const t = e.touches[0];
-        const p = getTouchPos(t);
-        joyCenter = { x: p.r.width / 2, y: p.r.height / 2 };
-        handleJoystickMove(p.x, p.y, Math.min(p.r.width, p.r.height) * 0.38);
-      },
-      { passive: false }
-    );
-
-    joystick.addEventListener(
-      "touchmove",
-      (e) => {
-        if (!joyActive) return;
-        const t = e.touches[0];
-        const p = getTouchPos(t);
-        handleJoystickMove(p.x, p.y, Math.min(p.r.width, p.r.height) * 0.38);
-        e.preventDefault();
-      },
-      { passive: false }
-    );
-
-    joystick.addEventListener("touchend", () => {
-      joyActive = false;
-      input.dx = 0;
-      input.dy = 0;
-      setStick(0, 0);
-    });
-  }
-
-  function bindButton(el, downFn, upFn) {
-    if (!el) return;
-    el.addEventListener(
-      "touchstart",
-      (e) => {
-        unlockAudio();
-        downFn();
-        e.preventDefault();
-      },
-      { passive: false }
-    );
-    el.addEventListener(
-      "touchend",
-      (e) => {
-        upFn();
-        e.preventDefault();
-      },
-      { passive: false }
-    );
-    el.addEventListener("mousedown", () => {
-      unlockAudio();
-      downFn();
-    });
-    el.addEventListener("mouseup", upFn);
-    el.addEventListener("mouseleave", upFn);
-  }
-
-  bindButton(btnA, () => (input.a = true), () => (input.a = false));
-  bindButton(btnB, () => (input.b = true), () => (input.b = false));
+  window.addEventListener("keydown", (e) => (keys[e.key.toLowerCase()] = true));
+  window.addEventListener("keyup", (e) => (keys[e.key.toLowerCase()] = false));
 
   // ---------- HELPERS ----------
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -205,13 +49,152 @@
     );
   }
 
-  // ---------- STATE ----------
+  // ---------- JOYSTICK ----------
+  let joyActive = false;
+  let joyCenter = null;
+
+  function setStick(x, y) {
+    if (!stick) return;
+    stick.style.transform = `translate(${x}px, ${y}px)`;
+  }
+
+  function getTouchPos(t) {
+    const r = joystick.getBoundingClientRect();
+    return { x: t.clientX - r.left, y: t.clientY - r.top, r };
+  }
+
+  function handleJoy(px, py, radius) {
+    const dx = px - joyCenter.x;
+    const dy = py - joyCenter.y;
+    const dist = Math.hypot(dx, dy);
+    const ndx = dist > 0 ? dx / dist : 0;
+    const ndy = dist > 0 ? dy / dist : 0;
+    const clampedDist = Math.min(dist, radius);
+
+    setStick(ndx * clampedDist, ndy * clampedDist);
+    input.dx = ndx * Math.min(1, clampedDist / radius);
+    input.dy = ndy * Math.min(1, clampedDist / radius);
+  }
+
+  if (joystick) {
+    joystick.addEventListener(
+      "touchstart",
+      (e) => {
+        joyActive = true;
+        const t = e.touches[0];
+        const p = getTouchPos(t);
+        joyCenter = { x: p.r.width / 2, y: p.r.height / 2 };
+        handleJoy(p.x, p.y, Math.min(p.r.width, p.r.height) * 0.38);
+        e.preventDefault();
+      },
+      { passive: false }
+    );
+
+    joystick.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!joyActive) return;
+        const t = e.touches[0];
+        const p = getTouchPos(t);
+        handleJoy(p.x, p.y, Math.min(p.r.width, p.r.height) * 0.38);
+        e.preventDefault();
+      },
+      { passive: false }
+    );
+
+    joystick.addEventListener("touchend", () => {
+      joyActive = false;
+      input.dx = 0;
+      input.dy = 0;
+      setStick(0, 0);
+    });
+  }
+
+  function bindButton(el, down, up) {
+    if (!el) return;
+    el.addEventListener(
+      "touchstart",
+      (e) => {
+        down();
+        e.preventDefault();
+      },
+      { passive: false }
+    );
+    el.addEventListener(
+      "touchend",
+      (e) => {
+        up();
+        e.preventDefault();
+      },
+      { passive: false }
+    );
+    el.addEventListener("mousedown", down);
+    el.addEventListener("mouseup", up);
+    el.addEventListener("mouseleave", up);
+  }
+
+  bindButton(btnA, () => (input.a = true), () => (input.a = false));
+  bindButton(btnB, () => (input.b = true), () => (input.b = false));
+
+  // ---------- CONSTANTS ----------
+  const GROUND_Y = H - 90;
+  const PLAYER_Y_MIN = GROUND_Y - 44;
+  const PLAYER_Y_MAX = GROUND_Y;
+
+  const STAGE_TIME_TEST = 60; // seconds
+  const MAX_ENEMIES = 4;
+
+  // Gameplay feel
+  const PLAYER_SPEED = 260;
+  const ENEMY_SPEED = 125;
+  const ENEMY_Y_FOLLOW = 90;
+
+  // HP / damage
+  const HP_MAX = 100;
+  const DMG_CONTACT = 22;
+  const DMG_LASER = 18;
+  const INVULN_AFTER_DAMAGE = 0.55;
+  const INVULN_AFTER_LIFE_LOSS = 1.0;
+
+  // Headbutt
+  const HEADBUTT_RANGE = 54;
+  const HEADBUTT_COOLDOWN = 0.22;
+  const HEADBUTT_WINDOW = 0.16;
+
+  // Ray power / giant
+  const RAY_DURATION = 10.0;
+  const GIANT_DURATION = 20.0;
+
+  // Shooting
+  const PLAYER_SHOT_SPEED = 560;
+  const PLAYER_SHOT_COOLDOWN = 0.16;
+
+  const ENEMY_RAY_SPEED = 420;
+  const ENEMY_RAY_COOLDOWN_MIN = 0.9;
+  const ENEMY_RAY_COOLDOWN_MAX = 1.4;
+
+  // Spawn rules
+  const MAX_RAY_ALIVE_PLAY = 1; // during PLAY only
+  const FINAL_RAY_COUNT = 2;    // after timer ends, exactly 2 ray zombies and then end.
+
+  // ---------- STATE MACHINE ----------
+  const Mode = {
+    PLAY: "PLAY",
+    FINAL: "FINAL",
+    NPC_IN: "NPC_IN",
+    TALK: "TALK",
+    EXIT: "EXIT",
+    FIREWORKS: "FIREWORKS",
+    VICTORY: "VICTORY",
+  };
+
   const state = {
-    t: 0,
-    lastTime: performance.now(),
-    mode: "PLAY", // PLAY | FINAL_WAVE | TALK | MOUNT | EXIT | FIREWORKS | VICTORY
-    stageTimer: STAGE_TIME_SEC_TEST,
-    finalSpawned: false,
+    last: performance.now(),
+    mode: Mode.PLAY,
+    stageTimer: STAGE_TIME_TEST,
+
+    finalSpawned: 0,  // how many final ray zombies spawned
+    finalDone: false, // locked once we begin the ending sequence
 
     player: {
       x: 140,
@@ -219,63 +202,39 @@
       w: 46,
       h: 34,
       dir: 1,
-      speed: PLAYER_BASE_SPEED,
-
       lives: 3,
       hp: HP_MAX,
       invuln: 0,
-
       score: 0,
-
       headbuttCd: 0,
       headbutting: 0,
-
       ray: 0,
       giant: 0,
-
-      // counts ONLY non-powered kills
       normalKillsSincePower: 0,
+      shotCd: 0,
     },
 
     enemies: [],
-    bullets: [], // player shots
-    rays: [], // enemy shots
-    effects: [],
+    pShots: [],
+    eShots: [],
+    fx: [],
 
-    shootCd: 0,
+    npc: { x: -120, y: GROUND_Y, vx: 320, active: false },
+    dialog: { active: false, timer: 0, text: "You killed all of the zombies here!\nThank you! I was so scared." },
 
-    human: {
-      active: false,
-      x: W + 80,
-      y: GROUND_Y,
-      vx: -280,
-      state: "OFF",
-    },
-
-    dialog: {
-      active: false,
-      text: "You killed all of the zombies here!\nThank you! I was so scared.",
-      timer: 0,
-    },
-
-    fireworks: {
-      active: false,
-      timer: 0,
-      bursts: [],
-      cd: 0,
-    },
-
+    fireworks: { active: false, timer: 0, cd: 0, bursts: [] },
     exitTimer: 0,
   };
 
   // ---------- SPAWNING ----------
-  function countRayEnemiesAlive() {
+  function rayAlive() {
     return state.enemies.filter((e) => e.type === "RAY").length;
   }
 
-  function spawnEnemy(type = "NORMAL") {
+  function spawnEnemy(type) {
+    // Spawn from left or right offscreen, on the ground band
     const fromLeft = Math.random() < 0.5;
-    const x = fromLeft ? -40 : W + 40;
+    const x = fromLeft ? -60 : W + 60;
     const y = rand(PLAYER_Y_MIN + 6, PLAYER_Y_MAX);
 
     state.enemies.push({
@@ -283,75 +242,60 @@
       y,
       w: 46,
       h: 34,
-      vx: fromLeft ? ENEMY_BASE_SPEED : -ENEMY_BASE_SPEED,
+      type,            // "NORMAL" or "RAY"
       hp: type === "RAY" ? 3 : 1,
-      type,
-      shootCd: rand(0.8, 1.4),
+      shootCd: rand(ENEMY_RAY_COOLDOWN_MIN, ENEMY_RAY_COOLDOWN_MAX),
+      sep: rand(0.8, 1.2), // slight variance so they don’t stack
     });
   }
 
-  function trySpawn() {
-    if (state.mode !== "PLAY") return;
+  // Normal spawning during PLAY
+  let spawnAcc = 0;
+  function trySpawnPlay(dt) {
+    spawnAcc += dt;
+    if (spawnAcc < 1.0) return;
+    spawnAcc = 0;
+
     if (state.enemies.length >= MAX_ENEMIES) return;
 
     const wantRay = Math.random() < 0.12;
     if (wantRay) {
-      if (countRayEnemiesAlive() >= MAX_RAY_ENEMIES_ALIVE) spawnEnemy("NORMAL");
+      if (rayAlive() >= MAX_RAY_ALIVE_PLAY) spawnEnemy("NORMAL");
       else spawnEnemy("RAY");
     } else {
       spawnEnemy("NORMAL");
     }
   }
 
-  let spawnAccum = 0;
+  // Final wave: exactly 2 ray zombies, no more spawns afterwards
+  function handleFinalWave(dt) {
+    if (state.finalDone) return;
 
-  // ---------- DAMAGE / HEALTH ----------
-  function damagePlayer(amount) {
-    const p = state.player;
-    if (p.invuln > 0) return;
-
-    p.hp -= amount;
-    p.invuln = INVULN_AFTER_DAMAGE;
-
-    // hit particles
-    for (let k = 0; k < 10; k++) {
-      state.effects.push({
-        x: p.x,
-        y: p.y,
-        vx: rand(-180, 180),
-        vy: rand(-240, 40),
-        life: rand(0.25, 0.45),
-        hue: rand(0, 360),
-      });
+    if (state.enemies.length < MAX_ENEMIES && state.finalSpawned < FINAL_RAY_COUNT) {
+      // spawn one at a time with pacing
+      state._finalSpawnCd = (state._finalSpawnCd ?? 0) - dt;
+      if (state._finalSpawnCd <= 0) {
+        spawnEnemy("RAY");
+        state.finalSpawned += 1;
+        state._finalSpawnCd = 0.9; // spacing so they don’t cluster
+      }
     }
 
-    if (p.hp <= 0) {
-      p.lives -= 1;
-
-      if (p.lives <= 0) {
-        restartGame();
-        return;
-      }
-
-      p.hp = HP_MAX;
-      p.invuln = INVULN_AFTER_LIFE_LOSS;
-
-      // drop any active powers on life loss (feels fair)
-      p.ray = 0;
-      p.giant = 0;
-
-      // keep the “earned progress” clean
-      // (optional: reset normalKillsSincePower too)
-      // p.normalKillsSincePower = 0;
+    // When both were spawned AND all enemies are dead => begin ending
+    if (state.finalSpawned >= FINAL_RAY_COUNT && state.enemies.length === 0) {
+      beginEnding();
     }
   }
 
+  // ---------- DAMAGE / RESTART ----------
   function restartGame() {
     const p = state.player;
+    state.mode = Mode.PLAY;
+    state.stageTimer = STAGE_TIME_TEST;
 
-    state.mode = "PLAY";
-    state.stageTimer = STAGE_TIME_SEC_TEST;
-    state.finalSpawned = false;
+    state.finalSpawned = 0;
+    state.finalDone = false;
+    state._finalSpawnCd = 0;
 
     p.x = 140;
     p.y = GROUND_Y;
@@ -360,43 +304,75 @@
     p.hp = HP_MAX;
     p.invuln = 0;
     p.score = 0;
-
     p.headbuttCd = 0;
     p.headbutting = 0;
-
     p.ray = 0;
     p.giant = 0;
     p.normalKillsSincePower = 0;
+    p.shotCd = 0;
 
     state.enemies.length = 0;
-    state.bullets.length = 0;
-    state.rays.length = 0;
-    state.effects.length = 0;
+    state.pShots.length = 0;
+    state.eShots.length = 0;
+    state.fx.length = 0;
 
-    state.shootCd = 0;
+    state.npc.active = false;
+    state.npc.x = -120;
+    state.npc.vx = 320;
 
-    state.human.active = false;
-    state.human.state = "OFF";
     state.dialog.active = false;
+    state.dialog.timer = 0;
 
     state.fireworks.active = false;
     state.fireworks.timer = 0;
-    state.fireworks.bursts.length = 0;
     state.fireworks.cd = 0;
+    state.fireworks.bursts.length = 0;
 
     state.exitTimer = 0;
 
-    spawnAccum = 0;
-    trySpawn();
+    // start gentle
+    spawnEnemy("NORMAL");
+  }
+
+  function damagePlayer(amount) {
+    const p = state.player;
+    if (p.invuln > 0) return;
+
+    p.hp -= amount;
+    p.invuln = INVULN_AFTER_DAMAGE;
+
+    // little hit sparkle
+    for (let i = 0; i < 10; i++) {
+      state.fx.push({
+        x: p.x,
+        y: p.y,
+        vx: rand(-180, 180),
+        vy: rand(-240, 50),
+        life: rand(0.25, 0.45),
+        hue: rand(0, 360),
+      });
+    }
+
+    if (p.hp <= 0) {
+      p.lives -= 1;
+      if (p.lives <= 0) {
+        restartGame();
+        return;
+      }
+      p.hp = HP_MAX;
+      p.invuln = INVULN_AFTER_LIFE_LOSS;
+      // drop powers on life loss (optional but fair)
+      p.ray = 0;
+      p.giant = 0;
+    }
   }
 
   // ---------- COMBAT ----------
   function doHeadbutt() {
     const p = state.player;
     if (p.headbuttCd > 0) return;
-
     p.headbuttCd = HEADBUTT_COOLDOWN;
-    p.headbutting = 0.12;
+    p.headbutting = HEADBUTT_WINDOW;
 
     const hb = {
       x: p.x + p.dir * (p.w / 2 + HEADBUTT_RANGE / 2),
@@ -405,6 +381,7 @@
       h: p.h,
     };
 
+    // headbutt kills easily: any overlap kills
     for (let i = state.enemies.length - 1; i >= 0; i--) {
       const e = state.enemies[i];
       const eb = { x: e.x, y: e.y, w: e.w, h: e.h };
@@ -414,43 +391,44 @@
     }
   }
 
-  function firePlayerRay() {
+  function shootPlayer() {
     const p = state.player;
     if (p.ray <= 0) return;
+    if (p.shotCd > 0) return;
+    p.shotCd = PLAYER_SHOT_COOLDOWN;
 
-    const speed = 520;
-    state.bullets.push({
+    state.pShots.push({
       x: p.x + p.dir * (p.w / 2 + 10),
       y: p.y - 8,
-      vx: p.dir * speed,
+      vx: p.dir * PLAYER_SHOT_SPEED,
       vy: 0,
       r: p.giant > 0 ? 10 : 6,
     });
 
     // sparkle
-    for (let k = 0; k < 8; k++) {
-      state.effects.push({
+    for (let i = 0; i < 8; i++) {
+      state.fx.push({
         x: p.x + p.dir * 26,
         y: p.y - 10,
-        vx: rand(-60, 60),
-        vy: rand(-80, 10),
-        life: rand(0.25, 0.45),
+        vx: rand(-80, 80),
+        vy: rand(-120, 20),
+        life: rand(0.2, 0.35),
         hue: rand(0, 360),
       });
     }
   }
 
-  function killEnemy(index) {
+  function killEnemy(idx) {
     const p = state.player;
-    const e = state.enemies[index];
+    const e = state.enemies[idx];
 
-    // explosion
-    for (let k = 0; k < 18; k++) {
-      state.effects.push({
+    // pop effect
+    for (let i = 0; i < 18; i++) {
+      state.fx.push({
         x: e.x,
         y: e.y,
         vx: rand(-160, 160),
-        vy: rand(-200, 60),
+        vy: rand(-220, 60),
         life: rand(0.35, 0.65),
         hue: e.type === "RAY" ? rand(0, 360) : rand(330, 30),
       });
@@ -458,321 +436,103 @@
 
     p.score += e.type === "RAY" ? 40 : 10;
 
-    const poweredNow = p.ray > 0 || p.giant > 0;
+    const powered = p.ray > 0 || p.giant > 0;
 
-    // get ray ONLY if you are not currently powered
-    if (e.type === "RAY" && !poweredNow && p.ray <= 0) {
+    // Ray pickup only if you are NOT already powered
+    if (e.type === "RAY" && !powered && p.ray <= 0) {
       p.ray = RAY_DURATION;
     }
 
-    // only non-powered kills count toward giant power
-    if (!poweredNow) {
-      p.normalKillsSincePower++;
+    // Normal-kill counter only increments when NOT powered
+    if (!powered) {
+      p.normalKillsSincePower += 1;
       if (p.normalKillsSincePower >= 20) {
         p.normalKillsSincePower = 0;
         p.giant = GIANT_DURATION;
       }
     }
 
-    state.enemies.splice(index, 1);
+    state.enemies.splice(idx, 1);
 
-    // if in final wave and all enemies dead -> talk
-    if (state.mode === "FINAL_WAVE" && state.enemies.length === 0) {
-      startTalkSequence();
+    // CRITICAL: If we are in FINAL mode and conditions met, begin ending right now
+    if (state.mode === Mode.FINAL) {
+      if (state.finalSpawned >= FINAL_RAY_COUNT && state.enemies.length === 0) {
+        beginEnding();
+      }
     }
   }
 
   // ---------- ENDING FLOW ----------
-  function startFinalWave() {
-    state.mode = "FINAL_WAVE";
-    state.finalSpawned = true;
+  function beginEnding() {
+    if (state.finalDone) return;
+    state.finalDone = true;
 
-    let add = FINAL_RAY_ENEMIES;
-    const interval = setInterval(() => {
-      if (state.mode !== "FINAL_WAVE") return clearInterval(interval);
-      if (add <= 0) return clearInterval(interval);
+    // Clear any leftover shots so nothing weird happens during cutscene
+    state.pShots.length = 0;
+    state.eShots.length = 0;
 
-      if (state.enemies.length < MAX_ENEMIES) {
-        // During final wave, allow two ray zombies total
-        spawnEnemy("RAY");
-        add--;
-      }
-    }, 650);
-  }
-
-  function startTalkSequence() {
-    state.mode = "TALK";
-    state.human.active = true;
-    state.human.x = W + 80;
-    state.human.y = GROUND_Y;
-    state.human.vx = -280;
-    state.human.state = "RUNIN";
+    state.mode = Mode.NPC_IN;
+    state.npc.active = true;
+    state.npc.x = -120;
+    state.npc.y = GROUND_Y;
+    state.npc.vx = 340;
 
     state.dialog.active = false;
     state.dialog.timer = 0;
   }
 
-  function startFireworks() {
-    state.mode = "FIREWORKS";
-    state.fireworks.active = true;
-   state.fireworks.timer = 6;
-    state.fireworks.bursts.length = 0;
-    state.fireworks.cd = 0;
-}
-
-
-
-  // ---------- UPDATE ----------
-  function update(dt) {
-    state.t += dt;
-
+  function updateEnding(dt) {
     const p = state.player;
 
-    // Keyboard movement overrides joystick
-    let kdx = 0,
-      kdy = 0;
-    if (keys["arrowleft"] || keys["a"]) kdx -= 1;
-    if (keys["arrowright"] || keys["d"]) kdx += 1;
-    if (keys["arrowup"] || keys["w"]) kdy -= 1;
-    if (keys["arrowdown"] || keys["s"]) kdy += 1;
+    if (state.mode === Mode.NPC_IN) {
+      // NPC runs in from left and stops near player
+      state.npc.x += state.npc.vx * dt;
 
-    let dx = input.dx;
-    let dy = input.dy;
-    if (kdx || kdy) {
-      const mag = Math.hypot(kdx, kdy) || 1;
-      dx = kdx / mag;
-      dy = kdy / mag;
+      const stopX = p.x - 120;
+      if (state.npc.x >= stopX) {
+        state.npc.x = stopX;
+        state.npc.vx = 0;
+
+        state.mode = Mode.TALK;
+        state.dialog.active = true;
+        state.dialog.timer = 2.4;
+      }
+      return;
     }
 
-    // actions
-    if (input.a || keys[" "]) doHeadbutt();
-
-    state.shootCd = Math.max(0, state.shootCd - dt);
-    if ((input.b || keys["enter"]) && state.shootCd <= 0) {
-      firePlayerRay();
-      state.shootCd = 0.18;
+    if (state.mode === Mode.TALK) {
+      state.dialog.timer -= dt;
+      if (state.dialog.timer <= 0) {
+        state.dialog.active = false;
+        state.mode = Mode.EXIT;
+        state.exitTimer = 1.6;
+      }
+      return;
     }
 
-    // timers
-    p.headbuttCd = Math.max(0, p.headbuttCd - dt);
-    p.headbutting = Math.max(0, p.headbutting - dt);
-    p.invuln = Math.max(0, p.invuln - dt);
-
-    if (p.ray > 0) p.ray = Math.max(0, p.ray - dt);
-    if (p.giant > 0) p.giant = Math.max(0, p.giant - dt);
-
-    // player movement
-    const speed = p.speed * (p.giant > 0 ? 1.08 : 1);
-    p.x += dx * speed * dt;
-    p.y += dy * speed * 0.65 * dt;
-
-    p.x = clamp(p.x, 30, W - 30);
-    p.y = clamp(p.y, PLAYER_Y_MIN, PLAYER_Y_MAX);
-
-    if (Math.abs(dx) > 0.15) p.dir = dx > 0 ? 1 : -1;
-
-    // stage timer -> final wave
-    if (state.mode === "PLAY") {
-      state.stageTimer -= dt;
-      if (state.stageTimer <= 0) {
-        state.stageTimer = 0;
-        startFinalWave();
-      }
-    }
-
-    // spawning (PLAY only)
-    if (state.mode === "PLAY") {
-      spawnAccum += dt;
-      if (spawnAccum >= 1.15) {
-        spawnAccum = 0;
-        trySpawn();
-      }
-    }
-
-    // enemies
-    for (let i = state.enemies.length - 1; i >= 0; i--) {
-      const e = state.enemies[i];
-
-      // keep on ground band
-      e.y = clamp(e.y, PLAYER_Y_MIN + 6, PLAYER_Y_MAX);
-      e.x += e.vx * dt;
-
-      const edir = e.vx >= 0 ? 1 : -1;
-
-      // ray enemy shooting
-      if (e.type === "RAY") {
-        e.shootCd -= dt;
-        if (e.shootCd <= 0) {
-          e.shootCd = rand(1.0, 1.55);
-
-          const ang = Math.atan2((p.y - 8) - (e.y - 8), p.x - e.x);
-          const sp = 360;
-          state.rays.push({
-            x: e.x + edir * (e.w / 2 + 8),
-            y: e.y - 8,
-            vx: Math.cos(ang) * sp,
-            vy: Math.sin(ang) * sp,
-            r: 7,
-            hue: rand(0, 360),
-          });
-        }
-      }
-
-      // contact collision
-      const pb = {
-        x: p.x,
-        y: p.y,
-        w: p.w * (p.giant > 0 ? 1.25 : 1),
-        h: p.h * (p.giant > 0 ? 1.25 : 1),
-      };
-      const eb = { x: e.x, y: e.y, w: e.w, h: e.h };
-
-      if (rectsOverlap(pb, eb)) {
-        if (p.headbutting > 0) {
-          killEnemy(i);
-        } else {
-          damagePlayer(DMG_CONTACT);
-          // small knockback
-          p.x -= (e.vx > 0 ? 1 : -1) * 18;
-        }
-      }
-
-      // mild separation (avoid clusters)
-      for (let j = 0; j < state.enemies.length; j++) {
-        if (j === i) continue;
-        const o = state.enemies[j];
-        if (Math.abs(o.x - e.x) < 38 && Math.abs(o.y - e.y) < 18) {
-          e.x += (e.x < o.x ? -1 : 1) * 18 * dt;
-        }
-      }
-    }
-
-    // player bullets
-    for (let i = state.bullets.length - 1; i >= 0; i--) {
-      const b = state.bullets[i];
-      b.x += b.vx * dt;
-
-      // hit enemies
-      for (let k = state.enemies.length - 1; k >= 0; k--) {
-        const e = state.enemies[k];
-        const dx2 = e.x - b.x;
-        const dy2 = (e.y - 8) - b.y;
-        const rr = b.r + 18;
-        if (dx2 * dx2 + dy2 * dy2 <= rr * rr) {
-          e.hp -= p.giant > 0 ? 2 : 1;
-
-          for (let s = 0; s < 8; s++) {
-            state.effects.push({
-              x: b.x,
-              y: b.y,
-              vx: rand(-140, 140),
-              vy: rand(-200, 40),
-              life: rand(0.2, 0.35),
-              hue: rand(0, 360),
-            });
-          }
-
-          state.bullets.splice(i, 1);
-
-          if (e.hp <= 0) killEnemy(k);
-          break;
-        }
-      }
-
-      if (b.x < -140 || b.x > W + 140) {
-        state.bullets.splice(i, 1);
-      }
-    }
-
-    // enemy rays (lasers) -> DAMAGE HP
-    for (let i = state.rays.length - 1; i >= 0; i--) {
-      const r = state.rays[i];
-      r.x += r.vx * dt;
-      r.y += r.vy * dt;
-
-      // trail sparkle
-      state.effects.push({
-        x: r.x,
-        y: r.y,
-        vx: rand(-40, 40),
-        vy: rand(-40, 40),
-        life: 0.18,
-        hue: r.hue,
-      });
-
-      const pb = {
-        x: p.x,
-        y: p.y - 6,
-        w: p.w * (p.giant > 0 ? 1.25 : 1),
-        h: p.h * (p.giant > 0 ? 1.25 : 1),
-      };
-      const rb = { x: r.x, y: r.y, w: r.r * 2, h: r.r * 2 };
-
-      if (rectsOverlap(pb, rb)) {
-        damagePlayer(DMG_LASER);
-        state.rays.splice(i, 1);
-        continue;
-      }
-
-      if (r.x < -160 || r.x > W + 160 || r.y < -160 || r.y > H + 160) {
-        state.rays.splice(i, 1);
-      }
-    }
-
-    // effects
-    for (let i = state.effects.length - 1; i >= 0; i--) {
-      const fx = state.effects[i];
-      fx.life -= dt;
-      fx.x += fx.vx * dt;
-      fx.y += fx.vy * dt;
-      fx.vy += 380 * dt;
-      if (fx.life <= 0) state.effects.splice(i, 1);
-    }
-
-    // TALK sequence: human runs in, then dialog, then exit, then fireworks
-    if (state.mode === "TALK") {
-      if (state.human.active && state.human.state === "RUNIN") {
-        state.human.x += state.human.vx * dt;
-
-        const stopX = p.x + 110;
-        if (state.human.x <= stopX) {
-          state.human.x = stopX;
-          state.human.vx = 0;
-          state.human.state = "TALK";
-          state.dialog.active = true;
-          state.dialog.timer = 2.4;
-        }
-      }
-
-      if (state.dialog.active) {
-        state.dialog.timer -= dt;
-        if (state.dialog.timer <= 0) {
-          state.dialog.active = false;
-          state.mode = "EXIT";
-          state.exitTimer = 1.2;
-        }
-      }
-    }
-
-    if (state.mode === "EXIT") {
+    if (state.mode === Mode.EXIT) {
+      // NPC “jumps on your back” concept: just follow player as you gallop off
       state.exitTimer -= dt;
-      p.x += 260 * dt;
-      state.human.x = p.x + 60;
 
-      if (state.exitTimer <= 0) {
-        // ensure offscreen
-        p.x = W + 200;
-        state.human.x = W + 260;
-        startFireworks();
+      p.x += 280 * dt;
+      state.npc.x = p.x - 60;
+
+      if (state.exitTimer <= 0 || p.x > W + 140) {
+        state.mode = Mode.FIREWORKS;
+        state.fireworks.active = true;
+        state.fireworks.timer = 3.0;
+        state.fireworks.cd = 0;
+        state.fireworks.bursts.length = 0;
       }
+      return;
     }
 
-    if (state.mode === "FIREWORKS") {
+    if (state.mode === Mode.FIREWORKS) {
       state.fireworks.timer -= dt;
       state.fireworks.cd -= dt;
 
       if (state.fireworks.cd <= 0) {
-        state.fireworks.cd = rand(0.18, 0.32);
+        state.fireworks.cd = rand(0.18, 0.30);
 
         const bx = rand(160, W - 160);
         const by = rand(80, 220);
@@ -802,21 +562,266 @@
       }
 
       if (state.fireworks.timer <= 0) {
-        state.mode = "VICTORY";
+        state.fireworks.active = false;
+        state.mode = Mode.VICTORY;
+      }
+      return;
+    }
+  }
+
+  // ---------- UPDATE ----------
+  function update(dt) {
+    const p = state.player;
+
+    // timers
+    p.invuln = Math.max(0, p.invuln - dt);
+    p.headbuttCd = Math.max(0, p.headbuttCd - dt);
+    p.headbutting = Math.max(0, p.headbutting - dt);
+    p.shotCd = Math.max(0, p.shotCd - dt);
+
+    if (p.ray > 0) p.ray = Math.max(0, p.ray - dt);
+    if (p.giant > 0) p.giant = Math.max(0, p.giant - dt);
+
+    // If we're in ending modes, player moves only during EXIT (handled in updateEnding)
+    if (
+      state.mode === Mode.NPC_IN ||
+      state.mode === Mode.TALK ||
+      state.mode === Mode.EXIT ||
+      state.mode === Mode.FIREWORKS ||
+      state.mode === Mode.VICTORY
+    ) {
+      updateEnding(dt);
+      updateFX(dt);
+      updateHUD();
+      return;
+    }
+
+    // input (keyboard overrides)
+    let dx = input.dx,
+      dy = input.dy;
+
+    let kdx = 0,
+      kdy = 0;
+    if (keys["arrowleft"] || keys["a"]) kdx -= 1;
+    if (keys["arrowright"] || keys["d"]) kdx += 1;
+    if (keys["arrowup"] || keys["w"]) kdy -= 1;
+    if (keys["arrowdown"] || keys["s"]) kdy += 1;
+
+    if (kdx || kdy) {
+      const m = Math.hypot(kdx, kdy) || 1;
+      dx = kdx / m;
+      dy = kdy / m;
+    }
+
+    // actions
+    if (input.a || keys[" "]) doHeadbutt();
+    if (input.b || keys["enter"]) shootPlayer();
+
+    // move player
+    const scale = p.giant > 0 ? 1.08 : 1;
+    p.x += dx * PLAYER_SPEED * scale * dt;
+    p.y += dy * PLAYER_SPEED * 0.65 * dt;
+
+    p.x = clamp(p.x, 30, W - 30);
+    p.y = clamp(p.y, PLAYER_Y_MIN, PLAYER_Y_MAX);
+    if (Math.abs(dx) > 0.15) p.dir = dx > 0 ? 1 : -1;
+
+    // stage timer & mode switching
+    if (state.mode === Mode.PLAY) {
+      state.stageTimer -= dt;
+      if (state.stageTimer <= 0) {
+        state.stageTimer = 0;
+        state.mode = Mode.FINAL;
+        state.finalSpawned = 0;
+        state._finalSpawnCd = 0;
+      } else {
+        trySpawnPlay(dt);
       }
     }
+
+    if (state.mode === Mode.FINAL) {
+      // No more normal spawns; final wave logic only
+      handleFinalWave(dt);
+    }
+
+    // update enemies & collisions
+    updateEnemies(dt);
+
+    // update shots
+    updatePlayerShots(dt);
+    updateEnemyShots(dt);
+
+    // fx
+    updateFX(dt);
 
     // HUD
     updateHUD();
   }
 
-  // ---------- HUD UPDATE ----------
+  function updateEnemies(dt) {
+    const p = state.player;
+
+    for (let i = state.enemies.length - 1; i >= 0; i--) {
+      const e = state.enemies[i];
+
+      // Chase player X
+      const toX = p.x - e.x;
+      const dirX = toX === 0 ? 0 : Math.sign(toX);
+
+      // Keep a small spacing so they don't stack perfectly
+      const desiredX = p.x - dirX * (26 + 22 * e.sep);
+      const steer = desiredX - e.x;
+
+      // apply movement toward player
+      e.x += clamp(steer, -1, 1) * ENEMY_SPEED * dt;
+
+      // Align Y gradually (so it's lively)
+      const toY = p.y - e.y;
+      e.y += clamp(toY, -1, 1) * ENEMY_Y_FOLLOW * dt;
+      e.y = clamp(e.y, PLAYER_Y_MIN + 6, PLAYER_Y_MAX);
+
+      // ray enemy shoots
+      if (e.type === "RAY") {
+        e.shootCd -= dt;
+        if (e.shootCd <= 0) {
+          e.shootCd = rand(ENEMY_RAY_COOLDOWN_MIN, ENEMY_RAY_COOLDOWN_MAX);
+
+          const sx = e.x + (p.x >= e.x ? 1 : -1) * (e.w / 2 + 8);
+          const sy = e.y - 8;
+
+          const ang = Math.atan2((p.y - 8) - sy, (p.x) - sx);
+          state.eShots.push({
+            x: sx,
+            y: sy,
+            vx: Math.cos(ang) * ENEMY_RAY_SPEED,
+            vy: Math.sin(ang) * ENEMY_RAY_SPEED,
+            r: 7,
+            hue: rand(0, 360),
+          });
+        }
+      }
+
+      // collision with player
+      const pb = {
+        x: p.x,
+        y: p.y,
+        w: p.w * (p.giant > 0 ? 1.25 : 1),
+        h: p.h * (p.giant > 0 ? 1.25 : 1),
+      };
+      const eb = { x: e.x, y: e.y, w: e.w, h: e.h };
+
+      if (rectsOverlap(pb, eb)) {
+        if (p.headbutting > 0) {
+          killEnemy(i);
+        } else {
+          damagePlayer(DMG_CONTACT);
+          // knockback to prevent instant re-hit
+          p.x += (p.x >= e.x ? 1 : -1) * 22;
+          p.x = clamp(p.x, 30, W - 30);
+        }
+      }
+    }
+  }
+
+  function updatePlayerShots(dt) {
+    const p = state.player;
+
+    for (let i = state.pShots.length - 1; i >= 0; i--) {
+      const b = state.pShots[i];
+      b.x += b.vx * dt;
+
+      // hit enemies
+      for (let k = state.enemies.length - 1; k >= 0; k--) {
+        const e = state.enemies[k];
+        const dx = e.x - b.x;
+        const dy = (e.y - 8) - b.y;
+        const rr = b.r + 18;
+        if (dx * dx + dy * dy <= rr * rr) {
+          e.hp -= p.giant > 0 ? 2 : 1;
+
+          for (let s = 0; s < 8; s++) {
+            state.fx.push({
+              x: b.x,
+              y: b.y,
+              vx: rand(-140, 140),
+              vy: rand(-200, 40),
+              life: rand(0.2, 0.35),
+              hue: rand(0, 360),
+            });
+          }
+
+          state.pShots.splice(i, 1);
+
+          if (e.hp <= 0) killEnemy(k);
+          break;
+        }
+      }
+
+      if (b.x < -160 || b.x > W + 160) {
+        state.pShots.splice(i, 1);
+      }
+    }
+  }
+
+  function updateEnemyShots(dt) {
+    const p = state.player;
+
+    for (let i = state.eShots.length - 1; i >= 0; i--) {
+      const r = state.eShots[i];
+      r.x += r.vx * dt;
+      r.y += r.vy * dt;
+
+      // trail sparkle
+      state.fx.push({
+        x: r.x,
+        y: r.y,
+        vx: rand(-40, 40),
+        vy: rand(-40, 40),
+        life: 0.18,
+        hue: r.hue,
+      });
+
+      const pb = {
+        x: p.x,
+        y: p.y - 6,
+        w: p.w * (p.giant > 0 ? 1.25 : 1),
+        h: p.h * (p.giant > 0 ? 1.25 : 1),
+      };
+      const rb = { x: r.x, y: r.y, w: r.r * 2, h: r.r * 2 };
+
+      if (rectsOverlap(pb, rb)) {
+        damagePlayer(DMG_LASER);
+        state.eShots.splice(i, 1);
+        continue;
+      }
+
+      if (r.x < -200 || r.x > W + 200 || r.y < -200 || r.y > H + 200) {
+        state.eShots.splice(i, 1);
+      }
+    }
+  }
+
+  function updateFX(dt) {
+    for (let i = state.fx.length - 1; i >= 0; i--) {
+      const fx = state.fx[i];
+      fx.life -= dt;
+      fx.x += fx.vx * dt;
+      fx.y += fx.vy * dt;
+      fx.vy += 380 * dt;
+      if (fx.life <= 0) state.fx.splice(i, 1);
+    }
+  }
+
   function updateHUD() {
     const p = state.player;
 
     if (elLives) elLives.textContent = `🦄 x ${p.lives}`;
     if (elScore) elScore.textContent = `Score: ${p.score}`;
-    if (elTime) elTime.textContent = `Time: ${Math.ceil(state.stageTimer)}s`;
+    if (elTime) {
+      // during final/ending show 0s
+      const t = state.mode === Mode.PLAY ? Math.ceil(state.stageTimer) : 0;
+      elTime.textContent = `Time: ${t}s`;
+    }
 
     if (elPowerFill) {
       let val = 0;
@@ -836,31 +841,7 @@
     }
   }
 
-  // ---------- DRAW HELPERS ----------
-  function roundRect(x, y, w, h, r, fill, stroke) {
-    const rr = Math.min(r, w / 2, h / 2);
-    ctx.beginPath();
-    ctx.moveTo(x + rr, y);
-    ctx.arcTo(x + w, y, x + w, y + h, rr);
-    ctx.arcTo(x + w, y + h, x, y + h, rr);
-    ctx.arcTo(x, y + h, x, y, rr);
-    ctx.arcTo(x, y, x + w, y, rr);
-    ctx.closePath();
-    if (fill) ctx.fill();
-    if (stroke) ctx.stroke();
-  }
-
-  function drawRainbow(cx, cy, r) {
-    const bands = ["#ff3b64", "#ff7a1a", "#ffd400", "#38d96b", "#2bc4ff", "#3b65ff", "#9f44ff"];
-    ctx.lineWidth = 18;
-    for (let i = 0; i < bands.length; i++) {
-      ctx.strokeStyle = bands[i];
-      ctx.beginPath();
-      ctx.arc(cx, cy, r - i * 14, Math.PI, Math.PI * 2);
-      ctx.stroke();
-    }
-  }
-
+  // ---------- DRAW ----------
   function drawBackground() {
     ctx.fillStyle = "#7ec7ff";
     ctx.fillRect(0, 0, W, H);
@@ -871,39 +852,16 @@
     ctx.fillStyle = "#32c86d";
     ctx.fillRect(0, 260, W, 110);
 
-    ctx.fillStyle = "#1faa52";
-    for (let x = 80; x < W; x += 180) {
-      ctx.fillRect(x, 320, 70, 18);
-      ctx.fillRect(x + 12, 302, 42, 18);
-      ctx.fillRect(x + 6, 284, 54, 18);
-    }
-
     ctx.fillStyle = "#9a5b2d";
     ctx.fillRect(0, GROUND_Y + 26, W, H - (GROUND_Y + 26));
 
     ctx.fillStyle = "#2ed066";
     ctx.fillRect(0, GROUND_Y + 10, W, 16);
-
-    drawRainbow(W * 0.75, GROUND_Y + 10, 240);
-  }
-
-  function drawTimerOnCanvas() {
-    const t = Math.ceil(state.stageTimer);
-    ctx.fillStyle = "rgba(255,255,255,0.75)";
-    ctx.fillRect(W / 2 - 90, 14, 180, 30);
-    ctx.strokeStyle = "rgba(0,0,0,0.35)";
-    ctx.strokeRect(W / 2 - 90, 14, 180, 30);
-    ctx.fillStyle = "#111";
-    ctx.font = "16px monospace";
-    ctx.fillText(`Time: ${t}s`, W / 2 - 52, 35);
   }
 
   function drawHealthBar() {
     const p = state.player;
-    const x = 16;
-    const y = 54; // under the top HUD row area
-    const w = 220;
-    const h = 16;
+    const x = 16, y = 54, w = 220, h = 16;
 
     ctx.fillStyle = "rgba(0,0,0,0.35)";
     ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
@@ -932,46 +890,32 @@
     ctx.translate(p.x, p.y);
     ctx.scale(p.dir * scale, scale);
 
-    // body
     ctx.fillStyle = "#ff6fa8";
     ctx.fillRect(-22, -16, 44, 22);
 
-    // legs
     ctx.fillStyle = "#ff4f93";
     ctx.fillRect(-18, 2, 10, 12);
     ctx.fillRect(6, 2, 10, 12);
 
-    // head
     ctx.fillStyle = "#ff6fa8";
     ctx.fillRect(12, -20, 22, 16);
 
-    // horn
     ctx.fillStyle = "#ffd400";
     ctx.fillRect(26, -30, 4, 10);
 
-    // eye
     ctx.fillStyle = "#111";
     ctx.fillRect(24, -16, 3, 3);
 
-    // mane
     ctx.fillStyle = "#2bc4ff";
     ctx.fillRect(-22, -24, 16, 10);
     ctx.fillStyle = "#9f44ff";
     ctx.fillRect(-10, -24, 10, 10);
 
-    // ray icon when active
-    if (p.ray > 0) {
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(-6, -38, 12, 6);
-      ctx.fillStyle = "#2bc4ff";
-      ctx.fillRect(-5, -37, 10, 4);
-    }
-
     ctx.restore();
   }
 
   function drawEnemy(e) {
-    const dir = e.vx >= 0 ? 1 : -1;
+    const dir = state.player.x >= e.x ? 1 : -1;
 
     ctx.save();
     ctx.translate(e.x, e.y);
@@ -990,8 +934,7 @@
     ctx.fillStyle = "#ffd400";
     ctx.fillRect(26, -30, 4, 10);
 
-    // subtle red eye tint but not too obvious
-    ctx.fillStyle = "#441111";
+    ctx.fillStyle = "rgba(120,0,0,0.6)";
     ctx.fillRect(24, -16, 3, 3);
 
     if (e.type === "RAY") {
@@ -1002,9 +945,8 @@
     ctx.restore();
   }
 
-  function drawBullets() {
-    // player shots
-    for (const b of state.bullets) {
+  function drawShots() {
+    for (const b of state.pShots) {
       ctx.beginPath();
       ctx.fillStyle = "#ffffff";
       ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
@@ -1016,33 +958,32 @@
       ctx.fill();
     }
 
-    // enemy rays
-    for (const r of state.rays) {
+    for (const r of state.eShots) {
       ctx.beginPath();
       ctx.fillStyle = "#ffffff";
       ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2);
       ctx.fill();
 
       ctx.beginPath();
-      ctx.fillStyle = `hsla(${r.hue}, 90%, 60%, 0.9)`;
+      ctx.fillStyle = `hsla(${r.hue},90%,60%,0.9)`;
       ctx.arc(r.x, r.y, Math.max(2, r.r - 3), 0, Math.PI * 2);
       ctx.fill();
     }
   }
 
-  function drawEffects() {
-    for (const fx of state.effects) {
+  function drawFX() {
+    for (const fx of state.fx) {
       const a = clamp(fx.life / 0.65, 0, 1);
       ctx.fillStyle = `hsla(${fx.hue}, 90%, 60%, ${a})`;
       ctx.fillRect(fx.x, fx.y, 3, 3);
     }
   }
 
-  function drawHuman() {
-    if (!state.human.active) return;
+  function drawNPC() {
+    if (!state.npc.active) return;
 
     ctx.save();
-    ctx.translate(state.human.x, state.human.y);
+    ctx.translate(state.npc.x, state.npc.y);
 
     ctx.fillStyle = "#5a44ff";
     ctx.fillRect(-10, -34, 20, 26);
@@ -1060,44 +1001,37 @@
     ctx.restore();
   }
 
-  function drawDialogBox() {
+  function drawDialog() {
     if (!state.dialog.active) return;
 
-    const pad = 16;
-    const boxW = 560;
-    const boxH = 94;
+    const boxW = 560, boxH = 94;
     const x = (W - boxW) / 2;
-    const y = 70; // under top HUD
+    const y = 70;
 
     ctx.fillStyle = "rgba(255,255,255,0.96)";
     ctx.strokeStyle = "rgba(0,0,0,0.55)";
     ctx.lineWidth = 3;
-    roundRect(x, y, boxW, boxH, 14, true, true);
+
+    // rounded-ish box
+    ctx.beginPath();
+    ctx.moveTo(x + 14, y);
+    ctx.arcTo(x + boxW, y, x + boxW, y + boxH, 14);
+    ctx.arcTo(x + boxW, y + boxH, x, y + boxH, 14);
+    ctx.arcTo(x, y + boxH, x, y, 14);
+    ctx.arcTo(x, y, x + boxW, y, 14);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
 
     ctx.fillStyle = "#111";
     ctx.font = "18px monospace";
     const lines = state.dialog.text.split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      ctx.fillText(lines[i], x + pad, y + 32 + i * 24);
-    }
-
-    // pointer toward human
-    const hx = state.human.x;
-    const triX = clamp(hx, x + 40, x + boxW - 40);
-    ctx.fillStyle = "rgba(255,255,255,0.96)";
-    ctx.strokeStyle = "rgba(0,0,0,0.55)";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(triX, y + boxH);
-    ctx.lineTo(triX - 10, y + boxH + 16);
-    ctx.lineTo(triX + 10, y + boxH + 16);
-    ctx.closePath();
-    ctx.fill();
-    ctx.stroke();
+    ctx.fillText(lines[0], x + 16, y + 34);
+    ctx.fillText(lines[1], x + 16, y + 58);
   }
 
   function drawFireworks() {
-    if (!state.fireworks.active) return;
+    if (state.mode !== Mode.FIREWORKS && state.mode !== Mode.VICTORY) return;
 
     for (const b of state.fireworks.bursts) {
       const a = clamp(b.life / 1.15, 0, 1);
@@ -1115,18 +1049,18 @@
 
   function draw() {
     drawBackground();
-    drawTimerOnCanvas();
     drawHealthBar();
 
     for (const e of state.enemies) drawEnemy(e);
-    drawBullets();
-    drawEffects();
+    drawShots();
+    drawFX();
     drawPlayer();
 
-    drawHuman();
-    drawDialogBox();
+    drawNPC();
+    drawDialog();
     drawFireworks();
 
+    // subtle invuln flash
     if (state.player.invuln > 0) {
       ctx.fillStyle = "rgba(255,255,255,0.08)";
       ctx.fillRect(0, 0, W, H);
@@ -1135,8 +1069,8 @@
 
   // ---------- MAIN LOOP ----------
   function loop(now) {
-    const dt = Math.min(0.033, (now - state.lastTime) / 1000);
-    state.lastTime = now;
+    const dt = Math.min(0.033, (now - state.last) / 1000);
+    state.last = now;
 
     update(dt);
     draw();
@@ -1144,9 +1078,8 @@
     requestAnimationFrame(loop);
   }
 
-  // ---------- START ----------
-  // Start with one enemy so you aren't surrounded instantly
-  trySpawn();
-
+  // start gentle
+  spawnEnemy("NORMAL");
+  updateHUD();
   requestAnimationFrame(loop);
-})();  
+})();
