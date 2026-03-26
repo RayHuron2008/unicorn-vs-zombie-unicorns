@@ -1,4 +1,4 @@
-     /* Unicorn vs. Zombie Game (version 22)
+/* Unicorn vs. Zombie Game (version 22)
    Restores unicorn and zombie sprites and rainbow background; includes health bar and timers.
 */
 
@@ -376,4 +376,4 @@ function gameLoop(ts) {
     setupDPad();
     last = performance.now();
     requestAnimationFrame(gameLoop);
-})(); 
+})();
