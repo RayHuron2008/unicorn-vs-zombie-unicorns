@@ -4,143 +4,170 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>Unicorn vs Zombie Unicorns</title>
+
 <style>
-html,body{
-  margin:0;
-  padding:0;
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  background:#000;
-  touch-action:none;
-  user-select:none;
-  font-family:system-ui,sans-serif;
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: system-ui, sans-serif;
 }
 
-#stage{
-  position:fixed;
-  inset:0;
-  background:#000;
-  overflow:hidden;
+/* Fullscreen game stage */
+#stage {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  overflow: hidden;
 }
 
-#game{
-  position:absolute;
-  inset:0;
-  width:100vw;
-  height:100vh;
-  display:block;
-  object-fit:contain;
-  image-rendering:pixelated;
-  background:#7ec7ff;
-  z-index:1;
-  pointer-events:none;
+/* IMPORTANT:
+   This stretches the actual game canvas to fill the whole screen.
+   No object-fit contain. No letterbox.
+*/
+#game {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  background: #7ec7ff;
+  z-index: 1;
+  pointer-events: none;
 }
 
-#hud{
-  position:fixed;
-  top:8px;
-  left:8px;
-  right:8px;
-  z-index:20;
-  display:flex;
-  gap:8px;
-  align-items:center;
-  justify-content:space-between;
-  color:#fff;
-  pointer-events:none;
-  font-family:monospace;
-  font-weight:700;
-  text-shadow:0 2px 4px #000;
+/* Top HUD */
+#hud {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+  pointer-events: none;
+  font-family: monospace;
+  font-weight: 700;
+  text-shadow: 0 2px 4px #000;
 }
 
-.box{
-  background:rgba(0,0,0,.45);
-  border:2px solid rgba(255,255,255,.25);
-  border-radius:8px;
-  padding:6px 9px;
-  font-size:13px;
-  white-space:nowrap;
+.box {
+  background: rgba(0,0,0,.45);
+  border: 2px solid rgba(255,255,255,.25);
+  border-radius: 8px;
+  padding: 6px 9px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
-#powerWrap{
-  display:flex;
-  align-items:center;
-  gap:6px;
+#powerWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-#powerBar{
-  width:120px;
-  height:12px;
-  background:rgba(0,0,0,.45);
-  border:2px solid rgba(255,255,255,.25);
-  border-radius:8px;
-  overflow:hidden;
+#powerBar {
+  width: 120px;
+  height: 12px;
+  background: rgba(0,0,0,.45);
+  border: 2px solid rgba(255,255,255,.25);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-#powerFill{
-  width:0%;
-  height:100%;
-  background:linear-gradient(90deg,#ff4d6d,#ffa94d,#ffe066,#66ff66,#66d9ff,#b066ff);
+#powerFill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg,#ff4d6d,#ffa94d,#ffe066,#66ff66,#66d9ff,#b066ff);
 }
 
-#controls{
-  position:fixed;
-  left:12px;
-  right:12px;
-  bottom:14px;
-  z-index:30;
-  display:flex;
-  justify-content:space-between;
-  align-items:flex-end;
-  pointer-events:none;
+/* Controls */
+#controls {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 14px;
+  z-index: 30;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
 }
 
-#dpad{
-  position:relative;
-  width:150px;
-  height:150px;
-  pointer-events:auto;
-  touch-action:none;
+#dpad {
+  position: relative;
+  width: 150px;
+  height: 150px;
+  pointer-events: auto;
+  touch-action: none;
 }
 
-#dpad .dir{
-  position:absolute;
-  width:48px;
-  height:48px;
-  border-radius:8px;
-  background:rgba(20,20,20,.78);
-  border:2px solid rgba(255,255,255,.38);
-  color:#fff;
-  font-size:18px;
+#dpad .dir {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: rgba(20,20,20,.78);
+  border: 2px solid rgba(255,255,255,.38);
+  color: #fff;
+  font-size: 18px;
 }
 
-#dpad .up{left:51px;top:0}
-#dpad .down{left:51px;bottom:0}
-#dpad .left{left:0;top:51px}
-#dpad .right{right:0;top:51px}
-
-#ab{
-  display:flex;
-  gap:16px;
-  pointer-events:auto;
-  touch-action:none;
+#dpad .up {
+  left: 51px;
+  top: 0;
 }
 
-.ab{
-  width:78px;
-  height:78px;
-  border-radius:50%;
-  background:rgba(20,20,20,.78);
-  border:2px solid rgba(255,255,255,.38);
-  color:#fff;
-  font-size:22px;
-  font-weight:900;
+#dpad .down {
+  left: 51px;
+  bottom: 0;
 }
 
-.ab:active,.dir:active{
-  transform:scale(.96);
-  background:rgba(255,255,255,.24);
+#dpad .left {
+  left: 0;
+  top: 51px;
+}
+
+#dpad .right {
+  right: 0;
+  top: 51px;
+}
+
+#ab {
+  display: flex;
+  gap: 16px;
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.ab {
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  background: rgba(20,20,20,.78);
+  border: 2px solid rgba(255,255,255,.38);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.ab:active,
+.dir:active {
+  transform: scale(.96);
+  background: rgba(255,255,255,.24);
 }
 </style>
 </head>
@@ -154,9 +181,12 @@ html,body{
   <div class="box" id="lives">Lives: 3</div>
   <div class="box" id="score">Score: 0</div>
   <div class="box" id="time">Time: 60s</div>
+
   <div class="box" id="powerWrap">
     <span id="powerLabel">Power</span>
-    <div id="powerBar"><div id="powerFill"></div></div>
+    <div id="powerBar">
+      <div id="powerFill"></div>
+    </div>
   </div>
 </div>
 
@@ -174,6 +204,6 @@ html,body{
   </div>
 </div>
 
-<script src="game.js?v=30"></script>
+<script src="game.js?v=31"></script>
 </body>
 </html>
