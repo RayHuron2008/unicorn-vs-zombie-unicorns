@@ -1,179 +1,179 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Unicorn vs Zombie Unicorns</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      overflow: hidden;            /* IMPORTANT: prevents scroll */
-      background: #000;
-      touch-action: none;
-      -webkit-user-select: none;
-      user-select: none;
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Unicorn vs Zombie Unicorns</title>
+<style>
+html,body{
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:#000;
+  touch-action:none;
+  user-select:none;
+  font-family:system-ui,sans-serif;
+}
 
-    /* Fullscreen game area */
-    #gameWrap {
-      position: fixed;
-      inset: 0;
-      width: 100vw;
-      height: 100vh;
-      overflow: hidden;
-    }
+#stage{
+  position:fixed;
+  inset:0;
+  background:#000;
+  overflow:hidden;
+}
 
-    /* Canvas always fills the screen */
-    canvas#game {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-      background: #7ec7ff;
-      z-index: 1;                  /* game under UI */
-    }
+#game{
+  position:absolute;
+  inset:0;
+  width:100vw;
+  height:100vh;
+  display:block;
+  object-fit:contain;
+  image-rendering:pixelated;
+  background:#7ec7ff;
+  z-index:1;
+  pointer-events:none;
+}
 
-    /* UI overlay */
-    #ui {
-      position: absolute;
-      inset: 0;
-      z-index: 2;                  /* UI over game */
-      pointer-events: none;        /* UI text doesn't block touches */
-      font-family: ui-monospace, Menlo, Monaco, Consolas, monospace;
-      color: #fff;
-    }
+#hud{
+  position:fixed;
+  top:8px;
+  left:8px;
+  right:8px;
+  z-index:20;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:space-between;
+  color:#fff;
+  pointer-events:none;
+  font-family:monospace;
+  font-weight:700;
+  text-shadow:0 2px 4px #000;
+}
 
-    /* HUD */
-    #hud {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      right: 10px;
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-      pointer-events: none;
-      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
-    }
+.box{
+  background:rgba(0,0,0,.45);
+  border:2px solid rgba(255,255,255,.25);
+  border-radius:8px;
+  padding:6px 9px;
+  font-size:13px;
+  white-space:nowrap;
+}
 
-    /* On-screen controls */
-    #controls {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 42vh;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      padding: 14px;
-      pointer-events: none;        /* enable touches only on actual controls */
-    }
+#powerWrap{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
 
-    /* Joystick */
-    #joystick {
-      width: 150px;
-      height: 150px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.14);
-      border: 2px solid rgba(255,255,255,0.22);
-      position: relative;
-      pointer-events: auto;
-      touch-action: none;
-    }
+#powerBar{
+  width:120px;
+  height:12px;
+  background:rgba(0,0,0,.45);
+  border:2px solid rgba(255,255,255,.25);
+  border-radius:8px;
+  overflow:hidden;
+}
 
-    #stick {
-      width: 64px;
-      height: 64px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.25);
-      border: 2px solid rgba(255,255,255,0.25);
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      transform: translate(0px, 0px);
-      margin-left: -32px;
-      margin-top: -32px;
-    }
+#powerFill{
+  width:0%;
+  height:100%;
+  background:linear-gradient(90deg,#ff4d6d,#ffa94d,#ffe066,#66ff66,#66d9ff,#b066ff);
+}
 
-    /* Buttons */
-    #buttons {
-      display: flex;
-      gap: 14px;
-      pointer-events: auto;
-      touch-action: none;
-    }
+#controls{
+  position:fixed;
+  left:12px;
+  right:12px;
+  bottom:14px;
+  z-index:30;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  pointer-events:none;
+}
 
-    .btn {
-      width: 80px;
-      height: 80px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.16);
-      border: 2px solid rgba(255,255,255,0.24);
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-      font-size: 22px;
-      color: #fff;
-      user-select: none;
-      -webkit-user-select: none;
-    }
+#dpad{
+  position:relative;
+  width:150px;
+  height:150px;
+  pointer-events:auto;
+  touch-action:none;
+}
 
-    /* Power bar (optional) */
-    #powerBar {
-      position: absolute;
-      top: 46px;
-      left: 10px;
-      width: 240px;
-      height: 14px;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.2);
-      overflow: hidden;
-    }
-    #powerFill {
-      width: 0%;
-      height: 100%;
-      background: rgba(46, 208, 102, 0.95);
-    }
-    #powerLabel {
-      position: absolute;
-      top: 64px;
-      left: 10px;
-      font-size: 12px;
-      opacity: 0.95;
-    }
-  </style>
+#dpad .dir{
+  position:absolute;
+  width:48px;
+  height:48px;
+  border-radius:8px;
+  background:rgba(20,20,20,.78);
+  border:2px solid rgba(255,255,255,.38);
+  color:#fff;
+  font-size:18px;
+}
+
+#dpad .up{left:51px;top:0}
+#dpad .down{left:51px;bottom:0}
+#dpad .left{left:0;top:51px}
+#dpad .right{right:0;top:51px}
+
+#ab{
+  display:flex;
+  gap:16px;
+  pointer-events:auto;
+  touch-action:none;
+}
+
+.ab{
+  width:78px;
+  height:78px;
+  border-radius:50%;
+  background:rgba(20,20,20,.78);
+  border:2px solid rgba(255,255,255,.38);
+  color:#fff;
+  font-size:22px;
+  font-weight:900;
+}
+
+.ab:active,.dir:active{
+  transform:scale(.96);
+  background:rgba(255,255,255,.24);
+}
+</style>
 </head>
 
 <body>
-  <div id="gameWrap">
-    <!-- IMPORTANT: canvas has explicit pixel resolution -->
-    <canvas id="game" width="800" height="450"></canvas>
+<div id="stage">
+  <canvas id="game" width="960" height="540"></canvas>
+</div>
 
-    <div id="ui">
-      <div id="hud">
-        <div id="lives">🦄 x 3</div>
-        <div id="score">Score: 0</div>
-        <div id="time">Time: 60s</div>
-      </div>
+<div id="hud">
+  <div class="box" id="lives">Lives: 3</div>
+  <div class="box" id="score">Score: 0</div>
+  <div class="box" id="time">Time: 60s</div>
+  <div class="box" id="powerWrap">
+    <span id="powerLabel">Power</span>
+    <div id="powerBar"><div id="powerFill"></div></div>
+  </div>
+</div>
 
-      <div id="powerBar"><div id="powerFill"></div></div>
-      <div id="powerLabel">Power</div>
-
-      <div id="controls">
-        <div id="joystick"><div id="stick"></div></div>
-        <div id="buttons">
-          <div class="btn" id="btnA">1</div>
-          <div class="btn" id="btnB">2</div>
-        </div>
-      </div>
-    </div>
+<div id="controls">
+  <div id="dpad">
+    <button class="dir up" data-dx="0" data-dy="-1">▲</button>
+    <button class="dir left" data-dx="-1" data-dy="0">◀</button>
+    <button class="dir right" data-dx="1" data-dy="0">▶</button>
+    <button class="dir down" data-dx="0" data-dy="1">▼</button>
   </div>
 
-  <!-- Use your game.js version -->
-  <script src="game.js?v=26"></script>
+  <div id="ab">
+    <button id="btnA" class="ab">A</button>
+    <button id="btnB" class="ab">B</button>
+  </div>
+</div>
+
+<script src="game.js?v=29"></script>
 </body>
 </html>
