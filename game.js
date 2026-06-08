@@ -37,9 +37,11 @@
   const MAX_ENEMIES = 4;
   const FINAL_RAY_COUNT = 2;
 
-  const HP_MAX = 100;
-  const DMG_TOUCH = 22;
-  const DMG_LASER = 18;
+  // HARDER BALANCE
+  // Player has 2 laser-hit HP per life.
+  // Touch/contact instantly costs one life.
+  const HP_MAX = 2;
+  const DMG_LASER = 1;
 
   const RAY_TIME = 10;
   const GIANT_TIME = 20;
@@ -185,7 +187,7 @@
       h: 34,
       face: fromLeft ? 1 : -1,
       type,
-      hp: type === "ray" ? 3 : 1,
+      hp: type === "ray" ? 2 : 1,
       shootTimer: rand(1.0, 1.6),
       sep: rand(0.8, 1.25)
     });
@@ -204,30 +206,62 @@
     }
   }
 
-  function damagePlayer(amount) {
+  function clearBattlefield() {
+    state.enemies = [];
+    state.playerShots = [];
+    state.enemyShots = [];
+    state.particles = [];
+    state.spawnTimer = 0.6;
+  }
+
+  function resetPlayerPosition() {
+    player.x = W * 0.25;
+    player.y = GROUND_Y;
+    player.face = 1;
+    player.hp = HP_MAX;
+    player.invuln = 1.0;
+    player.headCd = 0;
+    player.headTimer = 0;
+    player.ray = 0;
+    player.giant = 0;
+  }
+
+  function loseLife() {
     if (player.invuln > 0) return;
     if (state.mode !== "play" && state.mode !== "final") return;
 
-    player.hp -= amount;
-    player.invuln = 0.7;
+    player.lives -= 1;
     addParticles(player.x, player.y, "red");
 
-    if (player.hp <= 0) {
-      player.lives -= 1;
+    if (player.lives <= 0) {
+      fullRestart();
+      return;
+    }
 
-      if (player.lives <= 0) {
-        resetGame();
-        return;
-      }
+    clearBattlefield();
+    resetPlayerPosition();
 
-      player.hp = HP_MAX;
-      player.invuln = 1.2;
-      player.ray = 0;
-      player.giant = 0;
+    // give the player a small breather after losing a life
+    if (state.mode === "play") {
+      spawnEnemy("normal");
     }
   }
 
-  function resetGame() {
+  function damagePlayerByLaser() {
+    if (player.invuln > 0) return;
+    if (state.mode !== "play" && state.mode !== "final") return;
+
+    player.hp -= DMG_LASER;
+    player.invuln = 0.35;
+    addParticles(player.x, player.y, "red");
+
+    if (player.hp <= 0) {
+      player.invuln = 0;
+      loseLife();
+    }
+  }
+
+  function fullRestart() {
     state.mode = "play";
     state.time = 0;
     state.score = 0;
@@ -249,7 +283,7 @@
     player.face = 1;
     player.hp = HP_MAX;
     player.lives = 3;
-    player.invuln = 0;
+    player.invuln = 1.0;
     player.headCd = 0;
     player.headTimer = 0;
     player.ray = 0;
@@ -410,9 +444,9 @@
         state.spawnTimer -= dt;
 
         if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES) {
-          const wantRay = Math.random() < 0.18;
+          const wantRay = Math.random() < 0.2;
           spawnEnemy(wantRay ? "ray" : "normal");
-          state.spawnTimer = rand(0.9, 1.4);
+          state.spawnTimer = rand(0.75, 1.2);
         }
       }
     }
@@ -452,11 +486,11 @@
       const stopDistance = 28 + e.sep * 16;
 
       if (Math.abs(dx) > stopDistance) {
-        e.x += Math.sign(dx) * 95 * dt;
+        e.x += Math.sign(dx) * 105 * dt;
       }
 
       if (Math.abs(dy) > 3) {
-        e.y += Math.sign(dy) * 60 * dt;
+        e.y += Math.sign(dy) * 70 * dt;
       }
 
       e.y = clamp(e.y, MIN_Y + 6, MAX_Y);
@@ -472,13 +506,13 @@
           state.enemyShots.push({
             x: sx,
             y: sy,
-            vx: Math.cos(angle) * 260,
-            vy: Math.sin(angle) * 260,
+            vx: Math.cos(angle) * 290,
+            vy: Math.sin(angle) * 290,
             r: 6,
             life: 2
           });
 
-          e.shootTimer = rand(1.1, 1.7);
+          e.shootTimer = rand(0.9, 1.4);
         }
       }
 
@@ -500,7 +534,8 @@
         if (player.headTimer > 0) {
           killEnemy(i);
         } else {
-          damagePlayer(DMG_TOUCH);
+          // Enemy contact/headbutt instantly costs one life.
+          loseLife();
         }
       }
     }
@@ -517,7 +552,7 @@
         const e = state.enemies[j];
 
         if (distance(b.x, b.y, e.x, e.y - 25) < b.r + 24) {
-          e.hp -= player.giant > 0 ? 2 : 1;
+          e.hp -= 1;
           state.playerShots.splice(i, 1);
 
           if (e.hp <= 0) killEnemy(j);
@@ -538,7 +573,7 @@
       b.life -= dt;
 
       if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 19) {
-        damagePlayer(DMG_LASER);
+        damagePlayerByLaser();
         state.enemyShots.splice(i, 1);
         continue;
       }
@@ -756,7 +791,7 @@
     ctx.fillStyle = "#fff";
     ctx.fillRect(x, y, w, h);
 
-    ctx.fillStyle = player.hp > 35 ? "#2de06e" : "#ff3b3b";
+    ctx.fillStyle = player.hp > 1 ? "#2de06e" : "#ff3b3b";
     ctx.fillRect(x, y, w * clamp(player.hp / HP_MAX, 0, 1), h);
 
     ctx.strokeStyle = "#111";
@@ -934,6 +969,6 @@
     requestAnimationFrame(loop);
   }
 
-  resetGame();
+  fullRestart();
   requestAnimationFrame(loop);
 })();
