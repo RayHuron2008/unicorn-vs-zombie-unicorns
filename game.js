@@ -15,7 +15,6 @@
   const btnA = document.getElementById("btnA");
   const btnB = document.getElementById("btnB");
 
-  // MUSIC
   const music = new Audio("./bgm_main.mp3");
   music.loop = true;
   music.volume = 0.75;
@@ -37,14 +36,15 @@
   const MAX_ENEMIES = 4;
   const FINAL_RAY_COUNT = 2;
 
-  // HARDER BALANCE
-  // Player has 2 laser-hit HP per life.
-  // Touch/contact instantly costs one life.
   const HP_MAX = 2;
   const DMG_LASER = 1;
 
   const RAY_TIME = 10;
   const GIANT_TIME = 20;
+
+  const SHIELD_KILL_STREAK_NEEDED = 10;
+  const MAX_SHIELDS_EARNED = 2;
+  const SHIELD_MAX_CHARGES = 2;
 
   const input = {
     dx: 0,
@@ -154,7 +154,11 @@
     headTimer: 0,
     ray: 0,
     giant: 0,
-    killsForGiant: 0
+    killsForGiant: 0,
+
+    shieldCharges: 0,
+    shieldsEarned: 0,
+    headbuttStreak: 0
   };
 
   function rectsOverlap(a, b) {
@@ -201,7 +205,7 @@
         vx: rand(-120, 120),
         vy: rand(-180, 60),
         life: rand(0.25, 0.65),
-        hue: kind === "red" ? rand(0, 25) : rand(0, 360)
+        hue: kind === "red" ? rand(0, 25) : kind === "shield" ? rand(190, 240) : rand(0, 360)
       });
     }
   }
@@ -224,41 +228,7 @@
     player.headTimer = 0;
     player.ray = 0;
     player.giant = 0;
-  }
-
-  function loseLife() {
-    if (player.invuln > 0) return;
-    if (state.mode !== "play" && state.mode !== "final") return;
-
-    player.lives -= 1;
-    addParticles(player.x, player.y, "red");
-
-    if (player.lives <= 0) {
-      fullRestart();
-      return;
-    }
-
-    clearBattlefield();
-    resetPlayerPosition();
-
-    // give the player a small breather after losing a life
-    if (state.mode === "play") {
-      spawnEnemy("normal");
-    }
-  }
-
-  function damagePlayerByLaser() {
-    if (player.invuln > 0) return;
-    if (state.mode !== "play" && state.mode !== "final") return;
-
-    player.hp -= DMG_LASER;
-    player.invuln = 0.35;
-    addParticles(player.x, player.y, "red");
-
-    if (player.hp <= 0) {
-      player.invuln = 0;
-      loseLife();
-    }
+    player.headbuttStreak = 0;
   }
 
   function fullRestart() {
@@ -290,16 +260,97 @@
     player.giant = 0;
     player.killsForGiant = 0;
 
+    player.shieldCharges = 0;
+    player.shieldsEarned = 0;
+    player.headbuttStreak = 0;
+
     spawnEnemy("normal");
   }
 
-  function killEnemy(index) {
+  function awardShieldIfReady() {
+    if (
+      player.headbuttStreak >= SHIELD_KILL_STREAK_NEEDED &&
+      player.shieldsEarned < MAX_SHIELDS_EARNED
+    ) {
+      player.headbuttStreak = 0;
+      player.shieldsEarned += 1;
+      player.shieldCharges = SHIELD_MAX_CHARGES;
+      addParticles(player.x, player.y - 24, "shield");
+    }
+  }
+
+  function shieldBlockLaser() {
+    if (player.shieldCharges <= 0) return false;
+
+    player.shieldCharges -= 1;
+    player.headbuttStreak = 0;
+    player.invuln = 0.25;
+    addParticles(player.x, player.y - 24, "shield");
+    return true;
+  }
+
+  function shieldBlockContact() {
+    if (player.shieldCharges <= 0) return false;
+
+    player.shieldCharges = 0;
+    player.headbuttStreak = 0;
+    player.invuln = 0.35;
+    addParticles(player.x, player.y - 24, "shield");
+    return true;
+  }
+
+  function loseLife() {
+    if (player.invuln > 0) return;
+    if (state.mode !== "play" && state.mode !== "final") return;
+
+    player.lives -= 1;
+    player.headbuttStreak = 0;
+    addParticles(player.x, player.y, "red");
+
+    if (player.lives <= 0) {
+      fullRestart();
+      return;
+    }
+
+    clearBattlefield();
+    resetPlayerPosition();
+
+    if (state.mode === "play") {
+      spawnEnemy("normal");
+    }
+  }
+
+  function damagePlayerByLaser() {
+    if (player.invuln > 0) return;
+    if (state.mode !== "play" && state.mode !== "final") return;
+
+    if (shieldBlockLaser()) return;
+
+    player.hp -= DMG_LASER;
+    player.invuln = 0.35;
+    player.headbuttStreak = 0;
+    addParticles(player.x, player.y, "red");
+
+    if (player.hp <= 0) {
+      player.invuln = 0;
+      loseLife();
+    }
+  }
+
+  function killEnemy(index, method = "other") {
     const e = state.enemies[index];
     const powered = player.ray > 0 || player.giant > 0;
 
     addParticles(e.x, e.y, e.type === "ray" ? "rainbow" : "red");
 
     state.score += e.type === "ray" ? 40 : 10;
+
+    if (method === "headbutt") {
+      player.headbuttStreak += 1;
+      awardShieldIfReady();
+    } else {
+      player.headbuttStreak = 0;
+    }
 
     if (!powered) {
       if (e.type === "ray") {
@@ -348,7 +399,7 @@
       };
 
       if (rectsOverlap(hitbox, box)) {
-        killEnemy(i);
+        killEnemy(i, "headbutt");
       }
     }
   }
@@ -532,10 +583,13 @@
 
       if (rectsOverlap(pBox, eBox)) {
         if (player.headTimer > 0) {
-          killEnemy(i);
+          killEnemy(i, "headbutt");
         } else {
-          // Enemy contact/headbutt instantly costs one life.
-          loseLife();
+          if (shieldBlockContact()) {
+            state.enemies.splice(i, 1);
+          } else {
+            loseLife();
+          }
         }
       }
     }
@@ -555,7 +609,7 @@
           e.hp -= 1;
           state.playerShots.splice(i, 1);
 
-          if (e.hp <= 0) killEnemy(j);
+          if (e.hp <= 0) killEnemy(j, "ray");
           break;
         }
       }
@@ -691,7 +745,11 @@
   }
 
   function updateHud() {
-    if (livesEl) livesEl.textContent = `Lives: ${player.lives}`;
+    if (livesEl) {
+      livesEl.textContent =
+        `Lives: ${player.lives} | Shield: ${player.shieldCharges}/2 | HB: ${player.headbuttStreak}/10`;
+    }
+
     if (scoreEl) scoreEl.textContent = `Score: ${state.score}`;
 
     if (timeEl) {
@@ -801,6 +859,19 @@
     ctx.fillStyle = "#111";
     ctx.font = "13px monospace";
     ctx.fillText(`HP ${player.hp}/${HP_MAX}`, x + 8, y + 13);
+  }
+
+  function drawShieldAura() {
+    if (player.shieldCharges <= 0) return;
+
+    ctx.save();
+    ctx.globalAlpha = 0.35;
+    ctx.strokeStyle = "#66d9ff";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y - 22, 44, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawUnicorn(x, y, face, zombie = false, ray = false, giant = false) {
@@ -944,6 +1015,7 @@
     drawParticles();
 
     if (state.mode !== "fireworks" && state.mode !== "victory") {
+      drawShieldAura();
       drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);
     }
 
