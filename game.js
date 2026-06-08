@@ -1,3 +1,661 @@
+(() => {
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+
+  const W = canvas.width;
+  const H = canvas.height;
+
+  const livesEl = document.getElementById("lives");
+  const scoreEl = document.getElementById("score");
+  const timeEl = document.getElementById("time");
+  const powerFillEl = document.getElementById("powerFill");
+  const powerLabelEl = document.getElementById("powerLabel");
+
+  const dpad = document.getElementById("dpad");
+  const btnA = document.getElementById("btnA");
+  const btnB = document.getElementById("btnB");
+
+  const music = new Audio("./bgm_main.mp3");
+  music.loop = true;
+  music.volume = 0.75;
+  music.preload = "auto";
+
+  function startMusic() {
+    music.play().catch(() => {});
+  }
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const distance = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
+
+  const GROUND_Y = Math.floor(H * 0.78);
+  const MIN_Y = GROUND_Y - 58;
+  const MAX_Y = GROUND_Y;
+
+  const LEVEL_TIME = 60;
+  const MAX_ENEMIES = 4;
+  const FINAL_RAY_COUNT = 2;
+
+  const HP_MAX = 2;
+  const DMG_LASER = 1;
+  const HEALTH_REGEN_TIME = 15;
+
+  const RAY_TIME = 10;
+  const GIANT_TIME = 20;
+
+  const SHIELD_KILL_STREAK_NEEDED = 10;
+  const MAX_SHIELDS_EARNED = 2;
+  const SHIELD_MAX_CHARGES = 2;
+
+  const DODGE_SPEED = 520;
+  const DODGE_TIME = 0.18;
+  const DODGE_INVULN = 0.24;
+  const DODGE_COOLDOWN = 0.55;
+
+  const input = {
+    dx: 0,
+    dy: 0,
+    a: false,
+    b: false
+  };
+
+  const keys = {};
+
+  window.addEventListener("keydown", e => {
+    startMusic();
+    keys[e.key.toLowerCase()] = true;
+  });
+
+  window.addEventListener("keyup", e => {
+    keys[e.key.toLowerCase()] = false;
+  });
+
+  window.addEventListener("touchstart", () => {
+    startMusic();
+  }, { passive: true });
+
+  window.addEventListener("mousedown", () => {
+    startMusic();
+  });
+
+  function bindDpad() {
+    if (!dpad) return;
+
+    dpad.querySelectorAll(".dir").forEach(btn => {
+      const dx = Number(btn.dataset.dx || 0);
+      const dy = Number(btn.dataset.dy || 0);
+
+      const start = e => {
+        startMusic();
+        input.dx = dx;
+        input.dy = dy;
+        e.preventDefault();
+      };
+
+      const end = e => {
+        input.dx = 0;
+        input.dy = 0;
+        if (e) e.preventDefault();
+      };
+
+      btn.addEventListener("touchstart", start, { passive: false });
+      btn.addEventListener("touchend", end, { passive: false });
+      btn.addEventListener("mousedown", start);
+      btn.addEventListener("mouseup", end);
+      btn.addEventListener("mouseleave", end);
+    });
+  }
+
+  function bindButton(el, key) {
+    if (!el) return;
+
+    const down = e => {
+      startMusic();
+      input[key] = true;
+      e.preventDefault();
+    };
+
+    const up = e => {
+      input[key] = false;
+      if (e) e.preventDefault();
+    };
+
+    el.addEventListener("touchstart", down, { passive: false });
+    el.addEventListener("touchend", up, { passive: false });
+    el.addEventListener("mousedown", down);
+    el.addEventListener("mouseup", up);
+    el.addEventListener("mouseleave", up);
+  }
+
+  bindDpad();
+  bindButton(btnA, "a");
+  bindButton(btnB, "b");
+
+  const state = {
+    mode: "play",
+    time: 0,
+    score: 0,
+    enemies: [],
+    playerShots: [],
+    enemyShots: [],
+    particles: [],
+    spawnTimer: 0,
+    finalSpawned: 0,
+    finalSpawnTimer: 0,
+    npc: null,
+    dialogTimer: 0,
+    exitTimer: 0,
+    fireworks: [],
+    victoryTimer: 0,
+    resetQueued: false
+  };
+
+  const player = {
+    x: W * 0.25,
+    y: GROUND_Y,
+    face: 1,
+    hp: HP_MAX,
+    lives: 3,
+    invuln: 0,
+    headCd: 0,
+    headTimer: 0,
+    ray: 0,
+    giant: 0,
+    killsForGiant: 0,
+
+    shieldCharges: 0,
+    shieldsEarned: 0,
+    headbuttStreak: 0,
+
+    dodgeTimer: 0,
+    dodgeCooldown: 0,
+    dodgeDir: 0,
+    actionLock: 0,
+
+    aConsumed: false,
+    regenTimer: HEALTH_REGEN_TIME
+  };
+
+  function rectsOverlap(a, b) {
+    return (
+      a.x < b.x + b.w &&
+      a.x + a.w > b.x &&
+      a.y < b.y + b.h &&
+      a.y + a.h > b.y
+    );
+  }
+
+  function enemyRayCount() {
+    return state.enemies.filter(e => e.type === "ray").length;
+  }
+
+  function spawnEnemy(type = "normal") {
+    if (state.enemies.length >= MAX_ENEMIES && state.mode !== "final") return;
+
+    if (type === "ray" && state.mode === "play" && enemyRayCount() >= 1) {
+      type = "normal";
+    }
+
+    const fromLeft = Math.random() < 0.5;
+    const x = fromLeft ? -50 : W + 50;
+
+    state.enemies.push({
+      x,
+      y: rand(MIN_Y + 8, MAX_Y),
+      w: 54,
+      h: 34,
+      face: fromLeft ? 1 : -1,
+      type,
+      hp: type === "ray" ? 2 : 1,
+      shootTimer: rand(1.0, 1.6),
+      sep: rand(0.8, 1.25)
+    });
+  }
+
+  function addParticles(x, y, kind = "rainbow") {
+    for (let i = 0; i < 14; i++) {
+      state.particles.push({
+        x,
+        y,
+        vx: rand(-120, 120),
+        vy: rand(-180, 60),
+        life: rand(0.25, 0.65),
+        hue:
+          kind === "red"
+            ? rand(0, 25)
+            : kind === "shield"
+              ? rand(190, 240)
+              : kind === "heal"
+                ? rand(90, 140)
+                : rand(0, 360)
+      });
+    }
+  }
+
+  function clearBattlefield() {
+    state.enemies.length = 0;
+    state.playerShots.length = 0;
+    state.enemyShots.length = 0;
+    state.particles.length = 0;
+    state.spawnTimer = 0.8;
+  }
+
+  function resetPlayerPosition() {
+    player.x = W * 0.25;
+    player.y = GROUND_Y;
+    player.face = 1;
+    player.hp = HP_MAX;
+    player.invuln = 1.2;
+    player.headCd = 0;
+    player.headTimer = 0;
+    player.ray = 0;
+    player.giant = 0;
+    player.headbuttStreak = 0;
+    player.dodgeTimer = 0;
+    player.dodgeCooldown = 0.25;
+    player.dodgeDir = 0;
+    player.actionLock = 0.25;
+    player.aConsumed = false;
+    player.regenTimer = HEALTH_REGEN_TIME;
+  }
+
+  function fullRestart() {
+    state.mode = "play";
+    state.time = 0;
+    state.score = 0;
+    state.enemies.length = 0;
+    state.playerShots.length = 0;
+    state.enemyShots.length = 0;
+    state.particles.length = 0;
+    state.spawnTimer = 0;
+    state.finalSpawned = 0;
+    state.finalSpawnTimer = 0;
+    state.npc = null;
+    state.dialogTimer = 0;
+    state.exitTimer = 0;
+    state.fireworks.length = 0;
+    state.victoryTimer = 0;
+    state.resetQueued = false;
+
+    player.x = W * 0.25;
+    player.y = GROUND_Y;
+    player.face = 1;
+    player.hp = HP_MAX;
+    player.lives = 3;
+    player.invuln = 1.2;
+    player.headCd = 0;
+    player.headTimer = 0;
+    player.ray = 0;
+    player.giant = 0;
+    player.killsForGiant = 0;
+
+    player.shieldCharges = 0;
+    player.shieldsEarned = 0;
+    player.headbuttStreak = 0;
+
+    player.dodgeTimer = 0;
+    player.dodgeCooldown = 0.25;
+    player.dodgeDir = 0;
+    player.actionLock = 0.25;
+    player.aConsumed = false;
+    player.regenTimer = HEALTH_REGEN_TIME;
+
+    spawnEnemy("normal");
+  }
+
+  function safeLifeReset() {
+    state.resetQueued = false;
+
+    clearBattlefield();
+    resetPlayerPosition();
+
+    if (state.mode === "play") {
+      spawnEnemy("normal");
+    }
+  }
+
+  function awardShieldIfReady() {
+    if (
+      player.headbuttStreak >= SHIELD_KILL_STREAK_NEEDED &&
+      player.shieldsEarned < MAX_SHIELDS_EARNED
+    ) {
+      player.headbuttStreak = 0;
+      player.shieldsEarned += 1;
+      player.shieldCharges = SHIELD_MAX_CHARGES;
+      addParticles(player.x, player.y - 24, "shield");
+    }
+  }
+
+  function shieldBlockLaser() {
+    if (player.shieldCharges <= 0) return false;
+
+    player.shieldCharges -= 1;
+    player.headbuttStreak = 0;
+    player.invuln = 0.25;
+    addParticles(player.x, player.y - 24, "shield");
+    return true;
+  }
+
+  function shieldBlockContact() {
+    if (player.shieldCharges <= 0) return false;
+
+    player.shieldCharges = 0;
+    player.headbuttStreak = 0;
+    player.invuln = 0.4;
+    addParticles(player.x, player.y - 24, "shield");
+    return true;
+  }
+
+  function loseLife() {
+    if (player.invuln > 0) return;
+    if (state.mode !== "play" && state.mode !== "final") return;
+
+    player.lives -= 1;
+    player.headbuttStreak = 0;
+    player.regenTimer = HEALTH_REGEN_TIME;
+    addParticles(player.x, player.y, "red");
+
+    if (player.lives <= 0) {
+      fullRestart();
+      return;
+    }
+
+    state.resetQueued = true;
+  }
+
+  function damagePlayerByLaser() {
+    if (player.invuln > 0) return;
+    if (state.mode !== "play" && state.mode !== "final") return;
+
+    if (shieldBlockLaser()) return;
+
+    player.hp -= DMG_LASER;
+    player.invuln = 0.35;
+    player.headbuttStreak = 0;
+    player.regenTimer = HEALTH_REGEN_TIME;
+    addParticles(player.x, player.y, "red");
+
+    if (player.hp <= 0) {
+      player.invuln = 0;
+      loseLife();
+    }
+  }
+
+  function updateHealthRegen(dt) {
+    if (state.mode !== "play" && state.mode !== "final") return;
+
+    if (player.hp < HP_MAX && player.lives > 0) {
+      player.regenTimer -= dt;
+
+      if (player.regenTimer <= 0) {
+        player.hp = Math.min(HP_MAX, player.hp + 1);
+        player.regenTimer = HEALTH_REGEN_TIME;
+        addParticles(player.x, player.y - 24, "heal");
+      }
+    } else {
+      player.regenTimer = HEALTH_REGEN_TIME;
+    }
+  }
+
+  function killEnemy(index, method = "other") {
+    if (index < 0 || index >= state.enemies.length) return;
+
+    const e = state.enemies[index];
+    const powered = player.ray > 0 || player.giant > 0;
+
+    addParticles(e.x, e.y, e.type === "ray" ? "rainbow" : "red");
+
+    state.score += e.type === "ray" ? 40 : 10;
+
+    if (method === "headbutt") {
+      player.headbuttStreak += 1;
+      awardShieldIfReady();
+    } else {
+      player.headbuttStreak = 0;
+    }
+
+    if (!powered) {
+      if (e.type === "ray") {
+        player.ray = RAY_TIME;
+      }
+
+      player.killsForGiant += 1;
+
+      if (player.killsForGiant >= 20) {
+        player.killsForGiant = 0;
+        player.giant = GIANT_TIME;
+      }
+    }
+
+    state.enemies.splice(index, 1);
+
+    if (
+      state.mode === "final" &&
+      state.finalSpawned >= FINAL_RAY_COUNT &&
+      state.enemies.length === 0
+    ) {
+      startNpcScene();
+    }
+  }
+
+  function dodge(dir) {
+    if (player.dodgeCooldown > 0) return;
+    if (player.actionLock > 0) return;
+
+    player.dodgeTimer = DODGE_TIME;
+    player.dodgeCooldown = DODGE_COOLDOWN;
+    player.dodgeDir = dir;
+    player.invuln = Math.max(player.invuln, DODGE_INVULN);
+    player.headTimer = 0;
+    player.headCd = Math.max(player.headCd, 0.12);
+    player.actionLock = 0.12;
+
+    addParticles(player.x, player.y - 20, "shield");
+  }
+
+  function headbutt() {
+    if (player.headCd > 0) return;
+    if (player.dodgeTimer > 0) return;
+    if (player.actionLock > 0) return;
+
+    player.headCd = 0.24;
+    player.headTimer = 0.15;
+    player.actionLock = 0.08;
+
+    const hitbox = {
+      x: player.x + player.face * 38 - 25,
+      y: player.y - 30,
+      w: 70,
+      h: 48
+    };
+
+    for (let i = state.enemies.length - 1; i >= 0; i--) {
+      const e = state.enemies[i];
+      const box = {
+        x: e.x - 27,
+        y: e.y - 34,
+        w: e.w,
+        h: e.h
+      };
+
+      if (rectsOverlap(hitbox, box)) {
+        killEnemy(i, "headbutt");
+      }
+    }
+  }
+
+  function handleAAction() {
+    const aDown = input.a || keys[" "];
+
+    if (!aDown) {
+      player.aConsumed = false;
+      return;
+    }
+
+    if (player.aConsumed) return;
+
+    player.aConsumed = true;
+
+    const upPressed = input.dy < -0.5 || keys.arrowup || keys.w;
+    const downPressed = input.dy > 0.5 || keys.arrowdown || keys.s;
+
+    if (upPressed) {
+      dodge(-1);
+      return;
+    }
+
+    if (downPressed) {
+      dodge(1);
+      return;
+    }
+
+    headbutt();
+  }
+
+  function playerShoot() {
+    if (player.ray <= 0) return;
+
+    state.playerShots.push({
+      x: player.x + player.face * 34,
+      y: player.y - 32,
+      vx: player.face * (player.giant > 0 ? 520 : 420),
+      r: player.giant > 0 ? 9 : 6,
+      life: 1
+    });
+  }
+
+  let shootCooldown = 0;
+
+  function startFinalWave() {
+    state.mode = "final";
+    state.enemies.length = 0;
+    state.enemyShots.length = 0;
+    state.playerShots.length = 0;
+    state.finalSpawned = 0;
+    state.finalSpawnTimer = 0;
+  }
+
+  function startNpcScene() {
+    state.mode = "npc";
+    state.enemies.length = 0;
+    state.enemyShots.length = 0;
+    state.playerShots.length = 0;
+
+    const fromLeft = player.x > W / 2;
+
+    state.npc = {
+      x: fromLeft ? -30 : W + 30,
+      y: GROUND_Y,
+      vx: fromLeft ? 160 : -160,
+      face: fromLeft ? 1 : -1
+    };
+  }
+
+  function update(dt) {
+    if (state.resetQueued) {
+      safeLifeReset();
+      updateHud();
+      return;
+    }
+
+    player.invuln = Math.max(0, player.invuln - dt);
+    player.headCd = Math.max(0, player.headCd - dt);
+    player.headTimer = Math.max(0, player.headTimer - dt);
+    player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);
+    player.dodgeCooldown = Math.max(0, player.dodgeCooldown - dt);
+    player.actionLock = Math.max(0, player.actionLock - dt);
+    shootCooldown = Math.max(0, shootCooldown - dt);
+
+    if (player.ray > 0) player.ray = Math.max(0, player.ray - dt);
+    if (player.giant > 0) player.giant = Math.max(0, player.giant - dt);
+
+    updateHealthRegen(dt);
+
+    if (state.mode === "play" || state.mode === "final") {
+      let dx = input.dx;
+      let dy = input.dy;
+
+      if (keys.arrowleft || keys.a) dx = -1;
+      if (keys.arrowright || keys.d) dx = 1;
+      if (keys.arrowup || keys.w) dy = -1;
+      if (keys.arrowdown || keys.s) dy = 1;
+
+      const mag = Math.hypot(dx, dy);
+
+      if (mag > 0) {
+        dx /= mag;
+        dy /= mag;
+      }
+
+      const speed = player.giant > 0 ? 250 : 220;
+
+      if (player.dodgeTimer > 0) {
+        player.y += player.dodgeDir * DODGE_SPEED * dt;
+      } else {
+        player.x += dx * speed * dt;
+        player.y += dy * speed * 0.72 * dt;
+      }
+
+      player.x = clamp(player.x, 25, W - 25);
+      player.y = clamp(player.y, MIN_Y, MAX_Y);
+
+      if (dx !== 0 && player.dodgeTimer <= 0) {
+        player.face = dx > 0 ? 1 : -1;
+      }
+
+      handleAAction();
+
+      if ((input.b || keys.enter) && shootCooldown <= 0) {
+        playerShoot();
+        shootCooldown = 0.18;
+      }
+    }
+
+    if (state.mode === "play") {
+      state.time += dt;
+
+      if (state.time >= LEVEL_TIME) {
+        startFinalWave();
+      } else {
+        state.spawnTimer -= dt;
+
+        if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES) {
+          const wantRay = Math.random() < 0.2;
+          spawnEnemy(wantRay ? "ray" : "normal");
+          state.spawnTimer = rand(0.75, 1.2);
+        }
+      }
+    }
+
+    if (state.mode === "final") {
+      state.finalSpawnTimer -= dt;
+
+      if (state.finalSpawned < FINAL_RAY_COUNT && state.finalSpawnTimer <= 0) {
+        spawnEnemy("ray");
+        state.finalSpawned += 1;
+        state.finalSpawnTimer = 0.9;
+      }
+
+      if (state.finalSpawned >= FINAL_RAY_COUNT && state.enemies.length === 0) {
+        startNpcScene();
+      }
+    }
+
+    updateEnemies(dt);
+    if (state.resetQueued) return;
+
+    updateShots(dt);
+    if (state.resetQueued) return;
+
+    updateParticles(dt);
+    updateEnding(dt);
+    updateHud();
+  }
+
+  function updateEnemies(dt) {
+    if (state.mode !== "play" && state.mode !== "final") return;
+
+    for (let i = state.enemies.length - 1; i >= 0; i--) {
       const e = state.enemies[i];
 
       const dx = player.x - e.x;
@@ -221,8 +879,13 @@
 
   function updateHud() {
     if (livesEl) {
+      const regenText =
+        player.hp < HP_MAX
+          ? ` | Regen: ${Math.ceil(player.regenTimer)}s`
+          : "";
+
       livesEl.textContent =
-        `Lives: ${player.lives} | Shield: ${player.shieldCharges}/2 | HB: ${player.headbuttStreak}/10`;
+        `Lives: ${player.lives} | Shield: ${player.shieldCharges}/2 | HB: ${player.headbuttStreak}/10${regenText}`;
     }
 
     if (scoreEl) scoreEl.textContent = `Score: ${state.score}`;
