@@ -46,6 +46,11 @@
   const MAX_SHIELDS_EARNED = 2;
   const SHIELD_MAX_CHARGES = 2;
 
+  const DODGE_SPEED = 520;
+  const DODGE_TIME = 0.18;
+  const DODGE_INVULN = 0.24;
+  const DODGE_COOLDOWN = 0.55;
+
   const input = {
     dx: 0,
     dy: 0,
@@ -140,7 +145,8 @@
     dialogTimer: 0,
     exitTimer: 0,
     fireworks: [],
-    victoryTimer: 0
+    victoryTimer: 0,
+    resetQueued: false
   };
 
   const player = {
@@ -158,7 +164,15 @@
 
     shieldCharges: 0,
     shieldsEarned: 0,
-    headbuttStreak: 0
+    headbuttStreak: 0,
+
+    dodgeTimer: 0,
+    dodgeCooldown: 0,
+    dodgeDir: 0,
+    actionLock: 0,
+
+    // Important: prevents holding A from repeating headbutts forever.
+    aConsumed: false
   };
 
   function rectsOverlap(a, b) {
@@ -205,17 +219,22 @@
         vx: rand(-120, 120),
         vy: rand(-180, 60),
         life: rand(0.25, 0.65),
-        hue: kind === "red" ? rand(0, 25) : kind === "shield" ? rand(190, 240) : rand(0, 360)
+        hue:
+          kind === "red"
+            ? rand(0, 25)
+            : kind === "shield"
+              ? rand(190, 240)
+              : rand(0, 360)
       });
     }
   }
 
   function clearBattlefield() {
-    state.enemies = [];
-    state.playerShots = [];
-    state.enemyShots = [];
-    state.particles = [];
-    state.spawnTimer = 0.6;
+    state.enemies.length = 0;
+    state.playerShots.length = 0;
+    state.enemyShots.length = 0;
+    state.particles.length = 0;
+    state.spawnTimer = 0.8;
   }
 
   function resetPlayerPosition() {
@@ -223,37 +242,43 @@
     player.y = GROUND_Y;
     player.face = 1;
     player.hp = HP_MAX;
-    player.invuln = 1.0;
+    player.invuln = 1.2;
     player.headCd = 0;
     player.headTimer = 0;
     player.ray = 0;
     player.giant = 0;
     player.headbuttStreak = 0;
+    player.dodgeTimer = 0;
+    player.dodgeCooldown = 0.25;
+    player.dodgeDir = 0;
+    player.actionLock = 0.25;
+    player.aConsumed = false;
   }
 
   function fullRestart() {
     state.mode = "play";
     state.time = 0;
     state.score = 0;
-    state.enemies = [];
-    state.playerShots = [];
-    state.enemyShots = [];
-    state.particles = [];
+    state.enemies.length = 0;
+    state.playerShots.length = 0;
+    state.enemyShots.length = 0;
+    state.particles.length = 0;
     state.spawnTimer = 0;
     state.finalSpawned = 0;
     state.finalSpawnTimer = 0;
     state.npc = null;
     state.dialogTimer = 0;
     state.exitTimer = 0;
-    state.fireworks = [];
+    state.fireworks.length = 0;
     state.victoryTimer = 0;
+    state.resetQueued = false;
 
     player.x = W * 0.25;
     player.y = GROUND_Y;
     player.face = 1;
     player.hp = HP_MAX;
     player.lives = 3;
-    player.invuln = 1.0;
+    player.invuln = 1.2;
     player.headCd = 0;
     player.headTimer = 0;
     player.ray = 0;
@@ -264,7 +289,24 @@
     player.shieldsEarned = 0;
     player.headbuttStreak = 0;
 
+    player.dodgeTimer = 0;
+    player.dodgeCooldown = 0.25;
+    player.dodgeDir = 0;
+    player.actionLock = 0.25;
+    player.aConsumed = false;
+
     spawnEnemy("normal");
+  }
+
+  function safeLifeReset() {
+    state.resetQueued = false;
+
+    clearBattlefield();
+    resetPlayerPosition();
+
+    if (state.mode === "play") {
+      spawnEnemy("normal");
+    }
   }
 
   function awardShieldIfReady() {
@@ -294,7 +336,7 @@
 
     player.shieldCharges = 0;
     player.headbuttStreak = 0;
-    player.invuln = 0.35;
+    player.invuln = 0.4;
     addParticles(player.x, player.y - 24, "shield");
     return true;
   }
@@ -312,12 +354,7 @@
       return;
     }
 
-    clearBattlefield();
-    resetPlayerPosition();
-
-    if (state.mode === "play") {
-      spawnEnemy("normal");
-    }
+    state.resetQueued = true;
   }
 
   function damagePlayerByLaser() {
@@ -338,6 +375,8 @@
   }
 
   function killEnemy(index, method = "other") {
+    if (index < 0 || index >= state.enemies.length) return;
+
     const e = state.enemies[index];
     const powered = player.ray > 0 || player.giant > 0;
 
@@ -376,11 +415,29 @@
     }
   }
 
+  function dodge(dir) {
+    if (player.dodgeCooldown > 0) return;
+    if (player.actionLock > 0) return;
+
+    player.dodgeTimer = DODGE_TIME;
+    player.dodgeCooldown = DODGE_COOLDOWN;
+    player.dodgeDir = dir;
+    player.invuln = Math.max(player.invuln, DODGE_INVULN);
+    player.headTimer = 0;
+    player.headCd = Math.max(player.headCd, 0.12);
+    player.actionLock = 0.12;
+
+    addParticles(player.x, player.y - 20, "shield");
+  }
+
   function headbutt() {
     if (player.headCd > 0) return;
+    if (player.dodgeTimer > 0) return;
+    if (player.actionLock > 0) return;
 
     player.headCd = 0.24;
     player.headTimer = 0.15;
+    player.actionLock = 0.08;
 
     const hitbox = {
       x: player.x + player.face * 38 - 25,
@@ -404,6 +461,37 @@
     }
   }
 
+  function handleAAction() {
+    const aDown = input.a || keys[" "];
+
+    // If A is released, allow the next press to work.
+    if (!aDown) {
+      player.aConsumed = false;
+      return;
+    }
+
+    // If A is being held, do not repeat headbutt/dodge.
+    if (player.aConsumed) return;
+
+    // Consume this single press.
+    player.aConsumed = true;
+
+    const upPressed = input.dy < -0.5 || keys.arrowup || keys.w;
+    const downPressed = input.dy > 0.5 || keys.arrowdown || keys.s;
+
+    if (upPressed) {
+      dodge(-1);
+      return;
+    }
+
+    if (downPressed) {
+      dodge(1);
+      return;
+    }
+
+    headbutt();
+  }
+
   function playerShoot() {
     if (player.ray <= 0) return;
 
@@ -420,18 +508,18 @@
 
   function startFinalWave() {
     state.mode = "final";
-    state.enemies = [];
-    state.enemyShots = [];
-    state.playerShots = [];
+    state.enemies.length = 0;
+    state.enemyShots.length = 0;
+    state.playerShots.length = 0;
     state.finalSpawned = 0;
     state.finalSpawnTimer = 0;
   }
 
   function startNpcScene() {
     state.mode = "npc";
-    state.enemies = [];
-    state.enemyShots = [];
-    state.playerShots = [];
+    state.enemies.length = 0;
+    state.enemyShots.length = 0;
+    state.playerShots.length = 0;
 
     const fromLeft = player.x > W / 2;
 
@@ -444,9 +532,18 @@
   }
 
   function update(dt) {
+    if (state.resetQueued) {
+      safeLifeReset();
+      updateHud();
+      return;
+    }
+
     player.invuln = Math.max(0, player.invuln - dt);
     player.headCd = Math.max(0, player.headCd - dt);
     player.headTimer = Math.max(0, player.headTimer - dt);
+    player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);
+    player.dodgeCooldown = Math.max(0, player.dodgeCooldown - dt);
+    player.actionLock = Math.max(0, player.actionLock - dt);
     shootCooldown = Math.max(0, shootCooldown - dt);
 
     if (player.ray > 0) player.ray = Math.max(0, player.ray - dt);
@@ -470,15 +567,21 @@
 
       const speed = player.giant > 0 ? 250 : 220;
 
-      player.x += dx * speed * dt;
-      player.y += dy * speed * 0.72 * dt;
+      if (player.dodgeTimer > 0) {
+        player.y += player.dodgeDir * DODGE_SPEED * dt;
+      } else {
+        player.x += dx * speed * dt;
+        player.y += dy * speed * 0.72 * dt;
+      }
 
       player.x = clamp(player.x, 25, W - 25);
       player.y = clamp(player.y, MIN_Y, MAX_Y);
 
-      if (dx !== 0) player.face = dx > 0 ? 1 : -1;
+      if (dx !== 0 && player.dodgeTimer <= 0) {
+        player.face = dx > 0 ? 1 : -1;
+      }
 
-      if (input.a || keys[" "]) headbutt();
+      handleAAction();
 
       if ((input.b || keys.enter) && shootCooldown <= 0) {
         playerShoot();
@@ -517,7 +620,11 @@
     }
 
     updateEnemies(dt);
+    if (state.resetQueued) return;
+
     updateShots(dt);
+    if (state.resetQueued) return;
+
     updateParticles(dt);
     updateEnding(dt);
     updateHud();
@@ -589,6 +696,7 @@
             state.enemies.splice(i, 1);
           } else {
             loseLife();
+            return;
           }
         }
       }
@@ -614,8 +722,10 @@
         }
       }
 
-      if (b.life <= 0 || b.x < -100 || b.x > W + 100) {
-        state.playerShots.splice(i, 1);
+      if (i < state.playerShots.length) {
+        if (b.life <= 0 || b.x < -100 || b.x > W + 100) {
+          state.playerShots.splice(i, 1);
+        }
       }
     }
 
@@ -629,6 +739,7 @@
       if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 19) {
         damagePlayerByLaser();
         state.enemyShots.splice(i, 1);
+        if (state.resetQueued) return;
         continue;
       }
 
@@ -697,7 +808,7 @@
 
       if (state.exitTimer <= 0 || player.x > W + 80) {
         state.mode = "fireworks";
-        state.fireworks = [];
+        state.fireworks.length = 0;
         state.victoryTimer = 3.5;
       }
     }
@@ -772,6 +883,10 @@
     if (player.giant > 0) {
       pct = player.giant / GIANT_TIME;
       label = "Giant";
+    }
+
+    if (player.dodgeCooldown > 0 && player.dodgeTimer <= 0) {
+      label = "Dodge";
     }
 
     if (powerFillEl) {
@@ -871,6 +986,16 @@
     ctx.beginPath();
     ctx.arc(player.x, player.y - 22, 44, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawDodgeEffect() {
+    if (player.dodgeTimer <= 0) return;
+
+    ctx.save();
+    ctx.globalAlpha = 0.25;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(player.x - 34, player.y - 52, 68, 58);
     ctx.restore();
   }
 
@@ -1016,6 +1141,7 @@
 
     if (state.mode !== "fireworks" && state.mode !== "victory") {
       drawShieldAura();
+      drawDodgeEffect();
       drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);
     }
 
