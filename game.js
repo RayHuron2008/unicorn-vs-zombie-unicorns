@@ -47,23 +47,76 @@
   const MAX_SHIELDS_EARNED = 2;
   const SHIELD_MAX_CHARGES = 2;
 
-  const DODGE_SPEED = 520;
-  const DODGE_TIME = 0.18;
-  const DODGE_INVULN = 0.24;
+  const DODGE_SPEED = 560;
+  const DODGE_TIME = 0.2;
+  const DODGE_INVULN = 0.28;
   const DODGE_COOLDOWN = 0.55;
+  const DODGE_COMBO_WINDOW = 0.12;
 
   const input = {
     dx: 0,
     dy: 0,
     a: false,
-    b: false
+    b: false,
+    lastDirPressTime: -999,
+    lastDirX: 0,
+    lastDirY: 0,
+    lastAPressTime: -999
   };
 
   const keys = {};
+  const keyTimes = {};
+
+  let gameClock = 0;
+  let shootCooldown = 0;
 
   window.addEventListener("keydown", e => {
     startMusic();
-    keys[e.key.toLowerCase()] = true;
+
+    const k = e.key.toLowerCase();
+
+    if (!keys[k]) {
+      keyTimes[k] = gameClock;
+
+      if (
+        k === "arrowleft" ||
+        k === "arrowright" ||
+        k === "arrowup" ||
+        k === "arrowdown" ||
+        k === "w" ||
+        k === "a" ||
+        k === "s" ||
+        k === "d"
+      ) {
+        input.lastDirPressTime = gameClock;
+
+        if (k === "arrowleft" || k === "a") {
+          input.lastDirX = -1;
+          input.lastDirY = 0;
+        }
+
+        if (k === "arrowright" || k === "d") {
+          input.lastDirX = 1;
+          input.lastDirY = 0;
+        }
+
+        if (k === "arrowup" || k === "w") {
+          input.lastDirX = 0;
+          input.lastDirY = -1;
+        }
+
+        if (k === "arrowdown" || k === "s") {
+          input.lastDirX = 0;
+          input.lastDirY = 1;
+        }
+      }
+
+      if (k === " ") {
+        input.lastAPressTime = gameClock;
+      }
+    }
+
+    keys[k] = true;
   });
 
   window.addEventListener("keyup", e => {
@@ -87,8 +140,13 @@
 
       const start = e => {
         startMusic();
+
         input.dx = dx;
         input.dy = dy;
+        input.lastDirPressTime = gameClock;
+        input.lastDirX = dx;
+        input.lastDirY = dy;
+
         e.preventDefault();
       };
 
@@ -111,6 +169,11 @@
 
     const down = e => {
       startMusic();
+
+      if (!input[key]) {
+        if (key === "a") input.lastAPressTime = gameClock;
+      }
+
       input[key] = true;
       e.preventDefault();
     };
@@ -169,7 +232,8 @@
 
     dodgeTimer: 0,
     dodgeCooldown: 0,
-    dodgeDir: 0,
+    dodgeDirX: 0,
+    dodgeDirY: 0,
     actionLock: 0,
 
     aConsumed: false,
@@ -253,7 +317,8 @@
     player.headbuttStreak = 0;
     player.dodgeTimer = 0;
     player.dodgeCooldown = 0.25;
-    player.dodgeDir = 0;
+    player.dodgeDirX = 0;
+    player.dodgeDirY = 0;
     player.actionLock = 0.25;
     player.aConsumed = false;
     player.regenTimer = HEALTH_REGEN_TIME;
@@ -295,7 +360,8 @@
 
     player.dodgeTimer = 0;
     player.dodgeCooldown = 0.25;
-    player.dodgeDir = 0;
+    player.dodgeDirX = 0;
+    player.dodgeDirY = 0;
     player.actionLock = 0.25;
     player.aConsumed = false;
     player.regenTimer = HEALTH_REGEN_TIME;
@@ -438,13 +504,18 @@
     }
   }
 
-  function dodge(dir) {
+  function dodge(dx, dy) {
     if (player.dodgeCooldown > 0) return;
     if (player.actionLock > 0) return;
 
+    const mag = Math.hypot(dx, dy);
+    if (mag <= 0) return;
+
+    player.dodgeDirX = dx / mag;
+    player.dodgeDirY = dy / mag;
+
     player.dodgeTimer = DODGE_TIME;
     player.dodgeCooldown = DODGE_COOLDOWN;
-    player.dodgeDir = dir;
     player.invuln = Math.max(player.invuln, DODGE_INVULN);
     player.headTimer = 0;
     player.headCd = Math.max(player.headCd, 0.12);
@@ -484,6 +555,27 @@
     }
   }
 
+  function currentDirection() {
+    let dx = input.dx;
+    let dy = input.dy;
+
+    if (keys.arrowleft || keys.a) dx = -1;
+    if (keys.arrowright || keys.d) dx = 1;
+    if (keys.arrowup || keys.w) dy = -1;
+    if (keys.arrowdown || keys.s) dy = 1;
+
+    const mag = Math.hypot(dx, dy);
+
+    if (mag > 0) {
+      return {
+        dx: dx / mag,
+        dy: dy / mag
+      };
+    }
+
+    return { dx: 0, dy: 0 };
+  }
+
   function handleAAction() {
     const aDown = input.a || keys[" "];
 
@@ -496,16 +588,15 @@
 
     player.aConsumed = true;
 
-    const upPressed = input.dy < -0.5 || keys.arrowup || keys.w;
-    const downPressed = input.dy > 0.5 || keys.arrowdown || keys.s;
+    const dir = currentDirection();
 
-    if (upPressed) {
-      dodge(-1);
-      return;
-    }
+    const comboHappened =
+      dir.dx !== 0 || dir.dy !== 0
+        ? Math.abs(input.lastAPressTime - input.lastDirPressTime) <= DODGE_COMBO_WINDOW
+        : false;
 
-    if (downPressed) {
-      dodge(1);
+    if (comboHappened) {
+      dodge(input.lastDirX, input.lastDirY);
       return;
     }
 
@@ -523,8 +614,6 @@
       life: 1
     });
   }
-
-  let shootCooldown = 0;
 
   function startFinalWave() {
     state.mode = "final";
@@ -552,6 +641,8 @@
   }
 
   function update(dt) {
+    gameClock += dt;
+
     if (state.resetQueued) {
       safeLifeReset();
       updateHud();
@@ -572,35 +663,23 @@
     updateHealthRegen(dt);
 
     if (state.mode === "play" || state.mode === "final") {
-      let dx = input.dx;
-      let dy = input.dy;
-
-      if (keys.arrowleft || keys.a) dx = -1;
-      if (keys.arrowright || keys.d) dx = 1;
-      if (keys.arrowup || keys.w) dy = -1;
-      if (keys.arrowdown || keys.s) dy = 1;
-
-      const mag = Math.hypot(dx, dy);
-
-      if (mag > 0) {
-        dx /= mag;
-        dy /= mag;
-      }
+      const dir = currentDirection();
 
       const speed = player.giant > 0 ? 250 : 220;
 
       if (player.dodgeTimer > 0) {
-        player.y += player.dodgeDir * DODGE_SPEED * dt;
+        player.x += player.dodgeDirX * DODGE_SPEED * dt;
+        player.y += player.dodgeDirY * DODGE_SPEED * dt;
       } else {
-        player.x += dx * speed * dt;
-        player.y += dy * speed * 0.72 * dt;
+        player.x += dir.dx * speed * dt;
+        player.y += dir.dy * speed * 0.72 * dt;
       }
 
       player.x = clamp(player.x, 25, W - 25);
       player.y = clamp(player.y, MIN_Y, MAX_Y);
 
-      if (dx !== 0 && player.dodgeTimer <= 0) {
-        player.face = dx > 0 ? 1 : -1;
+      if (dir.dx !== 0 && player.dodgeTimer <= 0) {
+        player.face = dir.dx > 0 ? 1 : -1;
       }
 
       handleAAction();
@@ -694,6 +773,10 @@
 
           e.shootTimer = rand(0.9, 1.4);
         }
+      }
+
+      if (player.dodgeTimer > 0) {
+        continue;
       }
 
       const pBox = {
@@ -1020,9 +1103,17 @@
     if (player.dodgeTimer <= 0) return;
 
     ctx.save();
-    ctx.globalAlpha = 0.25;
+    ctx.globalAlpha = 0.3;
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(player.x - 34, player.y - 52, 68, 58);
+
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = "#66d9ff";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(player.x, player.y - 24, 38, 0, Math.PI * 2);
+    ctx.stroke();
+
     ctx.restore();
   }
 
