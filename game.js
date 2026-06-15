@@ -27,6 +27,7 @@
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rand = (a, b) => a + Math.random() * (b - a);
   const distance = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
+  const lerp = (a, b, t) => a + (b - a) * t;
 
   const GROUND_Y = Math.floor(H * 0.78);
   const MIN_Y = GROUND_Y - 58;
@@ -47,11 +48,15 @@
   const MAX_SHIELDS_EARNED = 2;
   const SHIELD_MAX_CHARGES = 2;
 
-  const DODGE_SPEED = 560;
-  const DODGE_TIME = 0.2;
-  const DODGE_INVULN = 0.28;
+  const DODGE_TIME = 0.22;
+  const DODGE_INVULN = 0.34;
   const DODGE_COOLDOWN = 0.55;
   const DODGE_COMBO_WINDOW = 0.12;
+  const DODGE_NORMAL_X = 150;
+  const DODGE_NORMAL_Y = 112;
+  const DODGE_CLEAR_GAP = 58;
+  const DODGE_DETECT_RANGE = 120;
+  const DODGE_LANDING_INVULN = 0.18;
 
   const input = {
     dx: 0,
@@ -232,8 +237,11 @@
 
     dodgeTimer: 0,
     dodgeCooldown: 0,
-    dodgeDirX: 0,
-    dodgeDirY: 0,
+    dodgeStartX: 0,
+    dodgeStartY: 0,
+    dodgeTargetX: 0,
+    dodgeTargetY: 0,
+    dodgeElapsed: 0,
     actionLock: 0,
 
     aConsumed: false,
@@ -317,8 +325,11 @@
     player.headbuttStreak = 0;
     player.dodgeTimer = 0;
     player.dodgeCooldown = 0.25;
-    player.dodgeDirX = 0;
-    player.dodgeDirY = 0;
+    player.dodgeStartX = player.x;
+    player.dodgeStartY = player.y;
+    player.dodgeTargetX = player.x;
+    player.dodgeTargetY = player.y;
+    player.dodgeElapsed = 0;
     player.actionLock = 0.25;
     player.aConsumed = false;
     player.regenTimer = HEALTH_REGEN_TIME;
@@ -360,8 +371,11 @@
 
     player.dodgeTimer = 0;
     player.dodgeCooldown = 0.25;
-    player.dodgeDirX = 0;
-    player.dodgeDirY = 0;
+    player.dodgeStartX = player.x;
+    player.dodgeStartY = player.y;
+    player.dodgeTargetX = player.x;
+    player.dodgeTargetY = player.y;
+    player.dodgeElapsed = 0;
     player.actionLock = 0.25;
     player.aConsumed = false;
     player.regenTimer = HEALTH_REGEN_TIME;
@@ -504,6 +518,48 @@
     }
   }
 
+  function findDodgeTarget(dx, dy) {
+    let targetX = player.x + dx * DODGE_NORMAL_X;
+    let targetY = player.y + dy * DODGE_NORMAL_Y;
+
+    if (Math.abs(dx) > Math.abs(dy)) {
+      let best = null;
+      let bestDist = Infinity;
+
+      for (const e of state.enemies) {
+        const verticalClose = Math.abs(player.y - e.y) < 64;
+        if (!verticalClose) continue;
+
+        const deltaX = e.x - player.x;
+
+        const enemyIsInDodgePath =
+          dx > 0
+            ? deltaX > -24 && deltaX < DODGE_DETECT_RANGE
+            : deltaX < 24 && deltaX > -DODGE_DETECT_RANGE;
+
+        if (!enemyIsInDodgePath) continue;
+
+        const d = Math.abs(deltaX);
+        if (d < bestDist) {
+          bestDist = d;
+          best = e;
+        }
+      }
+
+      if (best) {
+        const enemyHalf = best.w / 2;
+        const playerHalf = 24;
+        targetX = best.x + Math.sign(dx) * (enemyHalf + playerHalf + DODGE_CLEAR_GAP);
+        targetY = player.y;
+      }
+    }
+
+    targetX = clamp(targetX, 25, W - 25);
+    targetY = clamp(targetY, MIN_Y, MAX_Y);
+
+    return { x: targetX, y: targetY };
+  }
+
   function dodge(dx, dy) {
     if (player.dodgeCooldown > 0) return;
     if (player.actionLock > 0) return;
@@ -511,8 +567,15 @@
     const mag = Math.hypot(dx, dy);
     if (mag <= 0) return;
 
-    player.dodgeDirX = dx / mag;
-    player.dodgeDirY = dy / mag;
+    const nx = dx / mag;
+    const ny = dy / mag;
+    const target = findDodgeTarget(nx, ny);
+
+    player.dodgeStartX = player.x;
+    player.dodgeStartY = player.y;
+    player.dodgeTargetX = target.x;
+    player.dodgeTargetY = target.y;
+    player.dodgeElapsed = 0;
 
     player.dodgeTimer = DODGE_TIME;
     player.dodgeCooldown = DODGE_COOLDOWN;
@@ -522,6 +585,31 @@
     player.actionLock = 0.12;
 
     addParticles(player.x, player.y - 20, "shield");
+  }
+
+  function updateDodgeMovement(dt) {
+    if (player.dodgeTimer <= 0) return false;
+
+    player.dodgeElapsed = Math.min(DODGE_TIME, player.dodgeElapsed + dt);
+
+    const raw = clamp(player.dodgeElapsed / DODGE_TIME, 0, 1);
+    const eased = 1 - Math.pow(1 - raw, 2);
+
+    player.x = lerp(player.dodgeStartX, player.dodgeTargetX, eased);
+    player.y = lerp(player.dodgeStartY, player.dodgeTargetY, eased);
+
+    player.x = clamp(player.x, 25, W - 25);
+    player.y = clamp(player.y, MIN_Y, MAX_Y);
+
+    player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);
+
+    if (player.dodgeTimer <= 0) {
+      player.x = player.dodgeTargetX;
+      player.y = player.dodgeTargetY;
+      player.invuln = Math.max(player.invuln, DODGE_LANDING_INVULN);
+    }
+
+    return true;
   }
 
   function headbutt() {
@@ -652,7 +740,6 @@
     player.invuln = Math.max(0, player.invuln - dt);
     player.headCd = Math.max(0, player.headCd - dt);
     player.headTimer = Math.max(0, player.headTimer - dt);
-    player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);
     player.dodgeCooldown = Math.max(0, player.dodgeCooldown - dt);
     player.actionLock = Math.max(0, player.actionLock - dt);
     shootCooldown = Math.max(0, shootCooldown - dt);
@@ -667,10 +754,7 @@
 
       const speed = player.giant > 0 ? 250 : 220;
 
-      if (player.dodgeTimer > 0) {
-        player.x += player.dodgeDirX * DODGE_SPEED * dt;
-        player.y += player.dodgeDirY * DODGE_SPEED * dt;
-      } else {
+      if (!updateDodgeMovement(dt)) {
         player.x += dir.dx * speed * dt;
         player.y += dir.dy * speed * 0.72 * dt;
       }
