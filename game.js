@@ -1,1011 +1,515 @@
 (() => {
-  const canvas = document.getElementById("game");
-  const ctx = canvas.getContext("2d");
+  "use strict";
 
+  const canvas = document.getElementById("game");
+  if (!canvas) {
+    alert("Missing canvas with id='game'");
+    return;
+  }
+
+  const ctx = canvas.getContext("2d");
   const W = canvas.width;
   const H = canvas.height;
 
-  const livesEl = document.getElementById("lives");
-  const scoreEl = document.getElementById("score");
-  const timeEl = document.getElementById("time");
-  const powerFillEl = document.getElementById("powerFill");
-  const powerLabelEl = document.getElementById("powerLabel");
-
-  const dpad = document.getElementById("dpad");
-  const btnA = document.getElementById("btnA");
-  const btnB = document.getElementById("btnB");
-
-  const music = new Audio("./bgm_main.mp3");
-  music.loop = true;
-  music.volume = 0.75;
-  music.preload = "auto";
-
-  function startMusic() {
-    music.play().catch(() => {});
-  }
-
-  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-  const rand = (a, b) => a + Math.random() * (b - a);
-  const distance = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
-  const lerp = (a, b, t) => a + (b - a) * t;
+  // -----------------------------
+  // SETTINGS
+  // -----------------------------
+  const VERSION = "v42";
 
   const GROUND_Y = Math.floor(H * 0.78);
-  const MIN_Y = GROUND_Y - 58;
+  const MIN_Y = GROUND_Y - 46;
   const MAX_Y = GROUND_Y;
 
-  const LEVEL_TIME = 60;
-  const MAX_ENEMIES = 4;
+  const STAGE_TIME = 60;          // testing timer
+  const MAX_ENEMIES = 2;          // HALF difficulty
+  const SPAWN_INTERVAL = 1.6;     // slower enemy spawning
+  const MAX_RAY_NORMAL = 1;
   const FINAL_RAY_COUNT = 2;
 
-  const HP_MAX = 2;
-  const DMG_LASER = 1;
-  const HEALTH_REGEN_TIME = 15;
+  const PLAYER_SPEED = 245;
+  const ENEMY_SPEED = 100;
+  const ENEMY_Y_SPEED = 72;
 
-  const RAY_TIME = 10;
-  const GIANT_TIME = 20;
+  const HP_MAX = 100;
+  const DMG_CONTACT = 18;
+  const DMG_LASER = 14;
 
-  const SHIELD_KILL_STREAK_NEEDED = 10;
-  const MAX_SHIELDS_EARNED = 2;
-  const SHIELD_MAX_CHARGES = 2;
+  const INVULN_AFTER_HIT = 0.65;
+  const INVULN_AFTER_LIFE_LOSS = 1.1;
 
-  const DODGE_TIME = 0.22;
-  const DODGE_INVULN = 0.34;
-  const DODGE_COOLDOWN = 0.55;
-  const DODGE_COMBO_WINDOW = 0.12;
-  const DODGE_NORMAL_X = 150;
-  const DODGE_NORMAL_Y = 112;
-  const DODGE_CLEAR_GAP = 58;
-  const DODGE_DETECT_RANGE = 120;
-  const DODGE_LANDING_INVULN = 0.18;
+  const HEADBUTT_CD = 0.25;
+  const HEADBUTT_WINDOW = 0.16;
+  const HEADBUTT_RANGE = 56;
 
+  const RAY_DURATION = 10;
+  const GIANT_DURATION = 20;
+  const PLAYER_SHOT_CD = 0.18;
+
+  // -----------------------------
+  // DOM HUD
+  // -----------------------------
+  const hudLives = document.getElementById("lives");
+  const hudScore = document.getElementById("score");
+  const hudTime = document.getElementById("time");
+  const powerFill = document.getElementById("powerFill");
+  const powerLabel = document.getElementById("powerLabel");
+
+  // -----------------------------
+  // INPUT
+  // -----------------------------
   const input = {
     dx: 0,
     dy: 0,
-    a: false,
-    b: false,
-    lastDirPressTime: -999,
-    lastDirX: 0,
-    lastDirY: 0,
-    lastAPressTime: -999
+    attack: false,
+    shoot: false
   };
 
   const keys = {};
-  const keyTimes = {};
 
-  let gameClock = 0;
-  let shootCooldown = 0;
-
-  window.addEventListener("keydown", e => {
-    startMusic();
-
-    const k = e.key.toLowerCase();
-
-    if (!keys[k]) {
-      keyTimes[k] = gameClock;
-
-      if (
-        k === "arrowleft" ||
-        k === "arrowright" ||
-        k === "arrowup" ||
-        k === "arrowdown" ||
-        k === "w" ||
-        k === "a" ||
-        k === "s" ||
-        k === "d"
-      ) {
-        input.lastDirPressTime = gameClock;
-
-        if (k === "arrowleft" || k === "a") {
-          input.lastDirX = -1;
-          input.lastDirY = 0;
-        }
-
-        if (k === "arrowright" || k === "d") {
-          input.lastDirX = 1;
-          input.lastDirY = 0;
-        }
-
-        if (k === "arrowup" || k === "w") {
-          input.lastDirX = 0;
-          input.lastDirY = -1;
-        }
-
-        if (k === "arrowdown" || k === "s") {
-          input.lastDirX = 0;
-          input.lastDirY = 1;
-        }
-      }
-
-      if (k === " ") {
-        input.lastAPressTime = gameClock;
-      }
-    }
-
-    keys[k] = true;
+  window.addEventListener("keydown", (e) => {
+    keys[e.key.toLowerCase()] = true;
   });
 
-  window.addEventListener("keyup", e => {
+  window.addEventListener("keyup", (e) => {
     keys[e.key.toLowerCase()] = false;
   });
 
-  window.addEventListener("touchstart", () => {
-    startMusic();
-  }, { passive: true });
-
-  window.addEventListener("mousedown", () => {
-    startMusic();
-  });
-
-  function bindDpad() {
-    if (!dpad) return;
-
-    dpad.querySelectorAll(".dir").forEach(btn => {
-      const dx = Number(btn.dataset.dx || 0);
-      const dy = Number(btn.dataset.dy || 0);
-
-      const start = e => {
-        startMusic();
-
-        input.dx = dx;
-        input.dy = dy;
-        input.lastDirPressTime = gameClock;
-        input.lastDirX = dx;
-        input.lastDirY = dy;
-
-        e.preventDefault();
-      };
-
-      const end = e => {
-        input.dx = 0;
-        input.dy = 0;
-        if (e) e.preventDefault();
-      };
-
-      btn.addEventListener("touchstart", start, { passive: false });
-      btn.addEventListener("touchend", end, { passive: false });
-      btn.addEventListener("mousedown", start);
-      btn.addEventListener("mouseup", end);
-      btn.addEventListener("mouseleave", end);
-    });
-  }
-
-  function bindButton(el, key) {
+  function bindButton(id, down, up) {
+    const el = document.getElementById(id);
     if (!el) return;
 
-    const down = e => {
-      startMusic();
-
-      if (!input[key]) {
-        if (key === "a") input.lastAPressTime = gameClock;
-      }
-
-      input[key] = true;
+    el.addEventListener("touchstart", (e) => {
+      down();
       e.preventDefault();
-    };
+    }, { passive: false });
 
-    const up = e => {
-      input[key] = false;
-      if (e) e.preventDefault();
-    };
+    el.addEventListener("touchend", (e) => {
+      up();
+      e.preventDefault();
+    }, { passive: false });
 
-    el.addEventListener("touchstart", down, { passive: false });
-    el.addEventListener("touchend", up, { passive: false });
     el.addEventListener("mousedown", down);
     el.addEventListener("mouseup", up);
     el.addEventListener("mouseleave", up);
   }
 
-  bindDpad();
-  bindButton(btnA, "a");
-  bindButton(btnB, "b");
+  // Button support
+  bindButton("btnA", () => input.attack = true, () => input.attack = false);
+  bindButton("btnB", () => input.shoot = true, () => input.shoot = false);
 
-  const state = {
-    mode: "play",
-    time: 0,
-    score: 0,
-    enemies: [],
-    playerShots: [],
-    enemyShots: [],
-    particles: [],
-    spawnTimer: 0,
-    finalSpawned: 0,
-    finalSpawnTimer: 0,
-    npc: null,
-    dialogTimer: 0,
-    exitTimer: 0,
-    fireworks: [],
-    victoryTimer: 0,
-    resetQueued: false
-  };
+  // Old D-pad support if your HTML has dpad-up/down/left/right
+  bindButton("dpad-up", () => input.dy = -1, () => { if (input.dy < 0) input.dy = 0; });
+  bindButton("dpad-down", () => input.dy = 1, () => { if (input.dy > 0) input.dy = 0; });
+  bindButton("dpad-left", () => input.dx = -1, () => { if (input.dx < 0) input.dx = 0; });
+  bindButton("dpad-right", () => input.dx = 1, () => { if (input.dx > 0) input.dx = 0; });
 
-  const player = {
-    x: W * 0.25,
-    y: GROUND_Y,
-    face: 1,
-    hp: HP_MAX,
-    lives: 3,
-    invuln: 0,
-    headCd: 0,
-    headTimer: 0,
-    ray: 0,
-    giant: 0,
-    killsForGiant: 0,
+  // Joystick support
+  const joystick = document.getElementById("joystick");
+  const stick = document.getElementById("stick");
+  let joyActive = false;
+  let joyCenter = { x: 0, y: 0 };
 
-    shieldCharges: 0,
-    shieldsEarned: 0,
-    headbuttStreak: 0,
-
-    dodgeTimer: 0,
-    dodgeCooldown: 0,
-    dodgeStartX: 0,
-    dodgeStartY: 0,
-    dodgeTargetX: 0,
-    dodgeTargetY: 0,
-    dodgeElapsed: 0,
-    actionLock: 0,
-
-    aConsumed: false,
-    regenTimer: HEALTH_REGEN_TIME
-  };
-
-  function rectsOverlap(a, b) {
-    return (
-      a.x < b.x + b.w &&
-      a.x + a.w > b.x &&
-      a.y < b.y + b.h &&
-      a.y + a.h > b.y
-    );
+  function setStick(x, y) {
+    if (!stick) return;
+    stick.style.transform = `translate(${x}px, ${y}px)`;
   }
 
-  function enemyRayCount() {
-    return state.enemies.filter(e => e.type === "ray").length;
-  }
+  if (joystick) {
+    joystick.addEventListener("touchstart", (e) => {
+      joyActive = true;
+      const r = joystick.getBoundingClientRect();
+      joyCenter.x = r.left + r.width / 2;
+      joyCenter.y = r.top + r.height / 2;
+      handleJoystick(e.touches[0]);
+      e.preventDefault();
+    }, { passive: false });
 
-  function spawnEnemy(type = "normal") {
-    if (state.enemies.length >= MAX_ENEMIES && state.mode !== "final") return;
+    joystick.addEventListener("touchmove", (e) => {
+      if (!joyActive) return;
+      handleJoystick(e.touches[0]);
+      e.preventDefault();
+    }, { passive: false });
 
-    if (type === "ray" && state.mode === "play" && enemyRayCount() >= 1) {
-      type = "normal";
-    }
-
-    const fromLeft = Math.random() < 0.5;
-    const x = fromLeft ? -50 : W + 50;
-
-    state.enemies.push({
-      x,
-      y: rand(MIN_Y + 8, MAX_Y),
-      w: 54,
-      h: 34,
-      face: fromLeft ? 1 : -1,
-      type,
-      hp: type === "ray" ? 2 : 1,
-      shootTimer: rand(1.0, 1.6),
-      sep: rand(0.8, 1.25)
+    joystick.addEventListener("touchend", () => {
+      joyActive = false;
+      input.dx = 0;
+      input.dy = 0;
+      setStick(0, 0);
     });
   }
 
-  function addParticles(x, y, kind = "rainbow") {
-    for (let i = 0; i < 14; i++) {
-      state.particles.push({
-        x,
-        y,
-        vx: rand(-120, 120),
-        vy: rand(-180, 60),
-        life: rand(0.25, 0.65),
-        hue:
-          kind === "red"
-            ? rand(0, 25)
-            : kind === "shield"
-              ? rand(190, 240)
-              : kind === "heal"
-                ? rand(90, 140)
-                : rand(0, 360)
-      });
-    }
-  }
+  function handleJoystick(touch) {
+    const r = joystick.getBoundingClientRect();
+    const max = Math.min(r.width, r.height) * 0.35;
 
-  function clearBattlefield() {
-    state.enemies.length = 0;
-    state.playerShots.length = 0;
-    state.enemyShots.length = 0;
-    state.particles.length = 0;
-    state.spawnTimer = 0.8;
-  }
+    let dx = touch.clientX - joyCenter.x;
+    let dy = touch.clientY - joyCenter.y;
+    const d = Math.hypot(dx, dy);
 
-  function resetPlayerPosition() {
-    player.x = W * 0.25;
-    player.y = GROUND_Y;
-    player.face = 1;
-    player.hp = HP_MAX;
-    player.invuln = 1.2;
-    player.headCd = 0;
-    player.headTimer = 0;
-    player.ray = 0;
-    player.giant = 0;
-    player.headbuttStreak = 0;
-    player.dodgeTimer = 0;
-    player.dodgeCooldown = 0.25;
-    player.dodgeStartX = player.x;
-    player.dodgeStartY = player.y;
-    player.dodgeTargetX = player.x;
-    player.dodgeTargetY = player.y;
-    player.dodgeElapsed = 0;
-    player.actionLock = 0.25;
-    player.aConsumed = false;
-    player.regenTimer = HEALTH_REGEN_TIME;
-  }
-
-  function fullRestart() {
-    state.mode = "play";
-    state.time = 0;
-    state.score = 0;
-    state.enemies.length = 0;
-    state.playerShots.length = 0;
-    state.enemyShots.length = 0;
-    state.particles.length = 0;
-    state.spawnTimer = 0;
-    state.finalSpawned = 0;
-    state.finalSpawnTimer = 0;
-    state.npc = null;
-    state.dialogTimer = 0;
-    state.exitTimer = 0;
-    state.fireworks.length = 0;
-    state.victoryTimer = 0;
-    state.resetQueued = false;
-
-    player.x = W * 0.25;
-    player.y = GROUND_Y;
-    player.face = 1;
-    player.hp = HP_MAX;
-    player.lives = 3;
-    player.invuln = 1.2;
-    player.headCd = 0;
-    player.headTimer = 0;
-    player.ray = 0;
-    player.giant = 0;
-    player.killsForGiant = 0;
-
-    player.shieldCharges = 0;
-    player.shieldsEarned = 0;
-    player.headbuttStreak = 0;
-
-    player.dodgeTimer = 0;
-    player.dodgeCooldown = 0.25;
-    player.dodgeStartX = player.x;
-    player.dodgeStartY = player.y;
-    player.dodgeTargetX = player.x;
-    player.dodgeTargetY = player.y;
-    player.dodgeElapsed = 0;
-    player.actionLock = 0.25;
-    player.aConsumed = false;
-    player.regenTimer = HEALTH_REGEN_TIME;
-
-    spawnEnemy("normal");
-  }
-
-  function safeLifeReset() {
-    state.resetQueued = false;
-
-    clearBattlefield();
-    resetPlayerPosition();
-
-    if (state.mode === "play") {
-      spawnEnemy("normal");
-    }
-  }
-
-  function awardShieldIfReady() {
-    if (
-      player.headbuttStreak >= SHIELD_KILL_STREAK_NEEDED &&
-      player.shieldsEarned < MAX_SHIELDS_EARNED
-    ) {
-      player.headbuttStreak = 0;
-      player.shieldsEarned += 1;
-      player.shieldCharges = SHIELD_MAX_CHARGES;
-      addParticles(player.x, player.y - 24, "shield");
-    }
-  }
-
-  function shieldBlockLaser() {
-    if (player.shieldCharges <= 0) return false;
-
-    player.shieldCharges -= 1;
-    player.headbuttStreak = 0;
-    player.invuln = 0.25;
-    addParticles(player.x, player.y - 24, "shield");
-    return true;
-  }
-
-  function shieldBlockContact() {
-    if (player.shieldCharges <= 0) return false;
-
-    player.shieldCharges = 0;
-    player.headbuttStreak = 0;
-    player.invuln = 0.4;
-    addParticles(player.x, player.y - 24, "shield");
-    return true;
-  }
-
-  function loseLife() {
-    if (player.invuln > 0) return;
-    if (state.mode !== "play" && state.mode !== "final") return;
-
-    player.lives -= 1;
-    player.headbuttStreak = 0;
-    player.regenTimer = HEALTH_REGEN_TIME;
-    addParticles(player.x, player.y, "red");
-
-    if (player.lives <= 0) {
-      fullRestart();
-      return;
+    if (d > max) {
+      dx = dx / d * max;
+      dy = dy / d * max;
     }
 
-    state.resetQueued = true;
+    setStick(dx, dy);
+
+    input.dx = dx / max;
+    input.dy = dy / max;
   }
 
-  function damagePlayerByLaser() {
-    if (player.invuln > 0) return;
-    if (state.mode !== "play" && state.mode !== "final") return;
+  // -----------------------------
+  // HELPERS
+  // -----------------------------
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const rand = (a, b) => a + Math.random() * (b - a);
 
-    if (shieldBlockLaser()) return;
-
-    player.hp -= DMG_LASER;
-    player.invuln = 0.35;
-    player.headbuttStreak = 0;
-    player.regenTimer = HEALTH_REGEN_TIME;
-    addParticles(player.x, player.y, "red");
-
-    if (player.hp <= 0) {
-      player.invuln = 0;
-      loseLife();
-    }
+  function hit(a, b) {
+    return (
+      a.x - a.w / 2 < b.x + b.w / 2 &&
+      a.x + a.w / 2 > b.x - b.w / 2 &&
+      a.y - a.h / 2 < b.y + b.h / 2 &&
+      a.y + a.h / 2 > b.y - b.h / 2
+    );
   }
 
-  function updateHealthRegen(dt) {
-    if (state.mode !== "play" && state.mode !== "final") return;
+  // -----------------------------
+  // STATE
+  // -----------------------------
+  const Mode = {
+    PLAY: "PLAY",
+    FINAL: "FINAL",
+    NPC_IN: "NPC_IN",
+    TALK: "TALK",
+    EXIT: "EXIT",
+    FIREWORKS: "FIREWORKS",
+    VICTORY: "VICTORY"
+  };
 
-    if (player.hp < HP_MAX && player.lives > 0) {
-      player.regenTimer -= dt;
+  const state = {
+    last: performance.now(),
+    mode: Mode.PLAY,
+    timeLeft: STAGE_TIME,
 
-      if (player.regenTimer <= 0) {
-        player.hp = Math.min(HP_MAX, player.hp + 1);
-        player.regenTimer = HEALTH_REGEN_TIME;
-        addParticles(player.x, player.y - 24, "heal");
+    score: 0,
+
+    player: {
+      x: W * 0.22,
+      y: GROUND_Y,
+      w: 48,
+      h: 34,
+      dir: 1,
+      hp: HP_MAX,
+      lives: 3,
+      invuln: 0,
+      headbuttCd: 0,
+      headbutting: 0,
+      ray: 0,
+      giant: 0,
+      shotCd: 0,
+      normalKillsSincePower: 0
+    },
+
+    enemies: [],
+    playerShots: [],
+    enemyShots: [],
+    fx: [],
+
+    spawnTimer: 0.5,
+
+    finalSpawned: 0,
+    finalSpawnCd: 0,
+    endingStarted: false,
+
+    npc: {
+      active: false,
+      x: -80,
+      y: GROUND_Y,
+      vx: 260
+    },
+
+    dialogTimer: 0,
+
+    fireworksTimer: 0,
+    fireworksCd: 0,
+    fireworks: [],
+
+    exitTimer: 0
+  };
+
+  // -----------------------------
+  // SPAWN
+  // -----------------------------
+  function countRayEnemies() {
+    return state.enemies.filter(e => e.ray).length;
+  }
+
+  function spawnEnemy(ray = false) {
+    const fromLeft = Math.random() < 0.5;
+
+    state.enemies.push({
+      x: fromLeft ? -70 : W + 70,
+      y: rand(MIN_Y + 8, MAX_Y),
+      w: 48,
+      h: 34,
+      ray,
+      hp: ray ? 3 : 1,
+      shootCd: rand(1.0, 1.6),
+      sep: rand(0.8, 1.2)
+    });
+  }
+
+  function updateSpawning(dt) {
+    if (state.mode !== Mode.PLAY) return;
+
+    state.spawnTimer -= dt;
+
+    if (state.spawnTimer <= 0) {
+      state.spawnTimer = SPAWN_INTERVAL;
+
+      if (state.enemies.length >= MAX_ENEMIES) return;
+
+      const wantsRay = Math.random() < 0.18;
+
+      if (wantsRay && countRayEnemies() < MAX_RAY_NORMAL) {
+        spawnEnemy(true);
+      } else {
+        spawnEnemy(false);
       }
-    } else {
-      player.regenTimer = HEALTH_REGEN_TIME;
     }
   }
 
-  function killEnemy(index, method = "other") {
-    if (index < 0 || index >= state.enemies.length) return;
+  function updateFinalWave(dt) {
+    if (state.mode !== Mode.FINAL) return;
+    if (state.endingStarted) return;
 
+    state.finalSpawnCd -= dt;
+
+    if (state.finalSpawned < FINAL_RAY_COUNT && state.finalSpawnCd <= 0) {
+      spawnEnemy(true);
+      state.finalSpawned += 1;
+      state.finalSpawnCd = 0.9;
+    }
+
+    if (state.finalSpawned >= FINAL_RAY_COUNT && state.enemies.length === 0) {
+      beginEnding();
+    }
+  }
+
+  // -----------------------------
+  // DAMAGE / RESTART
+  // -----------------------------
+  function damagePlayer(amount) {
+    const p = state.player;
+
+    if (state.mode !== Mode.PLAY && state.mode !== Mode.FINAL) return;
+    if (p.invuln > 0) return;
+
+    p.hp -= amount;
+    p.invuln = INVULN_AFTER_HIT;
+
+    burst(p.x, p.y, 12, 0, 360);
+
+    if (p.hp <= 0) {
+      p.lives -= 1;
+
+      if (p.lives <= 0) {
+        restartGame();
+        return;
+      }
+
+      p.hp = HP_MAX;
+      p.invuln = INVULN_AFTER_LIFE_LOSS;
+      p.ray = 0;
+      p.giant = 0;
+    }
+  }
+
+  function restartGame() {
+    state.mode = Mode.PLAY;
+    state.timeLeft = STAGE_TIME;
+    state.score = 0;
+
+    state.player.x = W * 0.22;
+    state.player.y = GROUND_Y;
+    state.player.dir = 1;
+    state.player.hp = HP_MAX;
+    state.player.lives = 3;
+    state.player.invuln = 0;
+    state.player.headbuttCd = 0;
+    state.player.headbutting = 0;
+    state.player.ray = 0;
+    state.player.giant = 0;
+    state.player.shotCd = 0;
+    state.player.normalKillsSincePower = 0;
+
+    state.enemies.length = 0;
+    state.playerShots.length = 0;
+    state.enemyShots.length = 0;
+    state.fx.length = 0;
+
+    state.spawnTimer = 0.5;
+
+    state.finalSpawned = 0;
+    state.finalSpawnCd = 0;
+    state.endingStarted = false;
+
+    state.npc.active = false;
+    state.npc.x = -80;
+
+    state.dialogTimer = 0;
+
+    state.fireworksTimer = 0;
+    state.fireworksCd = 0;
+    state.fireworks.length = 0;
+
+    state.exitTimer = 0;
+
+    spawnEnemy(false);
+  }
+
+  // -----------------------------
+  // COMBAT
+  // -----------------------------
+  function doHeadbutt() {
+    const p = state.player;
+
+    if (p.headbuttCd > 0) return;
+
+    p.headbuttCd = HEADBUTT_CD;
+    p.headbutting = HEADBUTT_WINDOW;
+
+    const box = {
+      x: p.x + p.dir * (p.w / 2 + HEADBUTT_RANGE / 2),
+      y: p.y,
+      w: HEADBUTT_RANGE,
+      h: p.h
+    };
+
+    for (let i = state.enemies.length - 1; i >= 0; i--) {
+      const e = state.enemies[i];
+
+      if (hit(box, e)) {
+        killEnemy(i);
+      }
+    }
+  }
+
+  function shootPlayerRay() {
+    const p = state.player;
+
+    if (p.ray <= 0) return;
+    if (p.shotCd > 0) return;
+
+    p.shotCd = PLAYER_SHOT_CD;
+
+    state.playerShots.push({
+      x: p.x + p.dir * 34,
+      y: p.y - 12,
+      vx: p.dir * 460,
+      vy: 0,
+      r: p.giant > 0 ? 10 : 6
+    });
+
+    burst(p.x + p.dir * 34, p.y - 12, 6, 180, 260);
+  }
+
+  function killEnemy(index) {
+    const p = state.player;
     const e = state.enemies[index];
-    const powered = player.ray > 0 || player.giant > 0;
 
-    addParticles(e.x, e.y, e.type === "ray" ? "rainbow" : "red");
+    burst(e.x, e.y, 18, e.ray ? 0 : 90, e.ray ? 360 : 160);
 
-    state.score += e.type === "ray" ? 40 : 10;
+    state.score += e.ray ? 50 : 10;
 
-    if (method === "headbutt") {
-      player.headbuttStreak += 1;
-      awardShieldIfReady();
-    } else {
-      player.headbuttStreak = 0;
+    const powered = p.ray > 0 || p.giant > 0;
+
+    if (e.ray && !powered && p.ray <= 0) {
+      p.ray = RAY_DURATION;
     }
 
     if (!powered) {
-      if (e.type === "ray") {
-        player.ray = RAY_TIME;
-      }
+      p.normalKillsSincePower += 1;
 
-      player.killsForGiant += 1;
-
-      if (player.killsForGiant >= 20) {
-        player.killsForGiant = 0;
-        player.giant = GIANT_TIME;
+      if (p.normalKillsSincePower >= 20) {
+        p.normalKillsSincePower = 0;
+        p.giant = GIANT_DURATION;
       }
     }
 
     state.enemies.splice(index, 1);
 
-    if (
-      state.mode === "final" &&
-      state.finalSpawned >= FINAL_RAY_COUNT &&
-      state.enemies.length === 0
-    ) {
-      startNpcScene();
+    if (state.mode === Mode.FINAL && state.finalSpawned >= FINAL_RAY_COUNT && state.enemies.length === 0) {
+      beginEnding();
     }
   }
 
-  function findDodgeTarget(dx, dy) {
-    let targetX = player.x + dx * DODGE_NORMAL_X;
-    let targetY = player.y + dy * DODGE_NORMAL_Y;
+  // -----------------------------
+  // ENDING
+  // -----------------------------
+  function beginEnding() {
+    if (state.endingStarted) return;
 
-    if (Math.abs(dx) > Math.abs(dy)) {
-      let best = null;
-      let bestDist = Infinity;
+    state.endingStarted = true;
+    state.mode = Mode.NPC_IN;
 
-      for (const e of state.enemies) {
-        const verticalClose = Math.abs(player.y - e.y) < 64;
-        if (!verticalClose) continue;
-
-        const deltaX = e.x - player.x;
-
-        const enemyIsInDodgePath =
-          dx > 0
-            ? deltaX > -24 && deltaX < DODGE_DETECT_RANGE
-            : deltaX < 24 && deltaX > -DODGE_DETECT_RANGE;
-
-        if (!enemyIsInDodgePath) continue;
-
-        const d = Math.abs(deltaX);
-        if (d < bestDist) {
-          bestDist = d;
-          best = e;
-        }
-      }
-
-      if (best) {
-        const enemyHalf = best.w / 2;
-        const playerHalf = 24;
-        targetX = best.x + Math.sign(dx) * (enemyHalf + playerHalf + DODGE_CLEAR_GAP);
-        targetY = player.y;
-      }
-    }
-
-    targetX = clamp(targetX, 25, W - 25);
-    targetY = clamp(targetY, MIN_Y, MAX_Y);
-
-    return { x: targetX, y: targetY };
-  }
-
-  function dodge(dx, dy) {
-    if (player.dodgeCooldown > 0) return;
-    if (player.actionLock > 0) return;
-
-    const mag = Math.hypot(dx, dy);
-    if (mag <= 0) return;
-
-    const nx = dx / mag;
-    const ny = dy / mag;
-    const target = findDodgeTarget(nx, ny);
-
-    player.dodgeStartX = player.x;
-    player.dodgeStartY = player.y;
-    player.dodgeTargetX = target.x;
-    player.dodgeTargetY = target.y;
-    player.dodgeElapsed = 0;
-
-    player.dodgeTimer = DODGE_TIME;
-    player.dodgeCooldown = DODGE_COOLDOWN;
-    player.invuln = Math.max(player.invuln, DODGE_INVULN);
-    player.headTimer = 0;
-    player.headCd = Math.max(player.headCd, 0.12);
-    player.actionLock = 0.12;
-
-    addParticles(player.x, player.y - 20, "shield");
-  }
-
-  function updateDodgeMovement(dt) {
-    if (player.dodgeTimer <= 0) return false;
-
-    player.dodgeElapsed = Math.min(DODGE_TIME, player.dodgeElapsed + dt);
-
-    const raw = clamp(player.dodgeElapsed / DODGE_TIME, 0, 1);
-    const eased = 1 - Math.pow(1 - raw, 2);
-
-    player.x = lerp(player.dodgeStartX, player.dodgeTargetX, eased);
-    player.y = lerp(player.dodgeStartY, player.dodgeTargetY, eased);
-
-    player.x = clamp(player.x, 25, W - 25);
-    player.y = clamp(player.y, MIN_Y, MAX_Y);
-
-    player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);
-
-    if (player.dodgeTimer <= 0) {
-      player.x = player.dodgeTargetX;
-      player.y = player.dodgeTargetY;
-      player.invuln = Math.max(player.invuln, DODGE_LANDING_INVULN);
-    }
-
-    return true;
-  }
-
-  function headbutt() {
-    if (player.headCd > 0) return;
-    if (player.dodgeTimer > 0) return;
-    if (player.actionLock > 0) return;
-
-    player.headCd = 0.24;
-    player.headTimer = 0.15;
-    player.actionLock = 0.08;
-
-    const hitbox = {
-      x: player.x + player.face * 38 - 25,
-      y: player.y - 30,
-      w: 70,
-      h: 48
-    };
-
-    for (let i = state.enemies.length - 1; i >= 0; i--) {
-      const e = state.enemies[i];
-      const box = {
-        x: e.x - 27,
-        y: e.y - 34,
-        w: e.w,
-        h: e.h
-      };
-
-      if (rectsOverlap(hitbox, box)) {
-        killEnemy(i, "headbutt");
-      }
-    }
-  }
-
-  function currentDirection() {
-    let dx = input.dx;
-    let dy = input.dy;
-
-    if (keys.arrowleft || keys.a) dx = -1;
-    if (keys.arrowright || keys.d) dx = 1;
-    if (keys.arrowup || keys.w) dy = -1;
-    if (keys.arrowdown || keys.s) dy = 1;
-
-    const mag = Math.hypot(dx, dy);
-
-    if (mag > 0) {
-      return {
-        dx: dx / mag,
-        dy: dy / mag
-      };
-    }
-
-    return { dx: 0, dy: 0 };
-  }
-
-  function handleAAction() {
-    const aDown = input.a || keys[" "];
-
-    if (!aDown) {
-      player.aConsumed = false;
-      return;
-    }
-
-    if (player.aConsumed) return;
-
-    player.aConsumed = true;
-
-    const dir = currentDirection();
-
-    const comboHappened =
-      dir.dx !== 0 || dir.dy !== 0
-        ? Math.abs(input.lastAPressTime - input.lastDirPressTime) <= DODGE_COMBO_WINDOW
-        : false;
-
-    if (comboHappened) {
-      dodge(input.lastDirX, input.lastDirY);
-      return;
-    }
-
-    headbutt();
-  }
-
-  function playerShoot() {
-    if (player.ray <= 0) return;
-
-    state.playerShots.push({
-      x: player.x + player.face * 34,
-      y: player.y - 32,
-      vx: player.face * (player.giant > 0 ? 520 : 420),
-      r: player.giant > 0 ? 9 : 6,
-      life: 1
-    });
-  }
-
-  function startFinalWave() {
-    state.mode = "final";
-    state.enemies.length = 0;
-    state.enemyShots.length = 0;
     state.playerShots.length = 0;
-    state.finalSpawned = 0;
-    state.finalSpawnTimer = 0;
-  }
-
-  function startNpcScene() {
-    state.mode = "npc";
-    state.enemies.length = 0;
     state.enemyShots.length = 0;
-    state.playerShots.length = 0;
 
-    const fromLeft = player.x > W / 2;
+    state.npc.active = true;
+    state.npc.x = -90;
+    state.npc.y = GROUND_Y;
+    state.npc.vx = 260;
 
-    state.npc = {
-      x: fromLeft ? -30 : W + 30,
-      y: GROUND_Y,
-      vx: fromLeft ? 160 : -160,
-      face: fromLeft ? 1 : -1
-    };
-  }
-
-  function update(dt) {
-    gameClock += dt;
-
-    if (state.resetQueued) {
-      safeLifeReset();
-      updateHud();
-      return;
-    }
-
-    player.invuln = Math.max(0, player.invuln - dt);
-    player.headCd = Math.max(0, player.headCd - dt);
-    player.headTimer = Math.max(0, player.headTimer - dt);
-    player.dodgeCooldown = Math.max(0, player.dodgeCooldown - dt);
-    player.actionLock = Math.max(0, player.actionLock - dt);
-    shootCooldown = Math.max(0, shootCooldown - dt);
-
-    if (player.ray > 0) player.ray = Math.max(0, player.ray - dt);
-    if (player.giant > 0) player.giant = Math.max(0, player.giant - dt);
-
-    updateHealthRegen(dt);
-
-    if (state.mode === "play" || state.mode === "final") {
-      const dir = currentDirection();
-
-      const speed = player.giant > 0 ? 250 : 220;
-
-      if (!updateDodgeMovement(dt)) {
-        player.x += dir.dx * speed * dt;
-        player.y += dir.dy * speed * 0.72 * dt;
-      }
-
-      player.x = clamp(player.x, 25, W - 25);
-      player.y = clamp(player.y, MIN_Y, MAX_Y);
-
-      if (dir.dx !== 0 && player.dodgeTimer <= 0) {
-        player.face = dir.dx > 0 ? 1 : -1;
-      }
-
-      handleAAction();
-
-      if ((input.b || keys.enter) && shootCooldown <= 0) {
-        playerShoot();
-        shootCooldown = 0.18;
-      }
-    }
-
-    if (state.mode === "play") {
-      state.time += dt;
-
-      if (state.time >= LEVEL_TIME) {
-        startFinalWave();
-      } else {
-        state.spawnTimer -= dt;
-
-        if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES) {
-          const wantRay = Math.random() < 0.2;
-          spawnEnemy(wantRay ? "ray" : "normal");
-          state.spawnTimer = rand(0.75, 1.2);
-        }
-      }
-    }
-
-    if (state.mode === "final") {
-      state.finalSpawnTimer -= dt;
-
-      if (state.finalSpawned < FINAL_RAY_COUNT && state.finalSpawnTimer <= 0) {
-        spawnEnemy("ray");
-        state.finalSpawned += 1;
-        state.finalSpawnTimer = 0.9;
-      }
-
-      if (state.finalSpawned >= FINAL_RAY_COUNT && state.enemies.length === 0) {
-        startNpcScene();
-      }
-    }
-
-    updateEnemies(dt);
-    if (state.resetQueued) return;
-
-    updateShots(dt);
-    if (state.resetQueued) return;
-
-    updateParticles(dt);
-    updateEnding(dt);
-    updateHud();
-  }
-
-  function updateEnemies(dt) {
-    if (state.mode !== "play" && state.mode !== "final") return;
-
-    for (let i = state.enemies.length - 1; i >= 0; i--) {
-      const e = state.enemies[i];
-
-      const dx = player.x - e.x;
-      const dy = player.y - e.y;
-
-      e.face = dx >= 0 ? 1 : -1;
-
-      const stopDistance = 28 + e.sep * 16;
-
-      if (Math.abs(dx) > stopDistance) {
-        e.x += Math.sign(dx) * 105 * dt;
-      }
-
-      if (Math.abs(dy) > 3) {
-        e.y += Math.sign(dy) * 70 * dt;
-      }
-
-      e.y = clamp(e.y, MIN_Y + 6, MAX_Y);
-
-      if (e.type === "ray") {
-        e.shootTimer -= dt;
-
-        if (e.shootTimer <= 0) {
-          const sx = e.x + e.face * 28;
-          const sy = e.y - 34;
-          const angle = Math.atan2(player.y - 28 - sy, player.x - sx);
-
-          state.enemyShots.push({
-            x: sx,
-            y: sy,
-            vx: Math.cos(angle) * 290,
-            vy: Math.sin(angle) * 290,
-            r: 6,
-            life: 2
-          });
-
-          e.shootTimer = rand(0.9, 1.4);
-        }
-      }
-
-      if (player.dodgeTimer > 0) {
-        continue;
-      }
-
-      const pBox = {
-        x: player.x - 24,
-        y: player.y - 34,
-        w: 48,
-        h: 40
-      };
-
-      const eBox = {
-        x: e.x - 27,
-        y: e.y - 34,
-        w: e.w,
-        h: e.h
-      };
-
-      if (rectsOverlap(pBox, eBox)) {
-        if (player.headTimer > 0) {
-          killEnemy(i, "headbutt");
-        } else {
-          if (shieldBlockContact()) {
-            state.enemies.splice(i, 1);
-          } else {
-            loseLife();
-            return;
-          }
-        }
-      }
-    }
-  }
-
-  function updateShots(dt) {
-    for (let i = state.playerShots.length - 1; i >= 0; i--) {
-      const b = state.playerShots[i];
-
-      b.x += b.vx * dt;
-      b.life -= dt;
-
-      for (let j = state.enemies.length - 1; j >= 0; j--) {
-        const e = state.enemies[j];
-
-        if (distance(b.x, b.y, e.x, e.y - 25) < b.r + 24) {
-          e.hp -= 1;
-          state.playerShots.splice(i, 1);
-
-          if (e.hp <= 0) killEnemy(j, "ray");
-          break;
-        }
-      }
-
-      if (i < state.playerShots.length) {
-        if (b.life <= 0 || b.x < -100 || b.x > W + 100) {
-          state.playerShots.splice(i, 1);
-        }
-      }
-    }
-
-    for (let i = state.enemyShots.length - 1; i >= 0; i--) {
-      const b = state.enemyShots[i];
-
-      b.x += b.vx * dt;
-      b.y += b.vy * dt;
-      b.life -= dt;
-
-      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 19) {
-        damagePlayerByLaser();
-        state.enemyShots.splice(i, 1);
-        if (state.resetQueued) return;
-        continue;
-      }
-
-      if (
-        b.life <= 0 ||
-        b.x < -100 ||
-        b.x > W + 100 ||
-        b.y < -100 ||
-        b.y > H + 100
-      ) {
-        state.enemyShots.splice(i, 1);
-      }
-    }
-  }
-
-  function updateParticles(dt) {
-    for (let i = state.particles.length - 1; i >= 0; i--) {
-      const p = state.particles[i];
-
-      p.life -= dt;
-      p.x += p.vx * dt;
-      p.y += p.vy * dt;
-      p.vy += 250 * dt;
-
-      if (p.life <= 0) state.particles.splice(i, 1);
-    }
+    state.dialogTimer = 0;
   }
 
   function updateEnding(dt) {
-    if (state.mode === "npc") {
-      if (!state.npc) return;
+    const p = state.player;
 
+    if (state.mode === Mode.NPC_IN) {
       state.npc.x += state.npc.vx * dt;
 
-      const target = player.x + (state.npc.vx > 0 ? -70 : 70);
+      const stopX = p.x - 110;
 
-      if (
-        (state.npc.vx > 0 && state.npc.x >= target) ||
-        (state.npc.vx < 0 && state.npc.x <= target)
-      ) {
-        state.npc.x = target;
+      if (state.npc.x >= stopX) {
+        state.npc.x = stopX;
+        state.mode = Mode.TALK;
         state.dialogTimer = 2.5;
-        state.mode = "talk";
       }
     }
 
-    if (state.mode === "talk") {
+    else if (state.mode === Mode.TALK) {
       state.dialogTimer -= dt;
 
       if (state.dialogTimer <= 0) {
-        state.mode = "exit";
-        state.exitTimer = 1.7;
+        state.mode = Mode.EXIT;
+        state.exitTimer = 1.6;
       }
     }
 
-    if (state.mode === "exit") {
+    else if (state.mode === Mode.EXIT) {
       state.exitTimer -= dt;
 
-      player.face = 1;
-      player.x += 210 * dt;
+      p.x += 260 * dt;
+      state.npc.x = p.x - 55;
+      state.npc.y = p.y - 20;
 
-      if (state.npc) {
-        state.npc.x = player.x - 15;
-        state.npc.y = player.y - 18;
-      }
-
-      if (state.exitTimer <= 0 || player.x > W + 80) {
-        state.mode = "fireworks";
+      if (state.exitTimer <= 0 || p.x > W + 100) {
+        state.mode = Mode.FIREWORKS;
+        state.fireworksTimer = 3.2;
+        state.fireworksCd = 0;
         state.fireworks.length = 0;
-        state.victoryTimer = 3.5;
       }
     }
 
-    if (state.mode === "fireworks") {
-      state.victoryTimer -= dt;
+    else if (state.mode === Mode.FIREWORKS) {
+      state.fireworksTimer -= dt;
+      state.fireworksCd -= dt;
 
-      if (Math.random() < 0.15) spawnFirework();
+      if (state.fireworksCd <= 0) {
+        state.fireworksCd = rand(0.18, 0.35);
+        makeFirework();
+      }
 
       for (let i = state.fireworks.length - 1; i >= 0; i--) {
         const f = state.fireworks[i];
@@ -1013,114 +517,308 @@
         f.life -= dt;
         f.x += f.vx * dt;
         f.y += f.vy * dt;
-        f.vy += 40 * dt;
+        f.vy += 80 * dt;
 
-        if (f.life <= 0) state.fireworks.splice(i, 1);
+        if (f.life <= 0) {
+          state.fireworks.splice(i, 1);
+        }
       }
 
-      if (state.victoryTimer <= 0) {
-        state.mode = "victory";
+      if (state.fireworksTimer <= 0) {
+        state.mode = Mode.VICTORY;
       }
     }
   }
 
-  function spawnFirework() {
-    const cx = rand(120, W - 120);
-    const cy = rand(70, H * 0.48);
-    const hue = rand(0, 360);
+  // -----------------------------
+  // UPDATE
+  // -----------------------------
+  function update(dt) {
+    const p = state.player;
 
-    for (let i = 0; i < 20; i++) {
-      const a = (Math.PI * 2 * i) / 20;
-      const s = rand(50, 120);
+    p.invuln = Math.max(0, p.invuln - dt);
+    p.headbuttCd = Math.max(0, p.headbuttCd - dt);
+    p.headbutting = Math.max(0, p.headbutting - dt);
+    p.shotCd = Math.max(0, p.shotCd - dt);
 
-      state.fireworks.push({
-        x: cx,
-        y: cy,
-        vx: Math.cos(a) * s,
-        vy: Math.sin(a) * s,
-        life: rand(0.6, 1.1),
-        hue
+    if (p.ray > 0) p.ray = Math.max(0, p.ray - dt);
+    if (p.giant > 0) p.giant = Math.max(0, p.giant - dt);
+
+    if (
+      state.mode === Mode.NPC_IN ||
+      state.mode === Mode.TALK ||
+      state.mode === Mode.EXIT ||
+      state.mode === Mode.FIREWORKS ||
+      state.mode === Mode.VICTORY
+    ) {
+      updateEnding(dt);
+      updateFX(dt);
+      updateHUD();
+      return;
+    }
+
+    let dx = input.dx;
+    let dy = input.dy;
+
+    if (keys["arrowleft"] || keys["a"]) dx = -1;
+    if (keys["arrowright"] || keys["d"]) dx = 1;
+    if (keys["arrowup"] || keys["w"]) dy = -1;
+    if (keys["arrowdown"] || keys["s"]) dy = 1;
+
+    const mag = Math.hypot(dx, dy);
+    if (mag > 1) {
+      dx /= mag;
+      dy /= mag;
+    }
+
+    if (input.attack || keys[" "]) doHeadbutt();
+    if (input.shoot || keys["enter"]) shootPlayerRay();
+
+    const sizeBoost = p.giant > 0 ? 1.12 : 1;
+
+    p.x += dx * PLAYER_SPEED * sizeBoost * dt;
+    p.y += dy * PLAYER_SPEED * 0.65 * sizeBoost * dt;
+
+    p.x = clamp(p.x, 28, W - 28);
+    p.y = clamp(p.y, MIN_Y, MAX_Y);
+
+    if (Math.abs(dx) > 0.1) p.dir = dx > 0 ? 1 : -1;
+
+    if (state.mode === Mode.PLAY) {
+      state.timeLeft -= dt;
+
+      if (state.timeLeft <= 0) {
+        state.timeLeft = 0;
+        state.mode = Mode.FINAL;
+        state.finalSpawned = 0;
+        state.finalSpawnCd = 0;
+      } else {
+        updateSpawning(dt);
+      }
+    }
+
+    updateFinalWave(dt);
+    updateEnemies(dt);
+    updateShots(dt);
+    updateFX(dt);
+    updateHUD();
+  }
+
+  function updateEnemies(dt) {
+    const p = state.player;
+
+    for (let i = state.enemies.length - 1; i >= 0; i--) {
+      const e = state.enemies[i];
+
+      const dirX = p.x >= e.x ? 1 : -1;
+      const targetX = p.x - dirX * (36 + 18 * e.sep);
+
+      e.x += clamp(targetX - e.x, -1, 1) * ENEMY_SPEED * dt;
+      e.y += clamp(p.y - e.y, -1, 1) * ENEMY_Y_SPEED * dt;
+      e.y = clamp(e.y, MIN_Y + 4, MAX_Y);
+
+      if (e.ray) {
+        e.shootCd -= dt;
+
+        if (e.shootCd <= 0) {
+          e.shootCd = rand(1.0, 1.6);
+
+          const sx = e.x + dirX * 32;
+          const sy = e.y - 14;
+          const angle = Math.atan2((p.y - 10) - sy, p.x - sx);
+
+          state.enemyShots.push({
+            x: sx,
+            y: sy,
+            vx: Math.cos(angle) * 340,
+            vy: Math.sin(angle) * 340,
+            r: 6,
+            hue: 0
+          });
+        }
+      }
+
+      if (hit(p, e)) {
+        if (p.headbutting > 0) {
+          killEnemy(i);
+        } else {
+          damagePlayer(DMG_CONTACT);
+          p.x += (p.x >= e.x ? 1 : -1) * 24;
+          p.x = clamp(p.x, 28, W - 28);
+        }
+      }
+    }
+  }
+
+  function updateShots(dt) {
+    const p = state.player;
+
+    for (let i = state.playerShots.length - 1; i >= 0; i--) {
+      const s = state.playerShots[i];
+
+      s.x += s.vx * dt;
+
+      for (let j = state.enemies.length - 1; j >= 0; j--) {
+        const e = state.enemies[j];
+
+        const dx = e.x - s.x;
+        const dy = (e.y - 12) - s.y;
+        const rr = s.r + 22;
+
+        if (dx * dx + dy * dy <= rr * rr) {
+          e.hp -= p.giant > 0 ? 2 : 1;
+          state.playerShots.splice(i, 1);
+          burst(s.x, s.y, 8, 180, 260);
+
+          if (e.hp <= 0) killEnemy(j);
+
+          break;
+        }
+      }
+
+      if (s.x < -100 || s.x > W + 100) {
+        state.playerShots.splice(i, 1);
+      }
+    }
+
+    for (let i = state.enemyShots.length - 1; i >= 0; i--) {
+      const s = state.enemyShots[i];
+
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+
+      state.fx.push({
+        x: s.x,
+        y: s.y,
+        vx: rand(-20, 20),
+        vy: rand(-20, 20),
+        life: 0.15,
+        hue: 0
       });
+
+      const shotBox = {
+        x: s.x,
+        y: s.y,
+        w: s.r * 2,
+        h: s.r * 2
+      };
+
+      if (hit(p, shotBox)) {
+        damagePlayer(DMG_LASER);
+        state.enemyShots.splice(i, 1);
+        continue;
+      }
+
+      if (s.x < -100 || s.x > W + 100 || s.y < -100 || s.y > H + 100) {
+        state.enemyShots.splice(i, 1);
+      }
     }
   }
 
-  function updateHud() {
-    if (livesEl) {
-      const regenText =
-        player.hp < HP_MAX
-          ? ` | Regen: ${Math.ceil(player.regenTimer)}s`
-          : "";
+  function updateFX(dt) {
+    for (let i = state.fx.length - 1; i >= 0; i--) {
+      const f = state.fx[i];
 
-      livesEl.textContent =
-        `Lives: ${player.lives} | Shield: ${player.shieldCharges}/2 | HB: ${player.headbuttStreak}/10${regenText}`;
+      f.life -= dt;
+      f.x += f.vx * dt;
+      f.y += f.vy * dt;
+      f.vy += 120 * dt;
+
+      if (f.life <= 0) {
+        state.fx.splice(i, 1);
+      }
+    }
+  }
+
+  function updateHUD() {
+    const p = state.player;
+
+    if (hudLives) hudLives.textContent = `🦄 x ${p.lives}`;
+    if (hudScore) hudScore.textContent = `Score: ${state.score}`;
+    if (hudTime) hudTime.textContent = `Time: ${Math.ceil(state.timeLeft)}s`;
+
+    if (powerFill) {
+      let percent = 0;
+      let label = "Power";
+
+      if (p.ray > 0) {
+        percent = p.ray / RAY_DURATION;
+        label = "Power ✨ Ray";
+      } else if (p.giant > 0) {
+        percent = p.giant / GIANT_DURATION;
+        label = "Power 💪 Giant";
+      } else {
+        percent = p.normalKillsSincePower / 20;
+      }
+
+      powerFill.style.width = `${Math.floor(clamp(percent, 0, 1) * 100)}%`;
+      if (powerLabel) powerLabel.textContent = label;
+    }
+  }
+
+  // -----------------------------
+  // DRAW
+  // -----------------------------
+  function draw() {
+    drawBackground();
+    drawHealthBar();
+
+    for (const e of state.enemies) drawZombieUnicorn(e);
+    drawShots();
+    drawFX();
+    drawPlayerUnicorn();
+
+    drawNPC();
+    drawDialog();
+    drawFireworks();
+
+    if (state.player.invuln > 0) {
+      ctx.fillStyle = "rgba(255,255,255,0.08)";
+      ctx.fillRect(0, 0, W, H);
     }
 
-    if (scoreEl) scoreEl.textContent = `Score: ${state.score}`;
-
-    if (timeEl) {
-      const remaining =
-        state.mode === "play"
-          ? Math.max(0, Math.ceil(LEVEL_TIME - state.time))
-          : 0;
-
-      timeEl.textContent = `Time: ${remaining}s`;
-    }
-
-    let pct = player.killsForGiant / 20;
-    let label = "Power";
-
-    if (player.ray > 0) {
-      pct = player.ray / RAY_TIME;
-      label = "Ray";
-    }
-
-    if (player.giant > 0) {
-      pct = player.giant / GIANT_TIME;
-      label = "Giant";
-    }
-
-    if (player.dodgeCooldown > 0 && player.dodgeTimer <= 0) {
-      label = "Dodge";
-    }
-
-    if (powerFillEl) {
-      powerFillEl.style.width = `${Math.floor(clamp(pct, 0, 1) * 100)}%`;
-    }
-
-    if (powerLabelEl) {
-      powerLabelEl.textContent = label;
-    }
+    drawVersion();
   }
 
   function drawBackground() {
-    ctx.fillStyle = "#77ccff";
+    // Sky gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0, "#7ed6ff");
+    grad.addColorStop(0.45, "#d8f5ff");
+    grad.addColorStop(1, "#a8f0b4");
+
+    ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    ctx.fillStyle = "#a7e9ff";
-    ctx.fillRect(0, 90, W, 90);
+    // Park hills
+    ctx.fillStyle = "#5ed672";
+    ctx.beginPath();
+    ctx.arc(W * 0.18, GROUND_Y + 50, 170, Math.PI, 0);
+    ctx.arc(W * 0.50, GROUND_Y + 55, 220, Math.PI, 0);
+    ctx.arc(W * 0.82, GROUND_Y + 50, 170, Math.PI, 0);
+    ctx.fill();
 
-    ctx.fillStyle = "#8be37a";
-    ctx.fillRect(0, H * 0.58, W, H * 0.42);
+    // Rainbow
+    drawRainbow(W * 0.67, GROUND_Y + 28, 220);
 
-    drawRainbow(W * 0.62, GROUND_Y + 10, 240);
+    // Trees
+    for (let x = 50; x < W; x += 180) {
+      drawTree(x, GROUND_Y - 26);
+    }
 
-    drawCloud(120, 70);
-    drawCloud(390, 55);
-    drawCloud(750, 85);
+    // Grass
+    ctx.fillStyle = "#2ecc71";
+    ctx.fillRect(0, GROUND_Y + 8, W, H - GROUND_Y);
 
-    drawTree(90, GROUND_Y + 16);
-    drawTree(820, GROUND_Y + 18);
-
-    ctx.fillStyle = "#7a4a2a";
-    ctx.fillRect(0, GROUND_Y + 20, W, H - GROUND_Y);
-
-    ctx.fillStyle = "#29c768";
-    ctx.fillRect(0, GROUND_Y + 8, W, 18);
+    // Dirt
+    ctx.fillStyle = "#8b5a2b";
+    ctx.fillRect(0, GROUND_Y + 34, W, H - GROUND_Y - 34);
   }
 
   function drawRainbow(cx, cy, r) {
-    const colors = ["#ff3b64", "#ff8a00", "#ffe600", "#36dd5c", "#21c9ff", "#8a42ff"];
-    ctx.lineWidth = 16;
+    const colors = ["#ff3355", "#ff9933", "#ffe34d", "#47df6a", "#39c8ff", "#8a5cff"];
+
+    ctx.lineWidth = 15;
 
     for (let i = 0; i < colors.length; i++) {
       ctx.strokeStyle = colors[i];
@@ -1130,136 +828,220 @@
     }
   }
 
-  function drawCloud(x, y) {
-    ctx.fillStyle = "rgba(255,255,255,.92)";
-    ctx.fillRect(x, y, 70, 22);
-    ctx.fillRect(x + 15, y - 14, 42, 22);
-    ctx.fillRect(x + 40, y - 6, 46, 20);
-  }
-
   function drawTree(x, y) {
-    ctx.fillStyle = "#75421f";
-    ctx.fillRect(x - 8, y - 70, 16, 70);
+    ctx.fillStyle = "#8b5a2b";
+    ctx.fillRect(x - 8, y - 10, 16, 42);
 
-    ctx.fillStyle = "#238b45";
-    ctx.fillRect(x - 38, y - 105, 76, 35);
-    ctx.fillRect(x - 28, y - 130, 56, 35);
+    ctx.fillStyle = "#1fa64a";
+    ctx.beginPath();
+    ctx.arc(x, y - 20, 28, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x - 22, y - 8, 24, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x + 22, y - 8, 24, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   function drawHealthBar() {
-    const x = 18;
+    const p = state.player;
+
+    const x = 16;
     const y = 52;
     const w = 210;
     const h = 16;
 
-    ctx.fillStyle = "rgba(0,0,0,.45)";
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
     ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
 
-    ctx.fillStyle = "#fff";
+    ctx.fillStyle = "#ffffff";
     ctx.fillRect(x, y, w, h);
 
-    ctx.fillStyle = player.hp > 1 ? "#2de06e" : "#ff3b3b";
-    ctx.fillRect(x, y, w * clamp(player.hp / HP_MAX, 0, 1), h);
+    const frac = clamp(p.hp / HP_MAX, 0, 1);
 
-    ctx.strokeStyle = "#111";
+    ctx.fillStyle = frac > 0.5 ? "#39d66b" : frac > 0.25 ? "#ffd34d" : "#ff4d4d";
+    ctx.fillRect(x, y, w * frac, h);
+
+    ctx.strokeStyle = "#000";
     ctx.lineWidth = 2;
     ctx.strokeRect(x, y, w, h);
 
     ctx.fillStyle = "#111";
     ctx.font = "13px monospace";
-    ctx.fillText(`HP ${player.hp}/${HP_MAX}`, x + 8, y + 13);
+    ctx.fillText(`HP ${Math.ceil(p.hp)}/${HP_MAX}`, x + 8, y + 13);
   }
 
-  function drawShieldAura() {
-    if (player.shieldCharges <= 0) return;
+  function drawPlayerUnicorn() {
+    const p = state.player;
+
+    const scale = p.giant > 0 ? 1.28 : 1;
 
     ctx.save();
-    ctx.globalAlpha = 0.35;
-    ctx.strokeStyle = "#66d9ff";
-    ctx.lineWidth = 5;
+    ctx.translate(p.x, p.y);
+    ctx.scale(p.dir * scale, scale);
+
+    // body
+    ctx.fillStyle = "#ff73b7";
+    ctx.fillRect(-25, -18, 50, 24);
+
+    // legs
+    ctx.fillStyle = "#ec4f9c";
+    ctx.fillRect(-20, 2, 8, 18);
+    ctx.fillRect(12, 2, 8, 18);
+
+    // head
+    ctx.fillStyle = "#ff73b7";
+    ctx.fillRect(16, -28, 25, 22);
+
+    // nose
+    ctx.fillStyle = "#ffc0dc";
+    ctx.fillRect(32, -18, 12, 9);
+
+    // horn
+    ctx.fillStyle = "#ffd84d";
     ctx.beginPath();
-    ctx.arc(player.x, player.y - 22, 44, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.moveTo(30, -30);
+    ctx.lineTo(36, -47);
+    ctx.lineTo(42, -30);
+    ctx.closePath();
+    ctx.fill();
+
+    // eye
+    ctx.fillStyle = "#111";
+    ctx.fillRect(30, -22, 4, 4);
+
+    // mane
+    ctx.fillStyle = "#39c8ff";
+    ctx.fillRect(-22, -30, 12, 14);
+    ctx.fillStyle = "#8a5cff";
+    ctx.fillRect(-10, -30, 12, 14);
+    ctx.fillStyle = "#ffe34d";
+    ctx.fillRect(2, -30, 12, 14);
+
+    // tail
+    ctx.fillStyle = "#39c8ff";
+    ctx.fillRect(-36, -15, 14, 8);
+    ctx.fillStyle = "#8a5cff";
+    ctx.fillRect(-40, -7, 18, 8);
+
+    // ray icon above player
+    if (p.ray > 0) {
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(-12, -58, 24, 10);
+      ctx.fillStyle = "#39c8ff";
+      ctx.fillRect(-10, -56, 20, 6);
+    }
+
     ctx.restore();
   }
 
-  function drawDodgeEffect() {
-    if (player.dodgeTimer <= 0) return;
+  function drawZombieUnicorn(e) {
+    const dir = state.player.x >= e.x ? 1 : -1;
 
     ctx.save();
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(player.x - 34, player.y - 52, 68, 58);
+    ctx.translate(e.x, e.y);
+    ctx.scale(dir, 1);
 
-    ctx.globalAlpha = 0.5;
-    ctx.strokeStyle = "#66d9ff";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(player.x, player.y - 24, 38, 0, Math.PI * 2);
-    ctx.stroke();
+    const body = e.ray ? "#44e06d" : "#58c96a";
+    const dark = e.ray ? "#198a3a" : "#2b8a45";
 
-    ctx.restore();
-  }
-
-  function drawUnicorn(x, y, face, zombie = false, ray = false, giant = false) {
-    const s = giant ? 1.35 : 1;
-
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(face * s, s);
-
-    const body = zombie ? "#63d884" : "#ff7fbd";
-    const dark = zombie ? "#299452" : "#ff4da3";
-
-    const mane = zombie
-      ? ["#bbffd1", "#7df1a5", "#44c982"]
-      : ["#ff4d6d", "#ffa94d", "#ffe066", "#66ff66", "#66d9ff", "#b066ff"];
-
+    // body
     ctx.fillStyle = body;
-    ctx.fillRect(-28, -26, 50, 24);
+    ctx.fillRect(-25, -18, 50, 24);
 
+    // legs
     ctx.fillStyle = dark;
-    ctx.fillRect(-20, -4, 8, 18);
-    ctx.fillRect(6, -4, 8, 18);
+    ctx.fillRect(-20, 2, 8, 18);
+    ctx.fillRect(12, 2, 8, 18);
 
+    // head
     ctx.fillStyle = body;
-    ctx.fillRect(18, -34, 28, 20);
+    ctx.fillRect(16, -28, 25, 22);
 
-    ctx.fillStyle = "#ffe066";
-    ctx.fillRect(38, -48, 6, 16);
+    // zombie nose
+    ctx.fillStyle = "#c8ffce";
+    ctx.fillRect(32, -18, 12, 9);
 
-    for (let i = 0; i < mane.length; i++) {
-      ctx.fillStyle = mane[i];
-      ctx.fillRect(-24 + i * 7, -36, 8, 12);
-    }
+    // horn
+    ctx.fillStyle = "#ffef75";
+    ctx.beginPath();
+    ctx.moveTo(30, -30);
+    ctx.lineTo(36, -47);
+    ctx.lineTo(42, -30);
+    ctx.closePath();
+    ctx.fill();
 
-    ctx.fillStyle = zombie ? "#ff1e1e" : "#111";
-    ctx.fillRect(34, -27, 4, 4);
+    // red eyes but subtle
+    ctx.fillStyle = e.ray ? "#ff1f1f" : "#7c1414";
+    ctx.fillRect(30, -22, 4, 4);
 
-    if (ray) {
-      ctx.fillStyle = "rgba(255,255,255,.5)";
-      ctx.fillRect(-10, -43, 26, 5);
+    // messy mane
+    ctx.fillStyle = "#133f22";
+    ctx.fillRect(-18, -30, 9, 14);
+    ctx.fillRect(-7, -28, 9, 12);
+
+    // tail
+    ctx.fillStyle = "#133f22";
+    ctx.fillRect(-38, -13, 16, 8);
+
+    // ray zombie marking
+    if (e.ray) {
+      ctx.fillStyle = "rgba(255,255,255,0.35)";
+      ctx.fillRect(-10, -36, 20, 5);
     }
 
     ctx.restore();
   }
 
-  function drawNpc() {
-    if (!state.npc) return;
+  function drawShots() {
+    for (const s of state.playerShots) {
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
 
-    const n = state.npc;
+      ctx.fillStyle = "#39c8ff";
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, Math.max(2, s.r - 3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    for (const s of state.enemyShots) {
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#ff3333";
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, Math.max(2, s.r - 3), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  function drawFX() {
+    for (const f of state.fx) {
+      const a = clamp(f.life / 0.6, 0, 1);
+      ctx.fillStyle = `hsla(${f.hue}, 90%, 60%, ${a})`;
+      ctx.fillRect(f.x, f.y, 3, 3);
+    }
+  }
+
+  function drawNPC() {
+    if (!state.npc.active) return;
 
     ctx.save();
-    ctx.translate(n.x, n.y);
+    ctx.translate(state.npc.x, state.npc.y);
 
-    ctx.fillStyle = "#5137ff";
-    ctx.fillRect(-10, -38, 20, 30);
+    ctx.fillStyle = "#4d5cff";
+    ctx.fillRect(-9, -34, 18, 26);
 
-    ctx.fillStyle = "#ffd6aa";
-    ctx.fillRect(-8, -55, 16, 16);
+    ctx.fillStyle = "#ffd8b0";
+    ctx.fillRect(-8, -52, 16, 16);
 
-    ctx.fillStyle = "#24160f";
-    ctx.fillRect(-8, -57, 16, 6);
+    ctx.fillStyle = "#222";
+    ctx.fillRect(-8, -52, 16, 5);
 
     ctx.fillStyle = "#222";
     ctx.fillRect(-8, -8, 6, 12);
@@ -1268,100 +1050,100 @@
     ctx.restore();
   }
 
-  function drawShots() {
-    for (const b of state.playerShots) {
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(b.x - 10, b.y - 3, 20, 6);
-
-      ctx.fillStyle = "#66d9ff";
-      ctx.fillRect(b.x - 7, b.y - 2, 14, 4);
-    }
-
-    for (const b of state.enemyShots) {
-      ctx.fillStyle = "#ff2a2a";
-      ctx.fillRect(b.x - 8, b.y - 3, 16, 6);
-
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(b.x - 4, b.y - 2, 8, 4);
-    }
-  }
-
-  function drawParticles() {
-    for (const p of state.particles) {
-      ctx.fillStyle = `hsla(${p.hue},90%,60%,${clamp(p.life / 0.65, 0, 1)})`;
-      ctx.fillRect(p.x, p.y, 3, 3);
-    }
-  }
-
   function drawDialog() {
-    if (state.mode !== "talk") return;
+    if (state.mode !== Mode.TALK) return;
 
-    const x = 90;
-    const y = 72;
-    const w = W - 180;
-    const h = 84;
+    const boxW = Math.min(W - 80, 620);
+    const boxH = 92;
+    const x = (W - boxW) / 2;
+    const y = 76;
 
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(x, y, w, h);
-
+    ctx.fillStyle = "#ffffff";
     ctx.strokeStyle = "#111";
     ctx.lineWidth = 4;
-    ctx.strokeRect(x, y, w, h);
+
+    roundRect(x, y, boxW, boxH, 10);
+    ctx.fill();
+    ctx.stroke();
 
     ctx.fillStyle = "#111";
-    ctx.font = "20px monospace";
-    ctx.fillText("You killed all of the zombies here!", x + 22, y + 35);
-    ctx.fillText("Thank you! I was so scared.", x + 22, y + 62);
+    ctx.font = "18px monospace";
+    ctx.fillText("You killed all of the zombies here!", x + 18, y + 34);
+    ctx.fillText("Thank you! I was so scared.", x + 18, y + 62);
   }
 
   function drawFireworks() {
-    if (state.mode !== "fireworks" && state.mode !== "victory") return;
+    if (state.mode !== Mode.FIREWORKS && state.mode !== Mode.VICTORY) return;
 
-    ctx.fillStyle = "rgba(0,0,0,.25)";
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
     ctx.fillRect(0, 0, W, H);
 
     for (const f of state.fireworks) {
-      ctx.fillStyle = `hsla(${f.hue},90%,60%,${clamp(f.life, 0, 1)})`;
+      const a = clamp(f.life / 1.2, 0, 1);
+      ctx.fillStyle = `hsla(${f.hue}, 90%, 60%, ${a})`;
       ctx.fillRect(f.x, f.y, 4, 4);
     }
 
-    ctx.fillStyle = "#fff";
-    ctx.font = "34px monospace";
-    ctx.fillText("Victory: Stage 1 Completed!", 170, 280);
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "30px monospace";
+    ctx.fillText("Victory: Stage 1 Completed!", W / 2 - 230, H / 2);
   }
 
-  function draw() {
-    drawBackground();
-    drawHealthBar();
+  function drawVersion() {
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.font = "10px monospace";
+    ctx.fillText(VERSION, W - 36, H - 8);
+  }
 
-    for (const e of state.enemies) {
-      drawUnicorn(e.x, e.y, e.face, true, e.type === "ray", false);
-    }
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
 
-    drawShots();
-    drawParticles();
-
-    if (state.mode !== "fireworks" && state.mode !== "victory") {
-      drawShieldAura();
-      drawDodgeEffect();
-      drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);
-    }
-
-    drawNpc();
-    drawDialog();
-    drawFireworks();
-
-    if (player.invuln > 0) {
-      ctx.fillStyle = "rgba(255,255,255,.08)";
-      ctx.fillRect(0, 0, W, H);
+  function burst(x, y, count, hueMin, hueMax) {
+    for (let i = 0; i < count; i++) {
+      state.fx.push({
+        x,
+        y,
+        vx: rand(-120, 120),
+        vy: rand(-160, 40),
+        life: rand(0.25, 0.6),
+        hue: rand(hueMin, hueMax)
+      });
     }
   }
 
-  let last = performance.now();
+  function makeFirework() {
+    const x = rand(90, W - 90);
+    const y = rand(60, H * 0.45);
+    const hue = rand(0, 360);
 
+    for (let i = 0; i < 24; i++) {
+      const a = rand(0, Math.PI * 2);
+      const sp = rand(70, 190);
+
+      state.fireworks.push({
+        x,
+        y,
+        vx: Math.cos(a) * sp,
+        vy: Math.sin(a) * sp,
+        life: rand(0.7, 1.25),
+        hue
+      });
+    }
+  }
+
+  // -----------------------------
+  // LOOP
+  // -----------------------------
   function loop(now) {
-    const dt = Math.min(0.033, (now - last) / 1000);
-    last = now;
+    const dt = Math.min(0.033, (now - state.last) / 1000);
+    state.last = now;
 
     update(dt);
     draw();
@@ -1369,6 +1151,8 @@
     requestAnimationFrame(loop);
   }
 
-  fullRestart();
+  // Start gentle
+  spawnEnemy(false);
+  updateHUD();
   requestAnimationFrame(loop);
 })();
