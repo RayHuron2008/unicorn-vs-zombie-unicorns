@@ -1,6 +1,24 @@
 (() => {
   "use strict";
 
+  // Move the D-pad and A/B buttons higher on the screen.
+  // Change 24vh higher/lower if needed.
+  function raiseControls() {
+    const style = document.createElement("style");
+    style.textContent = `
+      #controls {
+        bottom: clamp(90px, 24vh, 180px) !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", raiseControls);
+  } else {
+    raiseControls();
+  }
+
   const OLD_STYLE_GAME_URL =
     "https://raw.githubusercontent.com/RayHuron2008/unicorn-vs-zombie-unicorns/8ab7caef24e7428def29e858f3cda8cd183fb939/game.js";
 
@@ -37,7 +55,7 @@
         "const MAX_ENEMIES = 2;"
       );
 
-      const run = new Function(code + "\n//# sourceURL=old-style-game-v43.js");
+      const run = new Function(code + "\n//# sourceURL=old-style-game-v44.js");
       run();
     })
     .catch(showLoadError);
