@@ -7,7 +7,7 @@
     const style = document.createElement("style");
     style.textContent = `
       #controls {
-        bottom: clamp(90px, 24vh, 180px) !important;
+        bottom: clamp(50px, 13vh, 100px) !important;
       }
     `;
     document.head.appendChild(style);
