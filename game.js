@@ -20,7 +20,7 @@
         justify-content: stretch;
         background:
           linear-gradient(rgba(0,0,0,.10), rgba(0,0,0,.18)),
-          url("title-screen.png") center center / cover no-repeat;
+          url("file_00000000f918720c83fd75d0289cbfa4.png") center center / cover no-repeat;
       }
 
       #menuShade {
