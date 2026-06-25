@@ -1,23 +1,125 @@
 (() => {
   "use strict";
 
-  // Keep controls at the comfortable middle-low position
-  function adjustControls() {
+  // --------------------------------------------------
+  // Small layout helpers
+  // --------------------------------------------------
+  function injectLayoutTweaks() {
     const style = document.createElement("style");
     style.textContent = `
       #controls {
-        bottom: clamp(50px, 13vh, 100px) !important;
+        bottom: clamp(34px, 10vh, 72px) !important;
+      }
+
+      #menuOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: stretch;
+        justify-content: stretch;
+        background:
+          linear-gradient(rgba(0,0,0,.10), rgba(0,0,0,.18)),
+          url("title-screen.png") center center / cover no-repeat;
+      }
+
+      #menuShade {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to bottom, rgba(255,255,255,.04), rgba(0,0,0,.14));
+      }
+
+      #menuPanel {
+        position: absolute;
+        left: 4.5%;
+        bottom: 6%;
+        width: min(34vw, 360px);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .menuBtn {
+        appearance: none;
+        border: 0;
+        border-radius: 18px;
+        padding: 16px 18px;
+        font: 900 24px system-ui, sans-serif;
+        color: #fff;
+        background: linear-gradient(180deg, #ff84c5, #ff4ca2);
+        box-shadow:
+          0 6px 0 #b22467,
+          inset 0 2px 0 rgba(255,255,255,.35),
+          0 8px 18px rgba(0,0,0,.28);
+        text-shadow: 0 2px 2px rgba(0,0,0,.35);
+      }
+
+      .menuBtn:active {
+        transform: translateY(2px);
+        box-shadow:
+          0 4px 0 #b22467,
+          inset 0 2px 0 rgba(255,255,255,.35),
+          0 6px 12px rgba(0,0,0,.28);
+      }
+
+      #difficultyRow {
+        display: flex;
+        gap: 10px;
+      }
+
+      .diffBtn {
+        flex: 1;
+        appearance: none;
+        border: 3px solid rgba(76, 38, 112, .92);
+        border-radius: 16px;
+        padding: 12px 10px;
+        font: 900 17px system-ui, sans-serif;
+        color: #4b2670;
+        background: rgba(255,255,255,.90);
+        box-shadow:
+          inset 0 2px 0 rgba(255,255,255,.60),
+          0 5px 14px rgba(0,0,0,.20);
+      }
+
+      .diffBtn.active {
+        color: #fff;
+        background: linear-gradient(180deg, #8b6fff, #5a45d8);
+      }
+
+      #menuHint {
+        color: #fff;
+        font: 700 14px system-ui, sans-serif;
+        text-shadow: 0 2px 4px rgba(0,0,0,.6);
+        padding: 2px 6px;
+      }
+
+      @media (max-width: 900px) {
+        #menuPanel {
+          left: 4%;
+          right: 4%;
+          width: auto;
+          bottom: 5%;
+        }
+        .menuBtn {
+          font-size: 22px;
+        }
+        .diffBtn {
+          font-size: 16px;
+        }
       }
     `;
     document.head.appendChild(style);
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", adjustControls);
+    document.addEventListener("DOMContentLoaded", injectLayoutTweaks);
   } else {
-    adjustControls();
+    injectLayoutTweaks();
   }
 
+  // --------------------------------------------------
+  // Pull the last working core game
+  // --------------------------------------------------
   const OLD_STYLE_GAME_URL =
     "https://raw.githubusercontent.com/RayHuron2008/unicorn-vs-zombie-unicorns/8ab7caef24e7428def29e858f3cda8cd183fb939/game.js";
 
@@ -75,6 +177,53 @@
     return code.slice(0, start) + replacement + code.slice(end);
   }
 
+  function createTitleMenu() {
+    const existing = document.getElementById("menuOverlay");
+    if (existing) existing.remove();
+
+    const hud = document.getElementById("hud");
+    const controls = document.getElementById("controls");
+
+    if (hud) hud.style.display = "none";
+    if (controls) controls.style.display = "none";
+
+    const overlay = document.createElement("div");
+    overlay.id = "menuOverlay";
+    overlay.innerHTML = `
+      <div id="menuShade"></div>
+      <div id="menuPanel">
+        <button id="playBtn" class="menuBtn">⭐ PLAY ⭐</button>
+        <div id="difficultyRow">
+          <button class="diffBtn active" data-diff="Easy">Easy</button>
+          <button class="diffBtn" data-diff="Normal">Normal</button>
+          <button class="diffBtn" data-diff="Chaos">Chaos</button>
+        </div>
+        <div id="menuHint">Tap a difficulty, then tap PLAY</div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    let selected = "Easy";
+
+    const diffButtons = [...overlay.querySelectorAll(".diffBtn")];
+    diffButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        selected = btn.dataset.diff;
+        diffButtons.forEach((b) => b.classList.toggle("active", b === btn));
+      });
+    });
+
+    const playBtn = overlay.querySelector("#playBtn");
+    playBtn.addEventListener("click", () => {
+      if (typeof window.__uvzuStartGame === "function") {
+        window.__uvzuStartGame(selected);
+      }
+      overlay.remove();
+      if (hud) hud.style.display = "";
+      if (controls) controls.style.display = "";
+    });
+  }
+
   fetch(OLD_STYLE_GAME_URL, { cache: "no-store" })
     .then((response) => {
       if (!response.ok) {
@@ -83,7 +232,9 @@
       return response.text();
     })
     .then((code) => {
-      // Difficulty variables. Easy is the default.
+      // ----------------------------------------------
+      // Difficulty variables
+      // ----------------------------------------------
       code = code.replace(
         "const MAX_ENEMIES = 4;",
         `let MAX_ENEMIES = 2;
@@ -114,12 +265,13 @@
         "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;"
       );
 
-      // Background upgrade only. Characters stay old-working style for now.
+      // ----------------------------------------------
+      // Nice background from the working safer version
+      // ----------------------------------------------
       code = replaceFunction(
         code,
         "drawBackground",
 `  function drawBackground() {
-    // Sky
     const sky = ctx.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, "#75d8ff");
     sky.addColorStop(0.38, "#c8f4ff");
@@ -128,7 +280,6 @@
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
-    // Sun
     const sunX = W * 0.14;
     const sunY = H * 0.16;
     const sunGlow = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 90);
@@ -138,7 +289,6 @@
     ctx.fillStyle = sunGlow;
     ctx.fillRect(0, 0, W, H);
 
-    // Distant hills
     ctx.fillStyle = "#79d968";
     ctx.beginPath();
     ctx.moveTo(0, H * 0.58);
@@ -160,7 +310,6 @@
     ctx.closePath();
     ctx.fill();
 
-    // Rainbow
     const rx = W * 0.64;
     const ry = H * 0.63;
     const rr = Math.min(W, H) * 0.30;
@@ -173,7 +322,6 @@
       ctx.stroke();
     }
 
-    // Clouds
     function drawCloud(x, y, s) {
       ctx.save();
       ctx.translate(x, y);
@@ -191,7 +339,6 @@
     drawCloud(315, 48, 0.9);
     drawCloud(650, 88, 1.1);
 
-    // Trees
     function drawTree(x, y, s) {
       ctx.save();
       ctx.translate(x, y);
@@ -216,7 +363,6 @@
     drawTree(75, GROUND_Y + 18, 0.95);
     drawTree(W - 72, GROUND_Y + 18, 1.05);
 
-    // Main meadow
     const meadow = ctx.createLinearGradient(0, H * 0.54, 0, H);
     meadow.addColorStop(0, "#8df06f");
     meadow.addColorStop(0.55, "#4dd45d");
@@ -224,7 +370,6 @@
     ctx.fillStyle = meadow;
     ctx.fillRect(0, H * 0.56, W, H * 0.44);
 
-    // Curved grass depth stripes
     for (let i = 0; i < 8; i++) {
       const y = H * 0.60 + i * 27;
       ctx.strokeStyle = i % 2 === 0
@@ -237,7 +382,6 @@
       ctx.stroke();
     }
 
-    // Flower dots
     const flowerColors = ["#fff47a", "#ff79c6", "#ffffff", "#ff9f43", "#b36bff"];
     for (let i = 0; i < 90; i++) {
       const x = (i * 97) % W;
@@ -246,7 +390,6 @@
       ctx.fillRect(x, y, 3, 3);
     }
 
-    // Foreground edge
     ctx.fillStyle = "#35c85f";
     ctx.fillRect(0, GROUND_Y + 8, W, 22);
 
@@ -255,22 +398,15 @@
   }`
       );
 
-      // Replace the automatic start with a title menu + difficulty start.
+      // ----------------------------------------------
+      // Replace boot with title-screen hold
+      // ----------------------------------------------
       code = replaceBoot(
         code,
 `  let last = performance.now();
-  let screen = "title";
-  let selectedDifficulty = "Easy";
+  let gameStarted = false;
 
-  const menuButtons = [
-    { label: "EASY", difficulty: "Easy", x: 120, y: 310, w: 190, h: 58 },
-    { label: "NORMAL", difficulty: "Normal", x: 385, y: 310, w: 190, h: 58 },
-    { label: "CHAOS", difficulty: "Chaos", x: 650, y: 310, w: 190, h: 58 }
-  ];
-
-  function setDifficulty(name) {
-    selectedDifficulty = name;
-
+  function applyDifficulty(name) {
     if (name === "Easy") {
       MAX_ENEMIES = 2;
       ENEMY_X_SPEED = 85;
@@ -278,18 +414,14 @@
       SPAWN_MIN = 1.10;
       SPAWN_MAX = 1.60;
       RAY_CHANCE = 0.12;
-    }
-
-    if (name === "Normal") {
+    } else if (name === "Normal") {
       MAX_ENEMIES = 3;
       ENEMY_X_SPEED = 105;
       ENEMY_Y_SPEED = 70;
       SPAWN_MIN = 0.80;
       SPAWN_MAX = 1.25;
       RAY_CHANCE = 0.20;
-    }
-
-    if (name === "Chaos") {
+    } else {
       MAX_ENEMIES = 4;
       ENEMY_X_SPEED = 125;
       ENEMY_Y_SPEED = 88;
@@ -299,141 +431,26 @@
     }
   }
 
-  function startGame(name) {
-    startMusic();
-    setDifficulty(name);
-    fullRestart();
-    screen = "play";
+  window.__uvzuStartGame = function(name) {
+    applyDifficulty(name || "Easy");
+    try { fullRestart(); } catch (e) {}
+    try { startMusic && startMusic(); } catch (e) {}
+    gameStarted = true;
     last = performance.now();
-  }
-
-  function canvasPointFromEvent(e) {
-    const rect = canvas.getBoundingClientRect();
-    const touch = e.touches && e.touches[0] ? e.touches[0] : e;
-    return {
-      x: (touch.clientX - rect.left) * (W / rect.width),
-      y: (touch.clientY - rect.top) * (H / rect.height)
-    };
-  }
-
-  function handleMenuPress(e) {
-    if (screen !== "title") return;
-
-    const p = canvasPointFromEvent(e);
-
-    for (const b of menuButtons) {
-      if (
-        p.x >= b.x &&
-        p.x <= b.x + b.w &&
-        p.y >= b.y &&
-        p.y <= b.y + b.h
-      ) {
-        e.preventDefault();
-        startGame(b.difficulty);
-        return;
-      }
-    }
-  }
-
-  canvas.addEventListener("mousedown", handleMenuPress);
-  canvas.addEventListener("touchstart", handleMenuPress, { passive: false });
-
-  function drawMenuButton(b, active) {
-    ctx.save();
-
-    ctx.fillStyle = active ? "#ff4da3" : "#ffffff";
-    ctx.fillRect(b.x, b.y, b.w, b.h);
-
-    ctx.strokeStyle = "#4b2670";
-    ctx.lineWidth = 5;
-    ctx.strokeRect(b.x, b.y, b.w, b.h);
-
-    ctx.fillStyle = active ? "#ffffff" : "#4b2670";
-    ctx.font = "bold 27px monospace";
-    ctx.textAlign = "center";
-    ctx.fillText(b.label, b.x + b.w / 2, b.y + 38);
-
-    ctx.restore();
-  }
-
-  function drawTitleScreen() {
-    drawBackground();
-
-    // dark soft overlay so title is readable
-    ctx.fillStyle = "rgba(0,0,0,.18)";
-    ctx.fillRect(0, 0, W, H);
-
-    // wood-style title board
-    ctx.save();
-    ctx.translate(W / 2, 155);
-    ctx.rotate(-0.035);
-
-    ctx.fillStyle = "#c8894e";
-    ctx.fillRect(-330, -85, 660, 150);
-
-    ctx.fillStyle = "#e3a86c";
-    ctx.fillRect(-315, -72, 630, 124);
-
-    ctx.strokeStyle = "#5b2d18";
-    ctx.lineWidth = 8;
-    ctx.strokeRect(-330, -85, 660, 150);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = "#4b2670";
-    ctx.lineWidth = 7;
-    ctx.font = "bold 48px monospace";
-    ctx.textAlign = "center";
-    ctx.strokeText("UNICORN", 0, -25);
-    ctx.fillText("UNICORN", 0, -25);
-
-    ctx.fillStyle = "#4ef05c";
-    ctx.strokeStyle = "#25321a";
-    ctx.font = "bold 44px monospace";
-    ctx.strokeText("VS ZOMBIE UNICORNS", 0, 35);
-    ctx.fillText("VS ZOMBIE UNICORNS", 0, 35);
-
-    ctx.restore();
-
-    // little hero unicorn preview
-    drawUnicorn(W * 0.30, 265, 1, false, false, false);
-
-    // little zombie preview
-    drawUnicorn(W * 0.70, 265, -1, true, false, false);
-
-    ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 4;
-    ctx.font = "bold 24px monospace";
-    ctx.textAlign = "center";
-    ctx.strokeText("Choose Difficulty", W / 2, 292);
-    ctx.fillText("Choose Difficulty", W / 2, 292);
-
-    for (const b of menuButtons) {
-      drawMenuButton(b, b.difficulty === selectedDifficulty);
-    }
-
-    ctx.fillStyle = "#ffffff";
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 4;
-    ctx.font = "bold 18px monospace";
-    ctx.textAlign = "center";
-    ctx.strokeText("Easy = relaxed   Normal = balanced   Chaos = more zombies", W / 2, 410);
-    ctx.fillText("Easy = relaxed   Normal = balanced   Chaos = more zombies", W / 2, 410);
-  }
+  };
 
   function loop(now) {
     const dt = Math.min(0.033, (now - last) / 1000);
     last = now;
 
-    if (screen === "title") {
-      drawTitleScreen();
+    if (!gameStarted) {
+      drawBackground();
       requestAnimationFrame(loop);
       return;
     }
 
     update(dt);
     draw();
-
     requestAnimationFrame(loop);
   }
 
@@ -441,8 +458,11 @@
   requestAnimationFrame(loop);`
       );
 
-      const run = new Function(code + "\n//# sourceURL=title-menu-v52.js");
+      const run = new Function(code + "\n//# sourceURL=title-menu-v53.js");
       run();
+
+      // Create the menu after the game code is loaded
+      createTitleMenu();
     })
     .catch(showLoadError);
 })();
