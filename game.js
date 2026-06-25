@@ -62,6 +62,19 @@
     return code.slice(0, start) + replacement + code.slice(end);
   }
 
+  function replaceBoot(code, replacement) {
+    const startText = "  let last = performance.now();";
+    const start = code.indexOf(startText);
+    const end = code.lastIndexOf("\n})();");
+
+    if (start === -1 || end === -1 || end <= start) {
+      console.warn("Could not replace boot loop");
+      return code;
+    }
+
+    return code.slice(0, start) + replacement + code.slice(end);
+  }
+
   fetch(OLD_STYLE_GAME_URL, { cache: "no-store" })
     .then((response) => {
       if (!response.ok) {
@@ -70,19 +83,43 @@
       return response.text();
     })
     .then((code) => {
-      // Easier enemy count
+      // Difficulty variables. Easy is the default.
       code = code.replace(
         "const MAX_ENEMIES = 4;",
-        "const MAX_ENEMIES = 2;"
+        `let MAX_ENEMIES = 2;
+  let ENEMY_X_SPEED = 85;
+  let ENEMY_Y_SPEED = 55;
+  let SPAWN_MIN = 1.10;
+  let SPAWN_MAX = 1.60;
+  let RAY_CHANCE = 0.12;`
       );
 
-      // -----------------------------
-      // BACKGROUND UPGRADE (same as v50)
-      // -----------------------------
+      code = code.replace(
+        "const wantRay = Math.random() < 0.2;",
+        "const wantRay = Math.random() < RAY_CHANCE;"
+      );
+
+      code = code.replace(
+        "state.spawnTimer = rand(0.75, 1.2);",
+        "state.spawnTimer = rand(SPAWN_MIN, SPAWN_MAX);"
+      );
+
+      code = code.replace(
+        "e.x += Math.sign(dx) * 105 * dt;",
+        "e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;"
+      );
+
+      code = code.replace(
+        "e.y += Math.sign(dy) * 70 * dt;",
+        "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;"
+      );
+
+      // Background upgrade only. Characters stay old-working style for now.
       code = replaceFunction(
         code,
         "drawBackground",
 `  function drawBackground() {
+    // Sky
     const sky = ctx.createLinearGradient(0, 0, 0, H);
     sky.addColorStop(0, "#75d8ff");
     sky.addColorStop(0.38, "#c8f4ff");
@@ -91,6 +128,7 @@
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, W, H);
 
+    // Sun
     const sunX = W * 0.14;
     const sunY = H * 0.16;
     const sunGlow = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 90);
@@ -100,6 +138,7 @@
     ctx.fillStyle = sunGlow;
     ctx.fillRect(0, 0, W, H);
 
+    // Distant hills
     ctx.fillStyle = "#79d968";
     ctx.beginPath();
     ctx.moveTo(0, H * 0.58);
@@ -121,6 +160,7 @@
     ctx.closePath();
     ctx.fill();
 
+    // Rainbow
     const rx = W * 0.64;
     const ry = H * 0.63;
     const rr = Math.min(W, H) * 0.30;
@@ -133,6 +173,7 @@
       ctx.stroke();
     }
 
+    // Clouds
     function drawCloud(x, y, s) {
       ctx.save();
       ctx.translate(x, y);
@@ -150,6 +191,7 @@
     drawCloud(315, 48, 0.9);
     drawCloud(650, 88, 1.1);
 
+    // Trees
     function drawTree(x, y, s) {
       ctx.save();
       ctx.translate(x, y);
@@ -174,6 +216,7 @@
     drawTree(75, GROUND_Y + 18, 0.95);
     drawTree(W - 72, GROUND_Y + 18, 1.05);
 
+    // Main meadow
     const meadow = ctx.createLinearGradient(0, H * 0.54, 0, H);
     meadow.addColorStop(0, "#8df06f");
     meadow.addColorStop(0.55, "#4dd45d");
@@ -181,6 +224,7 @@
     ctx.fillStyle = meadow;
     ctx.fillRect(0, H * 0.56, W, H * 0.44);
 
+    // Curved grass depth stripes
     for (let i = 0; i < 8; i++) {
       const y = H * 0.60 + i * 27;
       ctx.strokeStyle = i % 2 === 0
@@ -193,6 +237,7 @@
       ctx.stroke();
     }
 
+    // Flower dots
     const flowerColors = ["#fff47a", "#ff79c6", "#ffffff", "#ff9f43", "#b36bff"];
     for (let i = 0; i < 90; i++) {
       const x = (i * 97) % W;
@@ -201,6 +246,7 @@
       ctx.fillRect(x, y, 3, 3);
     }
 
+    // Foreground edge
     ctx.fillStyle = "#35c85f";
     ctx.fillRect(0, GROUND_Y + 8, W, 22);
 
@@ -209,286 +255,193 @@
   }`
       );
 
-      // -----------------------------
-      // CHARACTER / ENEMY UPGRADE
-      // -----------------------------
-      code = replaceFunction(
+      // Replace the automatic start with a title menu + difficulty start.
+      code = replaceBoot(
         code,
-        "drawUnicorn",
-`  function drawUnicorn(x, y, face, zombie = false, ray = false, giant = false) {
-    const s = giant ? 1.28 : 1;
+`  let last = performance.now();
+  let screen = "title";
+  let selectedDifficulty = "Easy";
 
+  const menuButtons = [
+    { label: "EASY", difficulty: "Easy", x: 120, y: 310, w: 190, h: 58 },
+    { label: "NORMAL", difficulty: "Normal", x: 385, y: 310, w: 190, h: 58 },
+    { label: "CHAOS", difficulty: "Chaos", x: 650, y: 310, w: 190, h: 58 }
+  ];
+
+  function setDifficulty(name) {
+    selectedDifficulty = name;
+
+    if (name === "Easy") {
+      MAX_ENEMIES = 2;
+      ENEMY_X_SPEED = 85;
+      ENEMY_Y_SPEED = 55;
+      SPAWN_MIN = 1.10;
+      SPAWN_MAX = 1.60;
+      RAY_CHANCE = 0.12;
+    }
+
+    if (name === "Normal") {
+      MAX_ENEMIES = 3;
+      ENEMY_X_SPEED = 105;
+      ENEMY_Y_SPEED = 70;
+      SPAWN_MIN = 0.80;
+      SPAWN_MAX = 1.25;
+      RAY_CHANCE = 0.20;
+    }
+
+    if (name === "Chaos") {
+      MAX_ENEMIES = 4;
+      ENEMY_X_SPEED = 125;
+      ENEMY_Y_SPEED = 88;
+      SPAWN_MIN = 0.55;
+      SPAWN_MAX = 0.95;
+      RAY_CHANCE = 0.32;
+    }
+  }
+
+  function startGame(name) {
+    startMusic();
+    setDifficulty(name);
+    fullRestart();
+    screen = "play";
+    last = performance.now();
+  }
+
+  function canvasPointFromEvent(e) {
+    const rect = canvas.getBoundingClientRect();
+    const touch = e.touches && e.touches[0] ? e.touches[0] : e;
+    return {
+      x: (touch.clientX - rect.left) * (W / rect.width),
+      y: (touch.clientY - rect.top) * (H / rect.height)
+    };
+  }
+
+  function handleMenuPress(e) {
+    if (screen !== "title") return;
+
+    const p = canvasPointFromEvent(e);
+
+    for (const b of menuButtons) {
+      if (
+        p.x >= b.x &&
+        p.x <= b.x + b.w &&
+        p.y >= b.y &&
+        p.y <= b.y + b.h
+      ) {
+        e.preventDefault();
+        startGame(b.difficulty);
+        return;
+      }
+    }
+  }
+
+  canvas.addEventListener("mousedown", handleMenuPress);
+  canvas.addEventListener("touchstart", handleMenuPress, { passive: false });
+
+  function drawMenuButton(b, active) {
     ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(face * s, s);
 
-    // shadow
-    ctx.save();
-    ctx.globalAlpha = 0.22;
-    ctx.fillStyle = "#154220";
-    ctx.beginPath();
-    ctx.ellipse(0, 9, 36, 9, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+    ctx.fillStyle = active ? "#ff4da3" : "#ffffff";
+    ctx.fillRect(b.x, b.y, b.w, b.h);
 
-    const body = zombie ? "#62d978" : "#ff8cc7";
-    const bodyDark = zombie ? "#299c55" : "#f04f9d";
-    const bodyLight = zombie ? "#a6ffbf" : "#ffc5e1";
-    const hoof = zombie ? "#235f35" : "#6a3c61";
+    ctx.strokeStyle = "#4b2670";
+    ctx.lineWidth = 5;
+    ctx.strokeRect(b.x, b.y, b.w, b.h);
 
-    // body
-    ctx.fillStyle = bodyDark;
-    ctx.fillRect(-28, -25, 52, 23);
-
-    ctx.fillStyle = body;
-    ctx.fillRect(-30, -30, 56, 25);
-
-    // belly highlight
-    ctx.fillStyle = bodyLight;
-    ctx.fillRect(-18, -25, 27, 7);
-
-    // legs
-    ctx.fillStyle = body;
-    ctx.fillRect(-24, -8, 8, 18);
-    ctx.fillRect(-8, -8, 8, 18);
-    ctx.fillRect(6, -8, 8, 18);
-    ctx.fillRect(20, -8, 8, 18);
-
-    ctx.fillStyle = hoof;
-    ctx.fillRect(-24, 8, 8, 5);
-    ctx.fillRect(-8, 8, 8, 5);
-    ctx.fillRect(6, 8, 8, 5);
-    ctx.fillRect(20, 8, 8, 5);
-
-    // neck
-    ctx.fillStyle = body;
-    ctx.fillRect(14, -40, 12, 15);
-
-    // head
-    ctx.fillStyle = body;
-    ctx.fillRect(22, -50, 30, 22);
-
-    // muzzle
-    ctx.fillStyle = zombie ? "#bff7cc" : "#ffd0e6";
-    ctx.fillRect(42, -40, 14, 10);
-
-    // ears
-    ctx.fillStyle = bodyDark;
-    ctx.fillRect(24, -60, 7, 11);
-    ctx.fillStyle = body;
-    ctx.fillRect(31, -62, 8, 13);
-
-    // horn
-    ctx.fillStyle = zombie ? "#ffe56e" : "#ffe56e";
-    ctx.beginPath();
-    ctx.moveTo(37, -52);
-    ctx.lineTo(48, -74);
-    ctx.lineTo(30, -56);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = "#c29a1b";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(35, -58);
-    ctx.lineTo(42, -64);
-    ctx.stroke();
-
-    // mane
-    const mane = zombie
-      ? ["#18482d", "#27663d", "#44bf67"]
-      : ["#ff4f72", "#ff9b43", "#ffe661", "#62eb66", "#62d7ff", "#aa6fff"];
-
-    for (let i = 0; i < mane.length; i++) {
-      ctx.fillStyle = mane[i];
-      ctx.fillRect(12 - i * 6, -42 + (i % 2) * 2, 8, 15);
-    }
-
-    // tail
-    for (let i = 0; i < mane.length; i++) {
-      ctx.fillStyle = mane[i];
-      ctx.fillRect(-38 - i * 2, -27 + i * 4, 16, 5);
-    }
-
-    // ray gun on back
-    if (ray) {
-      // mount
-      ctx.fillStyle = zombie ? "#6a1c1c" : "#3a3a46";
-      ctx.fillRect(-8, -45, 20, 9);
-
-      // barrel
-      ctx.fillStyle = zombie ? "#ff4040" : "#6de8ff";
-      ctx.fillRect(7, -42, 13, 4);
-
-      // handle
-      ctx.fillStyle = "#262626";
-      ctx.fillRect(-2, -36, 4, 8);
-
-      // tip
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(19, -42, 2, 4);
-    }
-
-    // face
-    if (zombie) {
-      ctx.fillStyle = "#ff2626";
-      ctx.fillRect(38, -44, 4, 4);
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(46, -36, 3, 3);
-      ctx.fillRect(50, -36, 3, 3);
-
-      ctx.strokeStyle = "#1b5e2c";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(44, -45);
-      ctx.lineTo(52, -48);
-      ctx.stroke();
-    } else {
-      ctx.fillStyle = "#111";
-      ctx.fillRect(38, -44, 4, 4);
-
-      ctx.strokeStyle = "#111";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(45, -35, 6, 0.15, Math.PI * 0.9);
-      ctx.stroke();
-
-      // tongue
-      ctx.fillStyle = "#ff4d8d";
-      ctx.fillRect(49, -31, 7, 6);
-    }
+    ctx.fillStyle = active ? "#ffffff" : "#4b2670";
+    ctx.font = "bold 27px monospace";
+    ctx.textAlign = "center";
+    ctx.fillText(b.label, b.x + b.w / 2, b.y + 38);
 
     ctx.restore();
-  }`
-      );
+  }
 
-      // -----------------------------
-      // NPC LOOK
-      // -----------------------------
-      code = replaceFunction(
-        code,
-        "drawNpc",
-`  function drawNpc() {
-    if (!state.npc) return;
+  function drawTitleScreen() {
+    drawBackground();
 
-    const n = state.npc;
+    // dark soft overlay so title is readable
+    ctx.fillStyle = "rgba(0,0,0,.18)";
+    ctx.fillRect(0, 0, W, H);
 
+    // wood-style title board
     ctx.save();
-    ctx.translate(n.x, n.y);
+    ctx.translate(W / 2, 155);
+    ctx.rotate(-0.035);
 
-    ctx.save();
-    ctx.globalAlpha = 0.22;
-    ctx.fillStyle = "#174b24";
-    ctx.beginPath();
-    ctx.ellipse(0, 8, 15, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = "#c8894e";
+    ctx.fillRect(-330, -85, 660, 150);
+
+    ctx.fillStyle = "#e3a86c";
+    ctx.fillRect(-315, -72, 630, 124);
+
+    ctx.strokeStyle = "#5b2d18";
+    ctx.lineWidth = 8;
+    ctx.strokeRect(-330, -85, 660, 150);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#4b2670";
+    ctx.lineWidth = 7;
+    ctx.font = "bold 48px monospace";
+    ctx.textAlign = "center";
+    ctx.strokeText("UNICORN", 0, -25);
+    ctx.fillText("UNICORN", 0, -25);
+
+    ctx.fillStyle = "#4ef05c";
+    ctx.strokeStyle = "#25321a";
+    ctx.font = "bold 44px monospace";
+    ctx.strokeText("VS ZOMBIE UNICORNS", 0, 35);
+    ctx.fillText("VS ZOMBIE UNICORNS", 0, 35);
+
     ctx.restore();
 
-    // body
-    ctx.fillStyle = "#4664ff";
-    ctx.fillRect(-10, -36, 20, 26);
+    // little hero unicorn preview
+    drawUnicorn(W * 0.30, 265, 1, false, false, false);
 
-    // legs
-    ctx.fillStyle = "#273594";
-    ctx.fillRect(-9, -10, 7, 14);
-    ctx.fillRect(2, -10, 7, 14);
+    // little zombie preview
+    drawUnicorn(W * 0.70, 265, -1, true, false, false);
 
-    // head
-    ctx.fillStyle = "#ffd6ad";
-    ctx.fillRect(-9, -54, 18, 18);
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 4;
+    ctx.font = "bold 24px monospace";
+    ctx.textAlign = "center";
+    ctx.strokeText("Choose Difficulty", W / 2, 292);
+    ctx.fillText("Choose Difficulty", W / 2, 292);
 
-    // hair
-    ctx.fillStyle = "#2b170e";
-    ctx.fillRect(-10, -58, 20, 7);
-    ctx.fillRect(-9, -53, 4, 6);
-
-    // face
-    ctx.fillStyle = "#111";
-    ctx.fillRect(-4, -48, 2, 2);
-    ctx.fillRect(4, -48, 2, 2);
-    ctx.fillRect(-2, -42, 5, 2);
-
-    ctx.restore();
-  }`
-      );
-
-      // -----------------------------
-      // SHOTS LOOK BETTER
-      // -----------------------------
-      code = replaceFunction(
-        code,
-        "drawShots",
-`  function drawShots() {
-    for (const b of state.playerShots) {
-      ctx.save();
-
-      const glow = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, 18);
-      glow.addColorStop(0, "rgba(255,255,255,1)");
-      glow.addColorStop(0.45, "rgba(110,235,255,.85)");
-      glow.addColorStop(1, "rgba(110,235,255,0)");
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, 18, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(b.x - 11, b.y - 3, 22, 6);
-
-      ctx.fillStyle = "#6de8ff";
-      ctx.fillRect(b.x - 8, b.y - 2, 16, 4);
-
-      ctx.restore();
+    for (const b of menuButtons) {
+      drawMenuButton(b, b.difficulty === selectedDifficulty);
     }
 
-    for (const b of state.enemyShots) {
-      ctx.save();
+    ctx.fillStyle = "#ffffff";
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 4;
+    ctx.font = "bold 18px monospace";
+    ctx.textAlign = "center";
+    ctx.strokeText("Easy = relaxed   Normal = balanced   Chaos = more zombies", W / 2, 410);
+    ctx.fillText("Easy = relaxed   Normal = balanced   Chaos = more zombies", W / 2, 410);
+  }
 
-      const glow = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, 16);
-      glow.addColorStop(0, "rgba(255,255,255,1)");
-      glow.addColorStop(0.45, "rgba(255,70,70,.92)");
-      glow.addColorStop(1, "rgba(255,70,70,0)");
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(b.x, b.y, 16, 0, Math.PI * 2);
-      ctx.fill();
+  function loop(now) {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
 
-      ctx.fillStyle = "#ff3b3b";
-      ctx.fillRect(b.x - 9, b.y - 3, 18, 6);
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(b.x - 4, b.y - 1, 8, 2);
-
-      ctx.restore();
+    if (screen === "title") {
+      drawTitleScreen();
+      requestAnimationFrame(loop);
+      return;
     }
-  }`
+
+    update(dt);
+    draw();
+
+    requestAnimationFrame(loop);
+  }
+
+  updateHud();
+  requestAnimationFrame(loop);`
       );
 
-      // -----------------------------
-      // PARTICLES
-      // -----------------------------
-      code = replaceFunction(
-        code,
-        "drawParticles",
-`  function drawParticles() {
-    for (const p of state.particles) {
-      const a = clamp(p.life / 0.65, 0, 1);
-
-      ctx.save();
-      ctx.globalAlpha = a;
-
-      ctx.fillStyle = \`hsla(\${p.hue},95%,65%,\${a})\`;
-      ctx.fillRect(p.x - 2, p.y - 2, 5, 5);
-
-      ctx.fillStyle = "rgba(255,255,255,.72)";
-      ctx.fillRect(p.x, p.y, 2, 2);
-
-      ctx.restore();
-    }
-  }`
-      );
-
-      const run = new Function(code + "\n//# sourceURL=graphics-upgrade-v51.js");
+      const run = new Function(code + "\n//# sourceURL=title-menu-v52.js");
       run();
     })
     .catch(showLoadError);
