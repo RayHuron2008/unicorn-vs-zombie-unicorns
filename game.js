@@ -440,17 +440,8 @@
     });
 
     overlay.querySelector("#exitBtn").addEventListener("click", () => {
-      const controlsPopup = document.getElementById("controlsOverlay");
-      if (controlsPopup) controlsPopup.remove();
-
-      overlay.remove();
-
-      if (typeof window.__uvzuExitGameToTitle === "function") {
-        window.__uvzuExitGameToTitle();
-      }
-
-      createTitleMenu();
-    });
+  window.location.reload();
+});
   }
 
   function setupScreenPauseGesture() {
