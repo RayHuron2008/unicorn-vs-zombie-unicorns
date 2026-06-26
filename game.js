@@ -277,6 +277,7 @@
         "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;"
       );
 
+      // Upgraded background
       code = replaceFunction(
         code,
         "drawBackground",
@@ -413,194 +414,248 @@
   }`
       );
 
+      // Exact v51 character/enemy graphics
       code = replaceFunction(
         code,
         "drawUnicorn",
-`  function drawUnicorn(x, y, dir = 1, zombie = false, ray = false, shield = false) {
+`  function drawUnicorn(x, y, face, zombie = false, ray = false, giant = false) {
+    const s = giant ? 1.28 : 1;
+
     ctx.save();
     ctx.translate(x, y);
-    ctx.scale(dir, 1);
+    ctx.scale(face * s, s);
 
-    const body = zombie ? "#57c96a" : "#ff8ac4";
-    const bodyShade = zombie ? "#2e9c4c" : "#f05aa6";
-    const bodyLight = zombie ? "#a7f7ae" : "#ffd1e6";
-    const mane = zombie ? "#5b2aa8" : "#ff3ca6";
-    const maneAlt = zombie ? "#38d6ff" : "#ffd447";
-    const horn = zombie ? "#b18cff" : "#ffd447";
-    const hoof = zombie ? "#1f5b34" : "#71305e";
-
-    if (shield) {
-      ctx.save();
-      ctx.globalAlpha = 0.45;
-      ctx.strokeStyle = "#63e7ff";
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.arc(0, -24, 55, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    // Tail
-    ctx.fillStyle = mane;
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = "#154220";
     ctx.beginPath();
-    ctx.ellipse(-50, -26, 23, 12, -0.25, 0, Math.PI * 2);
+    ctx.ellipse(0, 9, 36, 9, 0, 0, Math.PI * 2);
     ctx.fill();
+    ctx.restore();
 
-    ctx.fillStyle = maneAlt;
-    ctx.beginPath();
-    ctx.ellipse(-58, -14, 15, 7, -0.15, 0, Math.PI * 2);
-    ctx.fill();
+    const body = zombie ? "#62d978" : "#ff8cc7";
+    const bodyDark = zombie ? "#299c55" : "#f04f9d";
+    const bodyLight = zombie ? "#a6ffbf" : "#ffc5e1";
+    const hoof = zombie ? "#235f35" : "#6a3c61";
 
-    // Back legs
-    ctx.fillStyle = bodyShade;
-    ctx.fillRect(-30, -5, 13, 38);
-    ctx.fillRect(17, -5, 13, 38);
+    ctx.fillStyle = bodyDark;
+    ctx.fillRect(-28, -25, 52, 23);
+
+    ctx.fillStyle = body;
+    ctx.fillRect(-30, -30, 56, 25);
+
+    ctx.fillStyle = bodyLight;
+    ctx.fillRect(-18, -25, 27, 7);
+
+    ctx.fillStyle = body;
+    ctx.fillRect(-24, -8, 8, 18);
+    ctx.fillRect(-8, -8, 8, 18);
+    ctx.fillRect(6, -8, 8, 18);
+    ctx.fillRect(20, -8, 8, 18);
 
     ctx.fillStyle = hoof;
-    ctx.fillRect(-33, 28, 19, 8);
-    ctx.fillRect(14, 28, 19, 8);
+    ctx.fillRect(-24, 8, 8, 5);
+    ctx.fillRect(-8, 8, 8, 5);
+    ctx.fillRect(6, 8, 8, 5);
+    ctx.fillRect(20, 8, 8, 5);
 
-    // Body
     ctx.fillStyle = body;
-    ctx.beginPath();
-    ctx.ellipse(0, -25, 48, 28, 0, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(14, -40, 12, 15);
 
-    ctx.fillStyle = bodyLight;
-    ctx.globalAlpha = 0.55;
-    ctx.beginPath();
-    ctx.ellipse(-10, -18, 27, 12, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-
-    // Neck
     ctx.fillStyle = body;
-    ctx.beginPath();
-    ctx.ellipse(30, -50, 18, 30, -0.25, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(22, -50, 30, 22);
 
-    // Head
-    ctx.beginPath();
-    ctx.ellipse(58, -58, 30, 23, 0.1, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = zombie ? "#bff7cc" : "#ffd0e6";
+    ctx.fillRect(42, -40, 14, 10);
 
-    // Snout
-    ctx.fillStyle = zombie ? "#bdf0b9" : "#ffc1db";
-    ctx.beginPath();
-    ctx.ellipse(78, -53, 20, 14, 0.05, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Ear
+    ctx.fillStyle = bodyDark;
+    ctx.fillRect(24, -60, 7, 11);
     ctx.fillStyle = body;
+    ctx.fillRect(31, -62, 8, 13);
+
+    ctx.fillStyle = "#ffe56e";
     ctx.beginPath();
-    ctx.moveTo(39, -77);
-    ctx.lineTo(47, -105);
-    ctx.lineTo(58, -78);
+    ctx.moveTo(37, -52);
+    ctx.lineTo(48, -74);
+    ctx.lineTo(30, -56);
     ctx.closePath();
     ctx.fill();
 
-    ctx.fillStyle = bodyLight;
-    ctx.beginPath();
-    ctx.moveTo(45, -81);
-    ctx.lineTo(49, -96);
-    ctx.lineTo(55, -81);
-    ctx.closePath();
-    ctx.fill();
-
-    // Horn
-    ctx.fillStyle = horn;
-    ctx.beginPath();
-    ctx.moveTo(68, -79);
-    ctx.lineTo(82, -113);
-    ctx.lineTo(91, -77);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = zombie ? "#6541c8" : "#b87915";
+    ctx.strokeStyle = "#c29a1b";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(75, -91);
-    ctx.lineTo(87, -90);
-    ctx.moveTo(78, -101);
-    ctx.lineTo(85, -100);
+    ctx.moveTo(35, -58);
+    ctx.lineTo(42, -64);
     ctx.stroke();
 
-    // Mane on neck
-    ctx.fillStyle = mane;
-    ctx.beginPath();
-    ctx.arc(25, -70, 10, 0, Math.PI * 2);
-    ctx.arc(20, -56, 10, 0, Math.PI * 2);
-    ctx.arc(22, -42, 9, 0, Math.PI * 2);
-    ctx.fill();
+    const mane = zombie
+      ? ["#18482d", "#27663d", "#44bf67"]
+      : ["#ff4f72", "#ff9b43", "#ffe661", "#62eb66", "#62d7ff", "#aa6fff"];
 
-    ctx.fillStyle = maneAlt;
-    ctx.beginPath();
-    ctx.arc(31, -66, 6, 0, Math.PI * 2);
-    ctx.arc(27, -48, 6, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Front legs
-    ctx.fillStyle = body;
-    ctx.fillRect(41, -5, 13, 38);
-    ctx.fillRect(64, -6, 13, 38);
-
-    ctx.fillStyle = hoof;
-    ctx.fillRect(38, 28, 19, 8);
-    ctx.fillRect(61, 28, 19, 8);
-
-    // Eye
-    ctx.fillStyle = zombie ? "#ecff67" : "#ffffff";
-    ctx.beginPath();
-    ctx.arc(64, -64, 7, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#172033";
-    ctx.beginPath();
-    ctx.arc(66, -63, 3.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Nose
-    ctx.fillStyle = "#2a1b22";
-    ctx.beginPath();
-    ctx.arc(84, -56, 2.5, 0, Math.PI * 2);
-    ctx.arc(92, -51, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (zombie) {
-      ctx.strokeStyle = "#265c2e";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(55, -48);
-      ctx.lineTo(64, -43);
-      ctx.lineTo(74, -48);
-      ctx.stroke();
-
-      ctx.fillStyle = "#9a1d1d";
-      ctx.beginPath();
-      ctx.arc(8, -15, 3, 0, Math.PI * 2);
-      ctx.arc(-17, -31, 3, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.strokeStyle = "#6d243a";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(77, -48, 8, 0.15, Math.PI * 0.85);
-      ctx.stroke();
+    for (let i = 0; i < mane.length; i++) {
+      ctx.fillStyle = mane[i];
+      ctx.fillRect(12 - i * 6, -42 + (i % 2) * 2, 8, 15);
     }
 
-    // Ray gun on back. No glow circle.
+    for (let i = 0; i < mane.length; i++) {
+      ctx.fillStyle = mane[i];
+      ctx.fillRect(-38 - i * 2, -27 + i * 4, 16, 5);
+    }
+
     if (ray) {
-      ctx.fillStyle = zombie ? "#5c1b1b" : "#353544";
-      ctx.fillRect(-8, -52, 24, 9);
+      ctx.fillStyle = zombie ? "#6a1c1c" : "#3a3a46";
+      ctx.fillRect(-8, -45, 20, 9);
 
       ctx.fillStyle = zombie ? "#ff4040" : "#6de8ff";
-      ctx.fillRect(13, -49, 18, 4);
+      ctx.fillRect(7, -42, 13, 4);
 
-      ctx.fillStyle = "#222";
-      ctx.fillRect(-1, -43, 4, 9);
+      ctx.fillStyle = "#262626";
+      ctx.fillRect(-2, -36, 4, 8);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(19, -42, 2, 4);
+    }
+
+    if (zombie) {
+      ctx.fillStyle = "#ff2626";
+      ctx.fillRect(38, -44, 4, 4);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(46, -36, 3, 3);
+      ctx.fillRect(50, -36, 3, 3);
+
+      ctx.strokeStyle = "#1b5e2c";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(44, -45);
+      ctx.lineTo(52, -48);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = "#111";
+      ctx.fillRect(38, -44, 4, 4);
+
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(45, -35, 6, 0.15, Math.PI * 0.9);
+      ctx.stroke();
+
+      ctx.fillStyle = "#ff4d8d";
+      ctx.fillRect(49, -31, 7, 6);
     }
 
     ctx.restore();
+  }`
+      );
+
+      code = replaceFunction(
+        code,
+        "drawNpc",
+`  function drawNpc() {
+    if (!state.npc) return;
+
+    const n = state.npc;
+
+    ctx.save();
+    ctx.translate(n.x, n.y);
+
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = "#174b24";
+    ctx.beginPath();
+    ctx.ellipse(0, 8, 15, 5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    ctx.fillStyle = "#4664ff";
+    ctx.fillRect(-10, -36, 20, 26);
+
+    ctx.fillStyle = "#273594";
+    ctx.fillRect(-9, -10, 7, 14);
+    ctx.fillRect(2, -10, 7, 14);
+
+    ctx.fillStyle = "#ffd6ad";
+    ctx.fillRect(-9, -54, 18, 18);
+
+    ctx.fillStyle = "#2b170e";
+    ctx.fillRect(-10, -58, 20, 7);
+    ctx.fillRect(-9, -53, 4, 6);
+
+    ctx.fillStyle = "#111";
+    ctx.fillRect(-4, -48, 2, 2);
+    ctx.fillRect(4, -48, 2, 2);
+    ctx.fillRect(-2, -42, 5, 2);
+
+    ctx.restore();
+  }`
+      );
+
+      code = replaceFunction(
+        code,
+        "drawShots",
+`  function drawShots() {
+    for (const b of state.playerShots) {
+      ctx.save();
+
+      const glow = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, 18);
+      glow.addColorStop(0, "rgba(255,255,255,1)");
+      glow.addColorStop(0.45, "rgba(110,235,255,.85)");
+      glow.addColorStop(1, "rgba(110,235,255,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 18, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(b.x - 11, b.y - 3, 22, 6);
+
+      ctx.fillStyle = "#6de8ff";
+      ctx.fillRect(b.x - 8, b.y - 2, 16, 4);
+
+      ctx.restore();
+    }
+
+    for (const b of state.enemyShots) {
+      ctx.save();
+
+      const glow = ctx.createRadialGradient(b.x, b.y, 1, b.x, b.y, 16);
+      glow.addColorStop(0, "rgba(255,255,255,1)");
+      glow.addColorStop(0.45, "rgba(255,70,70,.92)");
+      glow.addColorStop(1, "rgba(255,70,70,0)");
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#ff3b3b";
+      ctx.fillRect(b.x - 9, b.y - 3, 18, 6);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(b.x - 4, b.y - 1, 8, 2);
+
+      ctx.restore();
+    }
+  }`
+      );
+
+      code = replaceFunction(
+        code,
+        "drawParticles",
+`  function drawParticles() {
+    for (const p of state.particles) {
+      const a = clamp(p.life / 0.65, 0, 1);
+
+      ctx.save();
+      ctx.globalAlpha = a;
+
+      ctx.fillStyle = "hsla(" + p.hue + ",95%,65%," + a + ")";
+      ctx.fillRect(p.x - 2, p.y - 2, 5, 5);
+
+      ctx.fillStyle = "rgba(255,255,255,.72)";
+      ctx.fillRect(p.x, p.y, 2, 2);
+
+      ctx.restore();
+    }
   }`
       );
 
@@ -661,7 +716,7 @@
   requestAnimationFrame(loop);`
       );
 
-      const run = new Function(code + "\n//# sourceURL=title-menu-v57.js");
+      const run = new Function(code + "\n//# sourceURL=title-menu-v58.js");
       run();
 
       createTitleMenu();
