@@ -96,6 +96,56 @@
         text-shadow: 0 2px 4px rgba(0,0,0,.6);
       }
 
+      #pauseOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,.38);
+      }
+
+      #pausePanel {
+        width: min(82vw, 360px);
+        padding: 20px;
+        border-radius: 24px;
+        background: rgba(255,255,255,.94);
+        border: 4px solid rgba(76, 38, 112, .95);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        text-align: center;
+        box-shadow: 0 10px 24px rgba(0,0,0,.35);
+      }
+
+      #pauseTitle {
+        font: 900 30px system-ui, sans-serif;
+        color: #4b2670;
+      }
+
+      .pauseBtn {
+        appearance: none;
+        border: 0;
+        border-radius: 18px;
+        padding: 14px 16px;
+        font: 900 22px system-ui, sans-serif;
+        color: #fff;
+        background: linear-gradient(180deg, #8b6fff, #5a45d8);
+        box-shadow:
+          0 6px 0 #332086,
+          inset 0 2px 0 rgba(255,255,255,.35),
+          0 8px 18px rgba(0,0,0,.24);
+      }
+
+      .pauseBtn.exit {
+        background: linear-gradient(180deg, #ff84c5, #ff4ca2);
+        box-shadow:
+          0 6px 0 #b22467,
+          inset 0 2px 0 rgba(255,255,255,.35),
+          0 8px 18px rgba(0,0,0,.24);
+      }
+
       @media (max-width: 700px) {
         #menuPanel {
           bottom: 16px;
@@ -194,6 +244,9 @@
     const existing = document.getElementById("menuOverlay");
     if (existing) existing.remove();
 
+    const pause = document.getElementById("pauseOverlay");
+    if (pause) pause.remove();
+
     const hud = document.getElementById("hud");
     const controls = document.getElementById("controls");
 
@@ -239,6 +292,84 @@
     });
   }
 
+  function createPauseMenu() {
+    if (document.getElementById("pauseOverlay")) return;
+    if (typeof window.__uvzuSetPaused !== "function") return;
+
+    const controls = document.getElementById("controls");
+    if (controls) controls.style.display = "none";
+
+    window.__uvzuSetPaused(true);
+
+    const overlay = document.createElement("div");
+    overlay.id = "pauseOverlay";
+    overlay.innerHTML = `
+      <div id="pausePanel">
+        <div id="pauseTitle">PAUSED</div>
+        <button id="resumeBtn" class="pauseBtn">RESUME</button>
+        <button id="exitBtn" class="pauseBtn exit">EXIT TO MENU</button>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    overlay.querySelector("#resumeBtn").addEventListener("click", () => {
+      overlay.remove();
+      window.__uvzuSetPaused(false);
+      if (controls) controls.style.display = "";
+    });
+
+    overlay.querySelector("#exitBtn").addEventListener("click", () => {
+      overlay.remove();
+
+      if (typeof window.__uvzuExitGameToTitle === "function") {
+        window.__uvzuExitGameToTitle();
+      }
+
+      createTitleMenu();
+    });
+  }
+
+  function setupScreenPauseGesture() {
+    let lastTapAt = 0;
+
+    document.addEventListener(
+      "pointerup",
+      (e) => {
+        const menuOpen = document.getElementById("menuOverlay");
+        const pauseOpen = document.getElementById("pauseOverlay");
+
+        if (menuOpen || pauseOpen) return;
+
+        if (
+          e.target.closest &&
+          e.target.closest("#controls, #dpad, #ab, .dir, .ab, button")
+        ) {
+          return;
+        }
+
+        if (
+          typeof window.__uvzuIsPlaying !== "function" ||
+          !window.__uvzuIsPlaying()
+        ) {
+          return;
+        }
+
+        const now = Date.now();
+
+        if (now - lastTapAt < 300) {
+          lastTapAt = 0;
+          createPauseMenu();
+          return;
+        }
+
+        lastTapAt = now;
+      },
+      true
+    );
+  }
+
+  setupScreenPauseGesture();
+
   fetch(OLD_STYLE_GAME_URL, { cache: "no-store" })
     .then((response) => {
       if (!response.ok) {
@@ -277,7 +408,6 @@
         "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;"
       );
 
-      // Upgraded background
       code = replaceFunction(
         code,
         "drawBackground",
@@ -414,7 +544,6 @@
   }`
       );
 
-      // Exact v51 character/enemy graphics
       code = replaceFunction(
         code,
         "drawUnicorn",
@@ -663,6 +792,7 @@
         code,
 `  let last = performance.now();
   let gameStarted = false;
+  let paused = false;
 
   function applyDifficulty(name) {
     if (name === "Easy") {
@@ -689,10 +819,30 @@
     }
   }
 
+  window.__uvzuIsPlaying = function() {
+    return gameStarted && !paused;
+  };
+
+  window.__uvzuSetPaused = function(value) {
+    paused = !!value;
+    last = performance.now();
+  };
+
+  window.__uvzuExitGameToTitle = function() {
+    paused = false;
+    gameStarted = false;
+
+    try { fullRestart(); } catch (e) {}
+    try { updateHud(); } catch (e) {}
+
+    last = performance.now();
+  };
+
   window.__uvzuStartGame = function(name) {
     applyDifficulty(name || "Easy");
     try { fullRestart(); } catch (e) {}
     try { startMusic && startMusic(); } catch (e) {}
+    paused = false;
     gameStarted = true;
     last = performance.now();
   };
@@ -707,6 +857,12 @@
       return;
     }
 
+    if (paused) {
+      draw();
+      requestAnimationFrame(loop);
+      return;
+    }
+
     update(dt);
     draw();
     requestAnimationFrame(loop);
@@ -716,7 +872,7 @@
   requestAnimationFrame(loop);`
       );
 
-      const run = new Function(code + "\n//# sourceURL=title-menu-v58.js");
+      const run = new Function(code + "\n//# sourceURL=title-menu-v59.js");
       run();
 
       createTitleMenu();
