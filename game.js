@@ -145,6 +145,65 @@
           inset 0 2px 0 rgba(255,255,255,.35),
           0 8px 18px rgba(0,0,0,.24);
       }
+#titleControlsBtn {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  z-index: 10000;
+  appearance: none;
+  border: 3px solid rgba(76, 38, 112, .92);
+  border-radius: 16px;
+  padding: 10px 14px;
+  font: 900 14px system-ui, sans-serif;
+  color: #4b2670;
+  background: rgba(255,255,255,.92);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.60),
+    0 5px 14px rgba(0,0,0,.20);
+}
+
+#controlsOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,.42);
+}
+
+#controlsPanel {
+  width: min(86vw, 390px);
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(255,255,255,.96);
+  border: 4px solid rgba(76, 38, 112, .95);
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+}
+
+#controlsTitle {
+  font: 900 28px system-ui, sans-serif;
+  color: #4b2670;
+  text-align: center;
+  margin-bottom: 12px;
+}
+
+#controlsText {
+  font: 800 16px system-ui, sans-serif;
+  color: #333;
+  line-height: 1.55;
+}
+
+#controlsText .section {
+  margin-top: 12px;
+  color: #4b2670;
+  font-weight: 900;
+}
+
+#closeControlsBtn {
+  margin-top: 16px;
+  width: 100%;
+}
 
       @media (max-width: 700px) {
         #menuPanel {
