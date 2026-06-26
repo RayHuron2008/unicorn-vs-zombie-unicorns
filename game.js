@@ -27,24 +27,25 @@
         position: absolute;
         inset: 0;
         background: linear-gradient(to bottom, rgba(255,255,255,.04), rgba(0,0,0,.14));
+        pointer-events: none;
       }
 
       #menuPanel {
         position: absolute;
-        left: 4.5%;
-        bottom: 6%;
-        width: min(34vw, 360px);
+        left: 28px;
+        bottom: 24px;
+        width: 260px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 10px;
       }
 
       .menuBtn {
         appearance: none;
         border: 0;
         border-radius: 18px;
-        padding: 16px 18px;
-        font: 900 24px system-ui, sans-serif;
+        padding: 13px 16px;
+        font: 900 21px system-ui, sans-serif;
         color: #fff;
         background: linear-gradient(180deg, #ff84c5, #ff4ca2);
         box-shadow:
@@ -65,15 +66,15 @@
       #difficultyRow {
         display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 8px;
       }
 
       .diffBtn {
         appearance: none;
         border: 3px solid rgba(76, 38, 112, .92);
-        border-radius: 16px;
-        padding: 12px 10px;
-        font: 900 17px system-ui, sans-serif;
+        border-radius: 15px;
+        padding: 9px 10px;
+        font: 900 15px system-ui, sans-serif;
         color: #4b2670;
         background: rgba(255,255,255,.90);
         box-shadow:
@@ -88,25 +89,30 @@
 
       #menuHint {
         color: #fff;
-        font: 700 14px system-ui, sans-serif;
+        font: 700 12px system-ui, sans-serif;
         text-shadow: 0 2px 4px rgba(0,0,0,.6);
         padding: 2px 6px;
       }
 
       @media (max-width: 900px) {
         #menuPanel {
-          left: 4%;
-          right: 4%;
-          width: auto;
-          bottom: 5%;
+          left: 18px;
+          bottom: 18px;
+          width: 230px;
         }
 
         .menuBtn {
-          font-size: 22px;
+          font-size: 18px;
+          padding: 12px 14px;
         }
 
         .diffBtn {
-          font-size: 16px;
+          font-size: 14px;
+          padding: 9px 10px;
+        }
+
+        #menuHint {
+          font-size: 12px;
         }
       }
     `;
@@ -200,7 +206,7 @@
           <button class="diffBtn" data-diff="Normal">Normal</button>
           <button class="diffBtn" data-diff="Chaos">Chaos</button>
         </div>
-        <div id="menuHint">Choose a difficulty, then tap PLAY</div>
+        <div id="menuHint">Choose difficulty, then tap PLAY</div>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -270,7 +276,7 @@
       );
 
       // --------------------------------------------------
-      // Upgraded meadow background
+      // Upgraded meadow background only
       // --------------------------------------------------
       code = replaceFunction(
         code,
@@ -409,193 +415,6 @@
       );
 
       // --------------------------------------------------
-      // Updated character graphics: pink hero, green zombies
-      // --------------------------------------------------
-      code = replaceFunction(
-        code,
-        "drawUnicorn",
-`  function drawUnicorn(x, y, dir = 1, zombie = false, ray = false, shield = false) {
-    ctx.save();
-    ctx.translate(x, y);
-    ctx.scale(dir, 1);
-
-    const body = zombie ? "#62d978" : "#ff8cc7";
-    const bodyDark = zombie ? "#299c55" : "#f04f9d";
-    const bodyLight = zombie ? "#a6ffbf" : "#ffc5e1";
-    const mane = zombie ? "#7a3cff" : "#ff3ca6";
-    const mane2 = zombie ? "#22d6ff" : "#ffd23f";
-    const hoof = zombie ? "#245335" : "#7a3c72";
-    const horn = zombie ? "#8a6cff" : "#ffd34d";
-    const eye = zombie ? "#eaff70" : "#ffffff";
-    const pupil = zombie ? "#101010" : "#1d2a44";
-
-    if (shield) {
-      ctx.save();
-      ctx.globalAlpha = 0.45;
-      ctx.strokeStyle = "#6de8ff";
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.arc(0, -26, 58, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    ctx.fillStyle = bodyDark;
-    ctx.fillRect(-36, -6, 16, 43);
-    ctx.fillRect(24, -6, 16, 43);
-
-    ctx.fillStyle = hoof;
-    ctx.fillRect(-39, 30, 22, 9);
-    ctx.fillRect(21, 30, 22, 9);
-
-    ctx.fillStyle = body;
-    ctx.beginPath();
-    ctx.ellipse(0, -22, 52, 34, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = bodyLight;
-    ctx.globalAlpha = 0.65;
-    ctx.beginPath();
-    ctx.ellipse(-8, -16, 30, 16, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
-
-    ctx.fillStyle = body;
-    ctx.beginPath();
-    ctx.ellipse(32, -48, 21, 34, -0.25, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.ellipse(58, -58, 35, 27, 0.10, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = zombie ? "#b8f2b7" : "#ffc0d9";
-    ctx.beginPath();
-    ctx.ellipse(78, -52, 24, 17, 0.05, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#3b2630";
-    ctx.beginPath();
-    ctx.arc(84, -56, 3, 0, Math.PI * 2);
-    ctx.arc(94, -50, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = body;
-    ctx.beginPath();
-    ctx.moveTo(35, -78);
-    ctx.lineTo(45, -112);
-    ctx.lineTo(60, -78);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = zombie ? "#d0ffd1" : "#ffd1e3";
-    ctx.beginPath();
-    ctx.moveTo(43, -82);
-    ctx.lineTo(48, -101);
-    ctx.lineTo(56, -82);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = horn;
-    ctx.beginPath();
-    ctx.moveTo(68, -80);
-    ctx.lineTo(82, -122);
-    ctx.lineTo(94, -78);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.strokeStyle = zombie ? "#4c37a6" : "#b87915";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(74, -92);
-    ctx.lineTo(88, -91);
-    ctx.moveTo(78, -103);
-    ctx.lineTo(86, -102);
-    ctx.stroke();
-
-    ctx.fillStyle = mane;
-    ctx.beginPath();
-    ctx.arc(24, -72, 13, 0, Math.PI * 2);
-    ctx.arc(18, -56, 13, 0, Math.PI * 2);
-    ctx.arc(20, -40, 12, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = mane2;
-    ctx.beginPath();
-    ctx.arc(30, -66, 8, 0, Math.PI * 2);
-    ctx.arc(25, -47, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = mane;
-    ctx.beginPath();
-    ctx.ellipse(-54, -24, 20, 12, -0.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = mane2;
-    ctx.beginPath();
-    ctx.ellipse(-62, -14, 16, 8, -0.4, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = body;
-    ctx.fillRect(42, -6, 15, 43);
-    ctx.fillRect(67, -7, 15, 43);
-
-    ctx.fillStyle = hoof;
-    ctx.fillRect(39, 30, 22, 9);
-    ctx.fillRect(64, 30, 22, 9);
-
-    ctx.fillStyle = eye;
-    ctx.beginPath();
-    ctx.arc(65, -65, 8, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = pupil;
-    ctx.beginPath();
-    ctx.arc(67, -64, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (zombie) {
-      ctx.strokeStyle = "#3b5f2d";
-      ctx.lineWidth = 3;
-
-      ctx.beginPath();
-      ctx.moveTo(54, -49);
-      ctx.lineTo(64, -43);
-      ctx.lineTo(74, -48);
-      ctx.stroke();
-
-      ctx.fillStyle = "#9c1b1b";
-      ctx.beginPath();
-      ctx.arc(12, -16, 4, 0, Math.PI * 2);
-      ctx.arc(-18, -31, 3, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      ctx.strokeStyle = "#6d243a";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(76, -47, 10, 0.15, Math.PI * 0.85);
-      ctx.stroke();
-    }
-
-    if (ray) {
-      ctx.fillStyle = zombie ? "#5c1b1b" : "#3a3a46";
-      ctx.fillRect(-10, -53, 28, 10);
-
-      ctx.fillStyle = zombie ? "#ff4040" : "#6de8ff";
-      ctx.fillRect(15, -50, 20, 5);
-
-      ctx.fillStyle = "#222";
-      ctx.fillRect(-2, -43, 5, 10);
-
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(35, -50, 3, 5);
-    }
-
-    ctx.restore();
-  }`
-      );
-
-      // --------------------------------------------------
       // Replace boot with title-screen hold
       // --------------------------------------------------
       code = replaceBoot(
@@ -655,7 +474,7 @@
   requestAnimationFrame(loop);`
       );
 
-      const run = new Function(code + "\n//# sourceURL=title-menu-v55.js");
+      const run = new Function(code + "\n//# sourceURL=title-menu-v56.js");
       run();
 
       createTitleMenu();
