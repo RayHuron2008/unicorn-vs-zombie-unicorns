@@ -96,6 +96,23 @@
         text-shadow: 0 2px 4px rgba(0,0,0,.6);
       }
 
+      #titleControlsBtn {
+        position: absolute;
+        right: 18px;
+        bottom: 18px;
+        z-index: 10000;
+        appearance: none;
+        border: 3px solid rgba(76, 38, 112, .92);
+        border-radius: 16px;
+        padding: 10px 14px;
+        font: 900 14px system-ui, sans-serif;
+        color: #4b2670;
+        background: rgba(255,255,255,.92);
+        box-shadow:
+          inset 0 2px 0 rgba(255,255,255,.60),
+          0 5px 14px rgba(0,0,0,.20);
+      }
+
       #pauseOverlay {
         position: fixed;
         inset: 0;
@@ -145,65 +162,49 @@
           inset 0 2px 0 rgba(255,255,255,.35),
           0 8px 18px rgba(0,0,0,.24);
       }
-#titleControlsBtn {
-  position: absolute;
-  right: 18px;
-  bottom: 18px;
-  z-index: 10000;
-  appearance: none;
-  border: 3px solid rgba(76, 38, 112, .92);
-  border-radius: 16px;
-  padding: 10px 14px;
-  font: 900 14px system-ui, sans-serif;
-  color: #4b2670;
-  background: rgba(255,255,255,.92);
-  box-shadow:
-    inset 0 2px 0 rgba(255,255,255,.60),
-    0 5px 14px rgba(0,0,0,.20);
-}
 
-#controlsOverlay {
-  position: fixed;
-  inset: 0;
-  z-index: 10001;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,.42);
-}
+      #controlsOverlay {
+        position: fixed;
+        inset: 0;
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,.42);
+      }
 
-#controlsPanel {
-  width: min(86vw, 390px);
-  padding: 20px;
-  border-radius: 24px;
-  background: rgba(255,255,255,.96);
-  border: 4px solid rgba(76, 38, 112, .95);
-  box-shadow: 0 10px 24px rgba(0,0,0,.35);
-}
+      #controlsPanel {
+        width: min(86vw, 390px);
+        padding: 20px;
+        border-radius: 24px;
+        background: rgba(255,255,255,.96);
+        border: 4px solid rgba(76, 38, 112, .95);
+        box-shadow: 0 10px 24px rgba(0,0,0,.35);
+      }
 
-#controlsTitle {
-  font: 900 28px system-ui, sans-serif;
-  color: #4b2670;
-  text-align: center;
-  margin-bottom: 12px;
-}
+      #controlsTitle {
+        font: 900 28px system-ui, sans-serif;
+        color: #4b2670;
+        text-align: center;
+        margin-bottom: 12px;
+      }
 
-#controlsText {
-  font: 800 16px system-ui, sans-serif;
-  color: #333;
-  line-height: 1.55;
-}
+      #controlsText {
+        font: 800 16px system-ui, sans-serif;
+        color: #333;
+        line-height: 1.55;
+      }
 
-#controlsText .section {
-  margin-top: 12px;
-  color: #4b2670;
-  font-weight: 900;
-}
+      #controlsText .section {
+        margin-top: 12px;
+        color: #4b2670;
+        font-weight: 900;
+      }
 
-#closeControlsBtn {
-  margin-top: 16px;
-  width: 100%;
-}
+      #closeControlsBtn {
+        margin-top: 16px;
+        width: 100%;
+      }
 
       @media (max-width: 700px) {
         #menuPanel {
@@ -230,6 +231,17 @@
 
         #menuHint {
           font-size: 11px;
+        }
+
+        #titleControlsBtn {
+          right: 10px;
+          bottom: 10px;
+          font-size: 12px;
+          padding: 8px 10px;
+        }
+
+        #controlsText {
+          font-size: 14px;
         }
       }
     `;
@@ -299,12 +311,47 @@
     return code.slice(0, start) + replacement + code.slice(end);
   }
 
+  function createControlsPopup() {
+    if (document.getElementById("controlsOverlay")) return;
+
+    const overlay = document.createElement("div");
+    overlay.id = "controlsOverlay";
+    overlay.innerHTML = `
+      <div id="controlsPanel">
+        <div id="controlsTitle">CONTROLS</div>
+
+        <div id="controlsText">
+          <div>D-pad = Move</div>
+          <div>A = Headbutt / attack</div>
+          <div>B = Shoot ray when powered</div>
+          <div>Double tap game screen = Pause</div>
+
+          <div class="section">SPECIAL</div>
+          <div>Headbutt streak = Land headbutts without getting hit</div>
+          <div>10 headbutts in a row = Earn a shield</div>
+          <div>Shield = Blocks one hit</div>
+        </div>
+
+        <button id="closeControlsBtn" class="pauseBtn">BACK</button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    overlay.querySelector("#closeControlsBtn").addEventListener("click", () => {
+      overlay.remove();
+    });
+  }
+
   function createTitleMenu() {
     const existing = document.getElementById("menuOverlay");
     if (existing) existing.remove();
 
     const pause = document.getElementById("pauseOverlay");
     if (pause) pause.remove();
+
+    const controlsPopup = document.getElementById("controlsOverlay");
+    if (controlsPopup) controlsPopup.remove();
 
     const hud = document.getElementById("hud");
     const controls = document.getElementById("controls");
@@ -316,6 +363,7 @@
     overlay.id = "menuOverlay";
     overlay.innerHTML = `
       <div id="menuShade"></div>
+
       <div id="menuPanel">
         <button id="playBtn" class="menuBtn">START</button>
         <div id="difficultyRow">
@@ -325,6 +373,8 @@
         </div>
         <div id="menuHint">Choose difficulty, then tap START</div>
       </div>
+
+      <button id="titleControlsBtn">CONTROLS</button>
     `;
     document.body.appendChild(overlay);
 
@@ -336,6 +386,10 @@
         selected = btn.dataset.diff;
         diffButtons.forEach((b) => b.classList.toggle("active", b === btn));
       });
+    });
+
+    overlay.querySelector("#titleControlsBtn").addEventListener("click", () => {
+      createControlsPopup();
     });
 
     const playBtn = overlay.querySelector("#playBtn");
@@ -366,18 +420,29 @@
       <div id="pausePanel">
         <div id="pauseTitle">PAUSED</div>
         <button id="resumeBtn" class="pauseBtn">RESUME</button>
+        <button id="pauseControlsBtn" class="pauseBtn">CONTROLS</button>
         <button id="exitBtn" class="pauseBtn exit">EXIT TO MENU</button>
       </div>
     `;
     document.body.appendChild(overlay);
 
     overlay.querySelector("#resumeBtn").addEventListener("click", () => {
+      const controlsPopup = document.getElementById("controlsOverlay");
+      if (controlsPopup) controlsPopup.remove();
+
       overlay.remove();
       window.__uvzuSetPaused(false);
       if (controls) controls.style.display = "";
     });
 
+    overlay.querySelector("#pauseControlsBtn").addEventListener("click", () => {
+      createControlsPopup();
+    });
+
     overlay.querySelector("#exitBtn").addEventListener("click", () => {
+      const controlsPopup = document.getElementById("controlsOverlay");
+      if (controlsPopup) controlsPopup.remove();
+
       overlay.remove();
 
       if (typeof window.__uvzuExitGameToTitle === "function") {
@@ -396,8 +461,9 @@
       (e) => {
         const menuOpen = document.getElementById("menuOverlay");
         const pauseOpen = document.getElementById("pauseOverlay");
+        const controlsOpen = document.getElementById("controlsOverlay");
 
-        if (menuOpen || pauseOpen) return;
+        if (menuOpen || pauseOpen || controlsOpen) return;
 
         if (
           e.target.closest &&
@@ -931,7 +997,7 @@
   requestAnimationFrame(loop);`
       );
 
-      const run = new Function(code + "\n//# sourceURL=title-menu-v59.js");
+      const run = new Function(code + "\n//# sourceURL=title-menu-v60.js");
       run();
 
       createTitleMenu();
