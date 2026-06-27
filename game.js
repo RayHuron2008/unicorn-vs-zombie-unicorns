@@ -388,7 +388,9 @@
       });
     });
 
-    overlay.querySelector("#titleControlsBtn").addEventListener("click", () => {
+   overlay.querySelector("#titleMultiplayerBtn").addEventListener("click", () => {
+  alert("2 player online multiplayer coming soon");
+}); overlay.querySelector("#titleControlsBtn").addEventListener("click", () => {
       createControlsPopup();
     });
 
