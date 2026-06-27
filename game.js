@@ -96,7 +96,8 @@
         text-shadow: 0 2px 4px rgba(0,0,0,.6);
       }
 
-      #titleControlsBtn {
+      #titleControlsBtn,
+      #titleMultiplayerBtn {
         position: absolute;
         right: 18px;
         bottom: 18px;
@@ -111,6 +112,11 @@
         box-shadow:
           inset 0 2px 0 rgba(255,255,255,.60),
           0 5px 14px rgba(0,0,0,.20);
+      }
+
+      #titleMultiplayerBtn {
+        left: 18px;
+        right: auto;
       }
 
       #pauseOverlay {
@@ -233,11 +239,20 @@
           font-size: 11px;
         }
 
-        #titleControlsBtn {
-          right: 10px;
+        #titleControlsBtn,
+        #titleMultiplayerBtn {
           bottom: 10px;
           font-size: 12px;
           padding: 8px 10px;
+        }
+
+        #titleControlsBtn {
+          right: 10px;
+        }
+
+        #titleMultiplayerBtn {
+          left: 10px;
+          right: auto;
         }
 
         #controlsText {
@@ -374,6 +389,7 @@
         <div id="menuHint">Choose difficulty, then tap START</div>
       </div>
 
+      <button id="titleMultiplayerBtn">MULTIPLAYER</button>
       <button id="titleControlsBtn">CONTROLS</button>
     `;
     document.body.appendChild(overlay);
@@ -388,9 +404,11 @@
       });
     });
 
-   overlay.querySelector("#titleMultiplayerBtn").addEventListener("click", () => {
-  alert("2 player online multiplayer coming soon");
-}); overlay.querySelector("#titleControlsBtn").addEventListener("click", () => {
+    overlay.querySelector("#titleMultiplayerBtn").addEventListener("click", () => {
+      alert("2 player online multiplayer coming soon");
+    });
+
+    overlay.querySelector("#titleControlsBtn").addEventListener("click", () => {
       createControlsPopup();
     });
 
@@ -428,6 +446,11 @@
     `;
     document.body.appendChild(overlay);
 
+    overlay.style.pointerEvents = "none";
+    setTimeout(() => {
+      overlay.style.pointerEvents = "";
+    }, 300);
+
     overlay.querySelector("#resumeBtn").addEventListener("click", () => {
       const controlsPopup = document.getElementById("controlsOverlay");
       if (controlsPopup) controlsPopup.remove();
@@ -442,8 +465,8 @@
     });
 
     overlay.querySelector("#exitBtn").addEventListener("click", () => {
-  window.location.reload();
-});
+      window.location.reload();
+    });
   }
 
   function setupScreenPauseGesture() {
@@ -990,7 +1013,7 @@
   requestAnimationFrame(loop);`
       );
 
-      const run = new Function(code + "\n//# sourceURL=title-menu-v60.js");
+      const run = new Function(code + "\n//# sourceURL=title-menu-v64.js");
       run();
 
       createTitleMenu();
