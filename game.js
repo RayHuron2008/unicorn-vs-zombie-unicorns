@@ -845,7 +845,7 @@
 
       code = code.slice(0, bootStart) + replacementBoot + code.slice(bootEnd);
 
-      const run = new Function(code + "\n//# sourceURL=graphics-v66.js");
+      const run = new Function(code + "\n//# sourceURL=graphics-v67.js");
       run();
 
       createTitleMenu();
