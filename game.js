@@ -324,16 +324,20 @@
         <div id="controlsTitle">CONTROLS</div>
 
         <div id="controlsText">
-          <div>D-pad = Move</div>
-          <div>A = Headbutt / attack</div>
-          <div>B = Shoot ray when powered</div>
-          <div>Double tap game screen = Pause</div>
+  <div>D-pad = Move</div>
+  <div>A = Headbutt / attack</div>
+  <div>B = Shoot ray when powered</div>
+  <div>Double tap game screen = Pause</div>
 
-          <div class="section">SPECIAL</div>
-          <div>Headbutt streak = Land headbutts without getting hit</div>
-          <div>10 headbutts in a row = Earn a shield</div>
-          <div>Shield = Blocks one hit</div>
-        </div>
+  <div class="section">DASH</div>
+  <div>Double tap a direction = Dash that way</div>
+  <div>Dash helps dodge zombies and ray shots</div>
+
+  <div class="section">SPECIAL</div>
+  <div>Headbutt streak = Land headbutts without getting hit</div>
+  <div>10 headbutts in a row = Earn a shield</div>
+  <div>Shield = Blocks one hit</div>
+</div>
 
         <button id="closeControlsBtn" class="pauseBtn">BACK</button>
       </div>
