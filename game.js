@@ -183,11 +183,14 @@
 
       #controlsPanel {
         width: min(86vw, 390px);
+        max-height: min(78vh, 390px);
         padding: 20px;
         border-radius: 24px;
         background: rgba(255,255,255,.96);
         border: 4px solid rgba(76, 38, 112, .95);
         box-shadow: 0 10px 24px rgba(0,0,0,.35);
+        display: flex;
+        flex-direction: column;
       }
 
       #controlsTitle {
@@ -195,12 +198,17 @@
         color: #4b2670;
         text-align: center;
         margin-bottom: 12px;
+        flex: 0 0 auto;
       }
 
       #controlsText {
         font: 800 16px system-ui, sans-serif;
         color: #333;
         line-height: 1.55;
+        overflow-y: auto;
+        max-height: 230px;
+        padding-right: 8px;
+        flex: 1 1 auto;
       }
 
       #controlsText .section {
@@ -212,6 +220,7 @@
       #closeControlsBtn {
         margin-top: 16px;
         width: 100%;
+        flex: 0 0 auto;
       }
 
       @media (max-width: 700px) {
@@ -256,8 +265,14 @@
           left: 10px;
         }
 
+        #controlsPanel {
+          max-height: 76vh;
+          padding: 16px;
+        }
+
         #controlsText {
           font-size: 14px;
+          max-height: 155px;
         }
       }
     `;
@@ -324,20 +339,20 @@
         <div id="controlsTitle">CONTROLS</div>
 
         <div id="controlsText">
-  <div>D-pad = Move</div>
-  <div>A = Headbutt / attack</div>
-  <div>B = Shoot ray when powered</div>
-  <div>Double tap game screen = Pause</div>
+          <div>D-pad = Move</div>
+          <div>A = Headbutt / attack</div>
+          <div>B = Shoot ray when powered</div>
+          <div>Double tap game screen = Pause</div>
 
-  <div class="section">DASH</div>
-  <div>Double tap a direction = Dash that way</div>
-  <div>Dash helps dodge zombies and ray shots</div>
+          <div class="section">DASH</div>
+          <div>Double tap a direction = Dash that way</div>
+          <div>Dash helps dodge zombies and ray shots</div>
 
-  <div class="section">SPECIAL</div>
-  <div>Headbutt streak = Land headbutts without getting hit</div>
-  <div>10 headbutts in a row = Earn a shield</div>
-  <div>Shield = Blocks one hit</div>
-</div>
+          <div class="section">SPECIAL</div>
+          <div>Headbutt streak = Land headbutts without getting hit</div>
+          <div>10 headbutts in a row = Earn a shield</div>
+          <div>Shield = Blocks one hit</div>
+        </div>
 
         <button id="closeControlsBtn" class="pauseBtn">BACK</button>
       </div>
@@ -845,7 +860,7 @@
 
       code = code.slice(0, bootStart) + replacementBoot + code.slice(bootEnd);
 
-      const run = new Function(code + "\n//# sourceURL=graphics-v67.js");
+      const run = new Function(code + "\n//# sourceURL=graphics-v68.js");
       run();
 
       createTitleMenu();
