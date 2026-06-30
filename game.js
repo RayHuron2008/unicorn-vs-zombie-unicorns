@@ -346,8 +346,7 @@
 
           <div class="section">DASH</div>
           <div>Double tap a direction = Dash that way</div>
-          <div>Dash helps dodge zombies and ray shots</div>
-
+         <div>Direction + A = Dash</div>
           <div class="section">SPECIAL</div>
           <div>Headbutt streak = Land headbutts without getting hit</div>
           <div>10 headbutts in a row = Earn a shield</div>
