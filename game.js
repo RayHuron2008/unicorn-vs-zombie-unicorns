@@ -345,7 +345,6 @@
           <div>Double tap game screen = Pause</div>
 
           <div class="section">DASH</div>
-          <div>Double tap a direction = Dash that way</div>
          <div>Direction + A = Dash</div>
           <div class="section">SPECIAL</div>
           <div>Headbutt streak = Land headbutts without getting hit</div>
