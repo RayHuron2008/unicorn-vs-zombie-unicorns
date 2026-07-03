@@ -345,7 +345,13 @@
           <div>Double tap game screen = Pause</div>
 
           <div class="section">DASH</div>
-         <div>Direction + A = Dash</div>
+          <div>Direction + A = Dash</div>
+          <div>Dash helps dodge zombies and ray shots</div>
+
+          <div class="section">GIANT MODE</div>
+          <div>20 kills = Giant mode</div>
+          <div>Giant mode = +1 extra life</div>
+
           <div class="section">SPECIAL</div>
           <div>Headbutt streak = Land headbutts without getting hit</div>
           <div>10 headbutts in a row = Earn a shield</div>
@@ -549,9 +555,14 @@
         "e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;"
       );
 
-            code = code.replace(
+      code = code.replace(
+        "e.y += Math.sign(dy) * 70 * dt;",
+        "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;"
+      );
+
+      code = code.replace(
         "player.giant = GIANT_TIME;",
-        "player.giant = GIANT_TIME;\\n        player.lives += 1;"
+        "player.giant = GIANT_TIME;\n        player.lives += 1;"
       );
 
       code = replaceFunction(
@@ -858,7 +869,7 @@
 
       code = code.slice(0, bootStart) + replacementBoot + code.slice(bootEnd);
 
-      const run = new Function(code + "\n//# sourceURL=graphics-v68.js");
+      const run = new Function(code + "\n//# sourceURL=graphics-v72.js");
       run();
 
       createTitleMenu();
