@@ -549,9 +549,9 @@
         "e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;"
       );
 
-      code = code.replace(
-        "e.y += Math.sign(dy) * 70 * dt;",
-        "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;"
+            code = code.replace(
+        "player.giant = GIANT_TIME;",
+        "player.giant = GIANT_TIME;\\n        player.lives += 1;"
       );
 
       code = replaceFunction(
