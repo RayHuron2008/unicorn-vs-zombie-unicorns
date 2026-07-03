@@ -564,7 +564,10 @@
         "player.giant = GIANT_TIME;",
         "player.giant = GIANT_TIME;\n        player.lives += 1;"
       );
-
+      code = code.replace(
+        'state.mode = "fireworks";\n        state.fireworks.length = 0;',
+        'state.mode = "fireworks";\n        state.npc = null;\n        state.fireworks.length = 0;'
+      );
       code = replaceFunction(
         code,
         "drawBackground",
