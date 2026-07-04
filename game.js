@@ -213,7 +213,8 @@
         flex: 0 0 auto;
       }
 
-      #controlsText {
+      #controlsText,
+      #multiplayerBody {
         font: 800 16px system-ui, sans-serif;
         color: #333;
         line-height: 1.55;
@@ -223,13 +224,26 @@
         flex: 1 1 auto;
       }
 
-      #controlsText .section {
+      #controlsText .section,
+      .multiplayerSection {
         margin-top: 12px;
         color: #4b2670;
         font-weight: 900;
       }
 
-      #roomCodeBox {
+      .multiplayerSection:first-child {
+        margin-top: 0;
+      }
+
+      .multiplayerSmallText {
+        font: 800 13px system-ui, sans-serif;
+        color: #444;
+        line-height: 1.35;
+        margin-bottom: 8px;
+      }
+
+      #roomCodeBox,
+      #hostLevelCodeBox {
         min-height: 30px;
         padding: 10px;
         border-radius: 14px;
@@ -237,9 +251,11 @@
         font: 900 22px monospace;
         color: #4b2670;
         letter-spacing: 1px;
+        margin-bottom: 10px;
       }
 
-      #joinCodeInput {
+      #joinCodeInput,
+      #hostLevelCodeInput {
         width: 100%;
         box-sizing: border-box;
         border: 3px solid rgba(76, 38, 112, .65);
@@ -249,6 +265,7 @@
         text-align: center;
         color: #4b2670;
         text-transform: uppercase;
+        margin-bottom: 10px;
       }
 
       #multiplayerHint {
@@ -257,7 +274,8 @@
         line-height: 1.35;
       }
 
-      #closeControlsBtn {
+      #closeControlsBtn,
+      #closeMultiplayerBtn {
         margin-top: 16px;
         width: 100%;
         flex: 0 0 auto;
@@ -311,7 +329,8 @@
           padding: 16px;
         }
 
-        #controlsText {
+        #controlsText,
+        #multiplayerBody {
           font-size: 14px;
           max-height: 155px;
         }
@@ -320,11 +339,13 @@
           font-size: 24px;
         }
 
-        #roomCodeBox {
+        #roomCodeBox,
+        #hostLevelCodeBox {
           font-size: 18px;
         }
 
-        #joinCodeInput {
+        #joinCodeInput,
+        #hostLevelCodeInput {
           font-size: 16px;
         }
       }
@@ -433,6 +454,36 @@
     return raw.slice(0, 5) + "-" + raw.slice(5);
   }
 
+  function cleanCodeInput(input, maxChars, addDash) {
+    let value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+    if (addDash && value.length > 5) {
+      value = value.slice(0, 5) + "-" + value.slice(5, 10);
+    } else {
+      value = value.slice(0, maxChars);
+    }
+
+    input.value = value;
+    return value;
+  }
+
+  function startFirstLevelFromMultiplayer() {
+    const menuOverlay = document.getElementById("menuOverlay");
+    const multiplayerOverlay = document.getElementById("multiplayerOverlay");
+    const hud = document.getElementById("hud");
+    const controls = document.getElementById("controls");
+
+    if (typeof window.__uvzuStartGame === "function") {
+      window.__uvzuStartGame("Easy");
+    }
+
+    if (multiplayerOverlay) multiplayerOverlay.remove();
+    if (menuOverlay) menuOverlay.remove();
+
+    if (hud) hud.style.display = "";
+    if (controls) controls.style.display = "";
+  }
+
   function createMultiplayerPopup() {
     if (document.getElementById("multiplayerOverlay")) return;
 
@@ -442,23 +493,48 @@
       <div id="multiplayerPanel">
         <div id="multiplayerTitle">MULTIPLAYER</div>
 
-        <button id="hostGameBtn" class="pauseBtn">HOST GAME</button>
+        <div id="multiplayerBody">
+          <div class="multiplayerSection">HOST GAME</div>
+          <div class="multiplayerSmallText">
+            Host creates a random room code.
+          </div>
 
-        <div id="roomCodeBox">Room Code</div>
+          <button id="hostGameBtn" class="pauseBtn">HOST GAME</button>
 
-        <input
-          id="joinCodeInput"
-          maxlength="11"
-          placeholder="ENTER CODE"
-          autocomplete="off"
-          autocapitalize="characters"
-        />
+          <div id="roomCodeBox">Room Code</div>
 
-        <button id="joinGameBtn" class="pauseBtn">JOIN GAME</button>
+          <div class="multiplayerSmallText">
+            Level Code for the joining player. Blank = Level 1.
+          </div>
 
-        <div id="multiplayerHint">
-          Host creates a random room code. Join enters that code.
-          Online connection coming soon.
+          <input
+            id="hostLevelCodeInput"
+            maxlength="5"
+            placeholder="LEVEL CODE"
+            autocomplete="off"
+            autocapitalize="characters"
+          />
+
+          <button id="startHostGameBtn" class="pauseBtn">START HOST GAME</button>
+
+          <div class="multiplayerSection">JOIN GAME</div>
+          <div class="multiplayerSmallText">
+            Enter the host room code.
+          </div>
+
+          <input
+            id="joinCodeInput"
+            maxlength="11"
+            placeholder="ENTER ROOM CODE"
+            autocomplete="off"
+            autocapitalize="characters"
+          />
+
+          <button id="joinGameBtn" class="pauseBtn">JOIN GAME</button>
+
+          <div id="multiplayerHint">
+            Online connection coming soon. The level code box is ready for future levels.
+          </div>
         </div>
 
         <button id="closeMultiplayerBtn" class="pauseBtn exit">BACK</button>
@@ -469,20 +545,32 @@
 
     const roomCodeBox = overlay.querySelector("#roomCodeBox");
     const joinCodeInput = overlay.querySelector("#joinCodeInput");
+    const hostLevelCodeInput = overlay.querySelector("#hostLevelCodeInput");
 
     overlay.querySelector("#hostGameBtn").addEventListener("click", () => {
       const code = generateRoomCode();
       roomCodeBox.textContent = code;
     });
 
-    joinCodeInput.addEventListener("input", () => {
-      let value = joinCodeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    hostLevelCodeInput.addEventListener("input", () => {
+      cleanCodeInput(hostLevelCodeInput, 5, false);
+    });
 
-      if (value.length > 5) {
-        value = value.slice(0, 5) + "-" + value.slice(5, 10);
+    joinCodeInput.addEventListener("input", () => {
+      cleanCodeInput(joinCodeInput, 10, true);
+    });
+
+    overlay.querySelector("#startHostGameBtn").addEventListener("click", () => {
+      if (roomCodeBox.textContent === "Room Code") {
+        roomCodeBox.textContent = generateRoomCode();
       }
 
-      joinCodeInput.value = value;
+      const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
+
+      console.log("Host room:", roomCodeBox.textContent);
+      console.log("Level code:", levelCode);
+
+      startFirstLevelFromMultiplayer();
     });
 
     overlay.querySelector("#joinGameBtn").addEventListener("click", () => {
@@ -1025,7 +1113,7 @@
 
       code = code.slice(0, bootStart) + replacementBoot + code.slice(bootEnd);
 
-      const run = new Function(code + "\n//# sourceURL=graphics-v75.js");
+      const run = new Function(code + "\n//# sourceURL=graphics-v77.js");
       run();
 
       createTitleMenu();
