@@ -564,9 +564,18 @@
         "player.giant = GIANT_TIME;",
         "player.giant = GIANT_TIME;\n        player.lives += 1;"
       );
-      code = code.replace(
-        'state.mode = "fireworks";\n        state.fireworks.length = 0;',
-        'state.mode = "fireworks";\n        state.npc = null;\n        state.fireworks.length = 0;'
+            code = code.replace(
+        `if (state.exitTimer <= 0 || player.x > W + 80) {
+        state.mode = "fireworks";
+        state.fireworks.length = 0;
+        state.victoryTimer = 3.5;
+      }`,
+        `if (player.x > W + 120) {
+        state.mode = "fireworks";
+        state.npc = null;
+        state.fireworks.length = 0;
+        state.victoryTimer = 3.5;
+      }`
       );
       code = replaceFunction(
         code,
