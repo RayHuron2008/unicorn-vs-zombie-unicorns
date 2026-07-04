@@ -171,7 +171,8 @@
           0 8px 18px rgba(0,0,0,.24);
       }
 
-      #controlsOverlay {
+      #controlsOverlay,
+      #multiplayerOverlay {
         position: fixed;
         inset: 0;
         z-index: 10001;
@@ -181,7 +182,12 @@
         background: rgba(0,0,0,.42);
       }
 
-      #controlsPanel {
+      #multiplayerOverlay {
+        z-index: 10002;
+      }
+
+      #controlsPanel,
+      #multiplayerPanel {
         width: min(86vw, 390px);
         max-height: min(78vh, 390px);
         padding: 20px;
@@ -193,7 +199,13 @@
         flex-direction: column;
       }
 
-      #controlsTitle {
+      #multiplayerPanel {
+        gap: 12px;
+        text-align: center;
+      }
+
+      #controlsTitle,
+      #multiplayerTitle {
         font: 900 28px system-ui, sans-serif;
         color: #4b2670;
         text-align: center;
@@ -215,6 +227,34 @@
         margin-top: 12px;
         color: #4b2670;
         font-weight: 900;
+      }
+
+      #roomCodeBox {
+        min-height: 30px;
+        padding: 10px;
+        border-radius: 14px;
+        background: rgba(76, 38, 112, .10);
+        font: 900 22px monospace;
+        color: #4b2670;
+        letter-spacing: 1px;
+      }
+
+      #joinCodeInput {
+        width: 100%;
+        box-sizing: border-box;
+        border: 3px solid rgba(76, 38, 112, .65);
+        border-radius: 14px;
+        padding: 12px;
+        font: 900 20px monospace;
+        text-align: center;
+        color: #4b2670;
+        text-transform: uppercase;
+      }
+
+      #multiplayerHint {
+        font: 800 13px system-ui, sans-serif;
+        color: #444;
+        line-height: 1.35;
       }
 
       #closeControlsBtn {
@@ -265,7 +305,8 @@
           left: 10px;
         }
 
-        #controlsPanel {
+        #controlsPanel,
+        #multiplayerPanel {
           max-height: 76vh;
           padding: 16px;
         }
@@ -273,6 +314,18 @@
         #controlsText {
           font-size: 14px;
           max-height: 155px;
+        }
+
+        #multiplayerTitle {
+          font-size: 24px;
+        }
+
+        #roomCodeBox {
+          font-size: 18px;
+        }
+
+        #joinCodeInput {
+          font-size: 16px;
         }
       }
     `;
@@ -369,6 +422,85 @@
     });
   }
 
+  function generateRoomCode() {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    let raw = "";
+
+    for (let i = 0; i < 10; i++) {
+      raw += chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    return raw.slice(0, 5) + "-" + raw.slice(5);
+  }
+
+  function createMultiplayerPopup() {
+    if (document.getElementById("multiplayerOverlay")) return;
+
+    const overlay = document.createElement("div");
+    overlay.id = "multiplayerOverlay";
+    overlay.innerHTML = `
+      <div id="multiplayerPanel">
+        <div id="multiplayerTitle">MULTIPLAYER</div>
+
+        <button id="hostGameBtn" class="pauseBtn">HOST GAME</button>
+
+        <div id="roomCodeBox">Room Code</div>
+
+        <input
+          id="joinCodeInput"
+          maxlength="11"
+          placeholder="ENTER CODE"
+          autocomplete="off"
+          autocapitalize="characters"
+        />
+
+        <button id="joinGameBtn" class="pauseBtn">JOIN GAME</button>
+
+        <div id="multiplayerHint">
+          Host creates a random room code. Join enters that code.
+          Online connection coming soon.
+        </div>
+
+        <button id="closeMultiplayerBtn" class="pauseBtn exit">BACK</button>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const roomCodeBox = overlay.querySelector("#roomCodeBox");
+    const joinCodeInput = overlay.querySelector("#joinCodeInput");
+
+    overlay.querySelector("#hostGameBtn").addEventListener("click", () => {
+      const code = generateRoomCode();
+      roomCodeBox.textContent = code;
+    });
+
+    joinCodeInput.addEventListener("input", () => {
+      let value = joinCodeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+      if (value.length > 5) {
+        value = value.slice(0, 5) + "-" + value.slice(5, 10);
+      }
+
+      joinCodeInput.value = value;
+    });
+
+    overlay.querySelector("#joinGameBtn").addEventListener("click", () => {
+      const code = joinCodeInput.value.trim();
+
+      if (!/^[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(code)) {
+        alert("Enter a room code like A7K2M-F9Q1Z");
+        return;
+      }
+
+      alert("Trying to join room " + code + ". Online multiplayer coming soon.");
+    });
+
+    overlay.querySelector("#closeMultiplayerBtn").addEventListener("click", () => {
+      overlay.remove();
+    });
+  }
+
   function createTitleMenu() {
     const existing = document.getElementById("menuOverlay");
     if (existing) existing.remove();
@@ -378,6 +510,9 @@
 
     const controlsPopup = document.getElementById("controlsOverlay");
     if (controlsPopup) controlsPopup.remove();
+
+    const multiplayerPopup = document.getElementById("multiplayerOverlay");
+    if (multiplayerPopup) multiplayerPopup.remove();
 
     const hud = document.getElementById("hud");
     const controls = document.getElementById("controls");
@@ -416,7 +551,7 @@
     });
 
     overlay.querySelector("#titleMultiplayerBtn").addEventListener("click", () => {
-      alert("2 player online multiplayer coming soon");
+      createMultiplayerPopup();
     });
 
     overlay.querySelector("#titleControlsBtn").addEventListener("click", () => {
@@ -450,6 +585,9 @@
     overlay.innerHTML = `
       <div id="pausePanel">
         <div id="pauseTitle">PAUSED</div>
+        <div style="font: 900 16px system-ui, sans-serif; color: #4b2670;">
+          Level Code: RNBW1
+        </div>
         <button id="resumeBtn" class="pauseBtn">RESUME</button>
         <button id="pauseControlsBtn" class="pauseBtn">CONTROLS</button>
         <button id="exitBtn" class="pauseBtn exit">EXIT TO MENU</button>
@@ -465,6 +603,9 @@
     overlay.querySelector("#resumeBtn").addEventListener("click", () => {
       const controlsPopup = document.getElementById("controlsOverlay");
       if (controlsPopup) controlsPopup.remove();
+
+      const multiplayerPopup = document.getElementById("multiplayerOverlay");
+      if (multiplayerPopup) multiplayerPopup.remove();
 
       overlay.remove();
       window.__uvzuSetPaused(false);
@@ -489,12 +630,13 @@
         const menuOpen = document.getElementById("menuOverlay");
         const pauseOpen = document.getElementById("pauseOverlay");
         const controlsOpen = document.getElementById("controlsOverlay");
+        const multiplayerOpen = document.getElementById("multiplayerOverlay");
 
-        if (menuOpen || pauseOpen || controlsOpen) return;
+        if (menuOpen || pauseOpen || controlsOpen || multiplayerOpen) return;
 
         if (
           e.target.closest &&
-          e.target.closest("#controls, #dpad, #ab, .dir, .ab, button")
+          e.target.closest("#controls, #dpad, #ab, .dir, .ab, button, input")
         ) {
           return;
         }
@@ -564,7 +706,8 @@
         "player.giant = GIANT_TIME;",
         "player.giant = GIANT_TIME;\n        player.lives += 1;"
       );
-            code = code.replace(
+
+      code = code.replace(
         `if (state.exitTimer <= 0 || player.x > W + 80) {
         state.mode = "fireworks";
         state.fireworks.length = 0;
@@ -577,6 +720,7 @@
         state.victoryTimer = 3.5;
       }`
       );
+
       code = replaceFunction(
         code,
         "drawBackground",
@@ -881,7 +1025,7 @@
 
       code = code.slice(0, bootStart) + replacementBoot + code.slice(bootEnd);
 
-      const run = new Function(code + "\n//# sourceURL=graphics-v72.js");
+      const run = new Function(code + "\n//# sourceURL=graphics-v75.js");
       run();
 
       createTitleMenu();
