@@ -1,6 +1,89 @@
 (() => {
   "use strict";
 
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBTqmoJpoO2OHpBxQUwAvbuW-8ICDJmUkE",
+    authDomain: "unicorn-zombie-multiplayer.firebaseapp.com",
+    databaseURL: "https://unicorn-zombie-multiplayer-default-rtdb.firebaseio.com",
+    projectId: "unicorn-zombie-multiplayer",
+    storageBucket: "unicorn-zombie-multiplayer.firebasestorage.app",
+    messagingSenderId: "297435363171",
+    appId: "1:297435363171:web:1a247d65ee8b3590e28556",
+    measurementId: "G-ZCJ2JD8JDF"
+  };
+
+  let firebaseReady = null;
+  let firebaseRoomCode = "";
+  let firebasePlayerRole = "";
+
+  async function getFirebaseDatabase() {
+    if (!firebaseReady) {
+      firebaseReady = Promise.all([
+        import("https://www.gstatic.com/firebasejs/12.15.0/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/12.15.0/firebase-database.js")
+      ]).then(([appMod, dbMod]) => {
+        const app = appMod.initializeApp(FIREBASE_CONFIG);
+        const db = dbMod.getDatabase(app);
+        return { dbMod, db };
+      });
+    }
+
+    return firebaseReady;
+  }
+
+  async function createFirebaseRoom(roomCode, levelCode) {
+    const { dbMod, db } = await getFirebaseDatabase();
+    const roomRef = dbMod.ref(db, "rooms/" + roomCode);
+    const now = Date.now();
+
+    await dbMod.set(roomRef, {
+      roomCode,
+      levelCode: levelCode || "RNBW1",
+      status: "waiting",
+      createdAt: now,
+      updatedAt: now,
+      host: {
+        connected: true,
+        ready: true,
+        x: 0,
+        y: 0
+      },
+      guest: {
+        connected: false,
+        ready: false,
+        x: 0,
+        y: 0
+      }
+    });
+
+    firebaseRoomCode = roomCode;
+    firebasePlayerRole = "host";
+  }
+
+  async function joinFirebaseRoom(roomCode) {
+    const { dbMod, db } = await getFirebaseDatabase();
+    const roomRef = dbMod.ref(db, "rooms/" + roomCode);
+    const snapshot = await dbMod.get(roomRef);
+
+    if (!snapshot.exists()) {
+      throw new Error("Room not found.");
+    }
+
+    const room = snapshot.val();
+
+    await dbMod.update(roomRef, {
+      status: "playing",
+      updatedAt: Date.now(),
+      "guest/connected": true,
+      "guest/ready": true
+    });
+
+    firebaseRoomCode = roomCode;
+    firebasePlayerRole = "guest";
+
+    return room;
+  }
+
   function injectLayoutTweaks() {
     const style = document.createElement("style");
     style.textContent = `
@@ -242,8 +325,7 @@
         margin-bottom: 8px;
       }
 
-      #roomCodeBox,
-      #hostLevelCodeBox {
+      #roomCodeBox {
         min-height: 30px;
         padding: 10px;
         border-radius: 14px;
@@ -339,8 +421,7 @@
           font-size: 24px;
         }
 
-        #roomCodeBox,
-        #hostLevelCodeBox {
+        #roomCodeBox {
           font-size: 18px;
         }
 
@@ -467,11 +548,18 @@
     return value;
   }
 
-  function startFirstLevelFromMultiplayer() {
+  function startFirstLevelFromMultiplayer(levelCode) {
+    const finalLevelCode = (levelCode || "").trim().toUpperCase() || "RNBW1";
+
     const menuOverlay = document.getElementById("menuOverlay");
     const multiplayerOverlay = document.getElementById("multiplayerOverlay");
     const hud = document.getElementById("hud");
     const controls = document.getElementById("controls");
+
+    if (finalLevelCode !== "RNBW1") {
+      alert("That level code is saved for later. Right now only Level 1 exists.");
+      return;
+    }
 
     if (typeof window.__uvzuStartGame === "function") {
       window.__uvzuStartGame("Easy");
@@ -496,7 +584,7 @@
         <div id="multiplayerBody">
           <div class="multiplayerSection">HOST GAME</div>
           <div class="multiplayerSmallText">
-            Host creates a random room code.
+            Host creates a real online room code.
           </div>
 
           <button id="hostGameBtn" class="pauseBtn">HOST GAME</button>
@@ -533,7 +621,7 @@
           <button id="joinGameBtn" class="pauseBtn">JOIN GAME</button>
 
           <div id="multiplayerHint">
-            Online connection coming soon. The level code box is ready for future levels.
+            Firebase rooms are active. Player syncing comes next.
           </div>
         </div>
 
@@ -547,9 +635,21 @@
     const joinCodeInput = overlay.querySelector("#joinCodeInput");
     const hostLevelCodeInput = overlay.querySelector("#hostLevelCodeInput");
 
-    overlay.querySelector("#hostGameBtn").addEventListener("click", () => {
+    overlay.querySelector("#hostGameBtn").addEventListener("click", async () => {
       const code = generateRoomCode();
-      roomCodeBox.textContent = code;
+      const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
+
+      roomCodeBox.textContent = "Creating...";
+
+      try {
+        await createFirebaseRoom(code, levelCode);
+        roomCodeBox.textContent = code;
+        alert("Room created. Give this code to Player 2: " + code);
+      } catch (err) {
+        console.error(err);
+        roomCodeBox.textContent = "Room Code";
+        alert("Could not create room. Check Firebase rules.");
+      }
     });
 
     hostLevelCodeInput.addEventListener("input", () => {
@@ -560,28 +660,44 @@
       cleanCodeInput(joinCodeInput, 10, true);
     });
 
-    overlay.querySelector("#startHostGameBtn").addEventListener("click", () => {
-      if (roomCodeBox.textContent === "Room Code") {
-        roomCodeBox.textContent = generateRoomCode();
-      }
-
+    overlay.querySelector("#startHostGameBtn").addEventListener("click", async () => {
+      let roomCode = roomCodeBox.textContent.trim();
       const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
 
-      console.log("Host room:", roomCodeBox.textContent);
-      console.log("Level code:", levelCode);
+      if (roomCode === "Room Code" || roomCode === "Creating...") {
+        roomCode = generateRoomCode();
+        roomCodeBox.textContent = "Creating...";
 
-      startFirstLevelFromMultiplayer();
+        try {
+          await createFirebaseRoom(roomCode, levelCode);
+          roomCodeBox.textContent = roomCode;
+        } catch (err) {
+          console.error(err);
+          roomCodeBox.textContent = "Room Code";
+          alert("Could not create room. Check Firebase rules.");
+          return;
+        }
+      }
+
+      startFirstLevelFromMultiplayer(levelCode);
     });
 
-    overlay.querySelector("#joinGameBtn").addEventListener("click", () => {
-      const code = joinCodeInput.value.trim();
+    overlay.querySelector("#joinGameBtn").addEventListener("click", async () => {
+      const code = joinCodeInput.value.trim().toUpperCase();
 
       if (!/^[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(code)) {
         alert("Enter a room code like A7K2M-F9Q1Z");
         return;
       }
 
-      alert("Trying to join room " + code + ". Online multiplayer coming soon.");
+      try {
+        const room = await joinFirebaseRoom(code);
+        alert("Joined room " + code + ". Starting level.");
+        startFirstLevelFromMultiplayer(room.levelCode || "RNBW1");
+      } catch (err) {
+        console.error(err);
+        alert("Room not found. Check the code and try again.");
+      }
     });
 
     overlay.querySelector("#closeMultiplayerBtn").addEventListener("click", () => {
@@ -1113,7 +1229,7 @@
 
       code = code.slice(0, bootStart) + replacementBoot + code.slice(bootEnd);
 
-      const run = new Function(code + "\n//# sourceURL=graphics-v77.js");
+      const run = new Function(code + "\n//# sourceURL=graphics-v78.js");
       run();
 
       createTitleMenu();
