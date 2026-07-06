@@ -58,8 +58,12 @@
       }
     });
 
-    firebaseRoomCode = roomCode;
+        firebaseRoomCode = roomCode;
     firebasePlayerRole = "host";
+    firebaseRemotePlayer = null;
+    firebaseRoomListenerStarted = false;
+
+    await startFirebaseRoomListener(roomCode);
   }
 
   async function joinFirebaseRoom(roomCode) {
