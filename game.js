@@ -84,8 +84,12 @@
       "guest/ready": true
     });
 
-    firebaseRoomCode = roomCode;
+        firebaseRoomCode = roomCode;
     firebasePlayerRole = "guest";
+    firebaseRemotePlayer = null;
+    firebaseRoomListenerStarted = false;
+
+    await startFirebaseRoomListener(roomCode);
 
     return room;
   }
