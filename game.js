@@ -1052,7 +1052,20 @@
     }
   }`
       );
+      code = code.replace(
+`    updateParticles(dt);
+    updateEnding(dt);
+    updateHud();
+  }`,
+`    updateParticles(dt);
+    updateEnding(dt);
+    updateHud();
 
+    if (window.__uvzuMultiplayerPush) {
+      window.__uvzuMultiplayerPush(player);
+    }
+  }`
+      );
       code = replaceFunction(
         code,
         "drawBackground",
