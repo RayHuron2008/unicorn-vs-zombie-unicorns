@@ -820,8 +820,10 @@
       createControlsPopup();
     });
 
-    overlay.querySelector("#exitBtn").addEventListener("click", () => {
-      window.location.reload();
+        overlay.querySelector("#exitBtn").addEventListener("pointerup", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.location.href = window.location.pathname + "?v=" + Date.now();
     });
   }
 
@@ -911,18 +913,83 @@
         "player.giant = GIANT_TIME;\n        player.lives += 1;"
       );
 
-      code = code.replace(
-        `if (state.exitTimer <= 0 || player.x > W + 80) {
-        state.mode = "fireworks";
-        state.fireworks.length = 0;
-        state.victoryTimer = 3.5;
-      }`,
-        `if (player.x > W + 120) {
+            code = replaceFunction(
+        code,
+        "updateEnding",
+`  function updateEnding(dt) {
+    if (state.mode === "npc") {
+      if (!state.npc) {
+        const fromLeft = player.x > W / 2;
+
+        state.npc = {
+          x: fromLeft ? -30 : W + 30,
+          y: GROUND_Y,
+          vx: fromLeft ? 160 : -160,
+          face: fromLeft ? 1 : -1
+        };
+      }
+
+      state.npc.x += state.npc.vx * dt;
+
+      const target = player.x + (state.npc.vx > 0 ? -70 : 70);
+
+      if (
+        (state.npc.vx > 0 && state.npc.x >= target) ||
+        (state.npc.vx < 0 && state.npc.x <= target)
+      ) {
+        state.npc.x = target;
+        state.dialogTimer = 2.5;
+        state.mode = "talk";
+      }
+    }
+
+    if (state.mode === "talk") {
+      state.dialogTimer -= dt;
+
+      if (state.dialogTimer <= 0) {
+        state.mode = "exit";
+        state.exitTimer = 1.7;
+      }
+    }
+
+    if (state.mode === "exit") {
+      player.face = 1;
+      player.x += 210 * dt;
+
+      if (state.npc) {
+        state.npc.x = player.x - 15;
+        state.npc.y = player.y - 18;
+      }
+
+      if (player.x > W + 120) {
         state.mode = "fireworks";
         state.npc = null;
         state.fireworks.length = 0;
         state.victoryTimer = 3.5;
-      }`
+      }
+    }
+
+    if (state.mode === "fireworks") {
+      state.victoryTimer -= dt;
+
+      if (Math.random() < 0.15) spawnFirework();
+
+      for (let i = state.fireworks.length - 1; i >= 0; i--) {
+        const f = state.fireworks[i];
+
+        f.life -= dt;
+        f.x += f.vx * dt;
+        f.y += f.vy * dt;
+        f.vy += 40 * dt;
+
+        if (f.life <= 0) state.fireworks.splice(i, 1);
+      }
+
+      if (state.victoryTimer <= 0) {
+        state.mode = "victory";
+      }
+    }
+  }`
       );
 
       code = replaceFunction(
