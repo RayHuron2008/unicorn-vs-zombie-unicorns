@@ -1156,7 +1156,28 @@
     ctx.fillRect(0, GROUND_Y + 25, W, H - GROUND_Y);
   }`
       );
+      code = code.replace(
+        "drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);",
+        `drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);
 
+      if (window.__uvzuGetRemotePlayer) {
+        const remote = window.__uvzuGetRemotePlayer();
+
+        if (remote && typeof remote.x === "number" && typeof remote.y === "number") {
+          ctx.save();
+          ctx.globalAlpha = 0.82;
+          drawUnicorn(remote.x, remote.y, remote.face || 1, false, remote.ray > 0, remote.giant > 0);
+          ctx.globalAlpha = 1;
+          ctx.fillStyle = "#ffffff";
+          ctx.strokeStyle = "#4b2670";
+          ctx.lineWidth = 3;
+          ctx.font = "900 18px system-ui, sans-serif";
+          ctx.strokeText("P2", remote.x - 13, remote.y - 72);
+          ctx.fillText("P2", remote.x - 13, remote.y - 72);
+          ctx.restore();
+        }
+      }`
+      );
       code = replaceFunction(
         code,
         "drawUnicorn",
