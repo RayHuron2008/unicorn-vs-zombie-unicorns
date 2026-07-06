@@ -85,7 +85,58 @@
 
     return room;
   }
+  async function startFirebaseRoomListener(roomCode) {
+    if (firebaseRoomListenerStarted) return;
 
+    const { dbMod, db } = await getFirebaseDatabase();
+    const roomRef = dbMod.ref(db, "rooms/" + roomCode);
+
+    firebaseRoomListenerStarted = true;
+
+    dbMod.onValue(roomRef, (snapshot) => {
+      if (!snapshot.exists()) return;
+
+      const room = snapshot.val();
+      const otherRole = firebasePlayerRole === "host" ? "guest" : "host";
+      const other = room[otherRole];
+
+      if (other && other.connected && typeof other.x === "number") {
+        firebaseRemotePlayer = other;
+      }
+    });
+  }
+
+  window.__uvzuMultiplayerPush = function(player) {
+    if (!firebaseRoomCode || !firebasePlayerRole || !player) return;
+
+    const now = Date.now();
+
+    if (now - firebaseLastWriteAt < 80) return;
+    firebaseLastWriteAt = now;
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const path = "rooms/" + firebaseRoomCode + "/" + firebasePlayerRole;
+
+        return dbMod.update(dbMod.ref(db, path), {
+          connected: true,
+          ready: true,
+          x: Math.round(player.x),
+          y: Math.round(player.y),
+          face: player.face || 1,
+          ray: player.ray || 0,
+          giant: player.giant || 0,
+          updatedAt: now
+        });
+      })
+      .catch((err) => {
+        console.error("Multiplayer position write failed:", err);
+      });
+  };
+
+  window.__uvzuGetRemotePlayer = function() {
+    return firebaseRemotePlayer;
+  };
   function injectLayoutTweaks() {
     const style = document.createElement("style");
     style.textContent = `
