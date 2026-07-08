@@ -12,12 +12,15 @@
     measurementId: "G-ZCJ2JD8JDF"
   };
 
-   let firebaseReady = null;
+     let firebaseReady = null;
   let firebaseRoomCode = "";
   let firebasePlayerRole = "";
   let firebaseRemotePlayer = null;
   let firebaseRoomListenerStarted = false;
   let firebaseLastWriteAt = 0;
+  let firebaseCurrentRoom = null;
+  let firebaseCountdownTimer = null;
+  let firebaseCountdownStarted = false;
   async function getFirebaseDatabase() {
     if (!firebaseReady) {
       firebaseReady = Promise.all([
