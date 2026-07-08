@@ -104,10 +104,12 @@
 
     firebaseRoomListenerStarted = true;
 
-    dbMod.onValue(roomRef, (snapshot) => {
+        dbMod.onValue(roomRef, (snapshot) => {
       if (!snapshot.exists()) return;
 
       const room = snapshot.val();
+      firebaseCurrentRoom = room;
+
       const otherRole = firebasePlayerRole === "host" ? "guest" : "host";
       const other = room[otherRole];
 
