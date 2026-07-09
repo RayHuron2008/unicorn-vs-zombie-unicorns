@@ -44,20 +44,26 @@
     await dbMod.set(roomRef, {
       roomCode,
       levelCode: levelCode || "RNBW1",
-      status: "waiting",
+            status: "lobby",
+      countdownStartedAt: null,
       createdAt: now,
       updatedAt: now,
       host: {
         connected: true,
-        ready: true,
+        ready: false,
+        micOn: false,
+        hearVoice: true,
         x: 0,
         y: 0
       },
       guest: {
         connected: false,
         ready: false,
+        micOn: false,
+        hearVoice: true,
         x: 0,
         y: 0
+      }
       }
     });
 
