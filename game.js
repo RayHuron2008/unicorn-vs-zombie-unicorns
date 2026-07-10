@@ -739,10 +739,28 @@
 
     document.body.appendChild(overlay);
 
-    const roomCodeBox = overlay.querySelector("#roomCodeBox");
+        const roomCodeBox = overlay.querySelector("#roomCodeBox");
+    const lobbyStatusBox = overlay.querySelector("#lobbyStatusBox");
+    const readyGameBtn = overlay.querySelector("#readyGameBtn");
     const joinCodeInput = overlay.querySelector("#joinCodeInput");
     const hostLevelCodeInput = overlay.querySelector("#hostLevelCodeInput");
+    readyGameBtn.addEventListener("click", async () => {
+      if (!firebaseRoomCode || !firebasePlayerRole) {
+        alert("Create or join a room first.");
+        return;
+      }
 
+      readyGameBtn.textContent = "READY ✓";
+      lobbyStatusBox.textContent = "You are ready. Waiting for the other player...";
+
+      try {
+        await setFirebaseReady(true);
+      } catch (err) {
+        console.error(err);
+        readyGameBtn.textContent = "READY";
+        lobbyStatusBox.textContent = "Ready failed. Try again.";
+      }
+    });
     overlay.querySelector("#hostGameBtn").addEventListener("click", async () => {
       const code = generateRoomCode();
       const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
