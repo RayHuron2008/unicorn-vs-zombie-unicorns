@@ -157,15 +157,32 @@
   window.__uvzuGetRemotePlayer = function() {
     return firebaseRemotePlayer;
   }; 
-  async function setFirebaseReady(isReady) {
+    async function setFirebaseReady(isReady) {
     if (!firebaseRoomCode || !firebasePlayerRole) return;
 
     const { dbMod, db } = await getFirebaseDatabase();
+    const roomRef = dbMod.ref(db, "rooms/" + firebaseRoomCode);
     const path = "rooms/" + firebaseRoomCode + "/" + firebasePlayerRole;
 
     await dbMod.update(dbMod.ref(db, path), {
       ready: !!isReady
     });
+
+    const snapshot = await dbMod.get(roomRef);
+
+    if (!snapshot.exists()) return;
+
+    const room = snapshot.val();
+    const hostReady = !!(room.host && room.host.ready);
+    const guestReady = !!(room.guest && room.guest.ready);
+
+    if (hostReady && guestReady && room.status === "lobby") {
+      await dbMod.update(roomRef, {
+        status: "countdown",
+        countdownStartedAt: Date.now(),
+        updatedAt: Date.now()
+      });
+    }
   }
   function injectLayoutTweaks() {
     const style = document.createElement("style");
