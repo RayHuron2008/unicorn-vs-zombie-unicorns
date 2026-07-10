@@ -139,9 +139,8 @@
       .then(({ dbMod, db }) => {
         const path = "rooms/" + firebaseRoomCode + "/" + firebasePlayerRole;
 
-        return dbMod.update(dbMod.ref(db, path), {
+                return dbMod.update(dbMod.ref(db, path), {
           connected: true,
-          ready: true,
           x: Math.round(player.x),
           y: Math.round(player.y),
           face: player.face || 1,
