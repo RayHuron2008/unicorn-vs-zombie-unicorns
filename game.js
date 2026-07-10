@@ -760,7 +760,26 @@
         readyGameBtn.textContent = "READY";
         lobbyStatusBox.textContent = "Ready failed. Try again.";
       }
-    });
+    });    function updateLobbyStatus() {
+      if (!firebaseCurrentRoom || !lobbyStatusBox) return;
+
+      const hostReady = !!(firebaseCurrentRoom.host && firebaseCurrentRoom.host.ready);
+      const guestReady = !!(firebaseCurrentRoom.guest && firebaseCurrentRoom.guest.ready);
+
+      if (firebaseCurrentRoom.status === "countdown" && firebaseCurrentRoom.countdownStartedAt) {
+        const elapsed = Math.floor((Date.now() - firebaseCurrentRoom.countdownStartedAt) / 1000);
+        const left = Math.max(0, 10 - elapsed);
+
+        lobbyStatusBox.textContent = "Starting in " + left + "...";
+        return;
+      }
+
+      lobbyStatusBox.textContent =
+        "Host: " + (hostReady ? "READY" : "WAITING") +
+        " | Guest: " + (guestReady ? "READY" : "WAITING");
+    }
+
+    setInterval(updateLobbyStatus, 250);
     overlay.querySelector("#hostGameBtn").addEventListener("click", async () => {
       const code = generateRoomCode();
       const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
