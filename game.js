@@ -689,7 +689,15 @@
 
           <button id="hostGameBtn" class="pauseBtn">HOST GAME</button>
 
-          <div id="roomCodeBox">Room Code</div>
+                  <div id="roomCodeBox">Room Code</div>
+
+          <div id="lobbyStatusBox">Not in lobby yet</div>
+
+          <button id="readyGameBtn" class="pauseBtn">READY</button>
+
+          <div class="multiplayerSmallText">
+            Voice chat controls will go here later. For now this lobby waits until both players are ready.
+          </div>
 
           <div class="multiplayerSmallText">
             Level Code for the joining player. Blank = Level 1.
