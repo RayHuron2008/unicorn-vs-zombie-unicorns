@@ -157,7 +157,17 @@
 
   window.__uvzuGetRemotePlayer = function() {
     return firebaseRemotePlayer;
-  };
+  }; 
+  async function setFirebaseReady(isReady) {
+    if (!firebaseRoomCode || !firebasePlayerRole) return;
+
+    const { dbMod, db } = await getFirebaseDatabase();
+    const path = "rooms/" + firebaseRoomCode + "/" + firebasePlayerRole;
+
+    await dbMod.update(dbMod.ref(db, path), {
+      ready: !!isReady
+    });
+  }
   function injectLayoutTweaks() {
     const style = document.createElement("style");
     style.textContent = `
