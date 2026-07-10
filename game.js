@@ -86,11 +86,13 @@
 
     const room = snapshot.val();
 
-    await dbMod.update(roomRef, {
-      status: "playing",
+        await dbMod.update(roomRef, {
+      status: "lobby",
       updatedAt: Date.now(),
       "guest/connected": true,
-      "guest/ready": true
+      "guest/ready": false,
+      "guest/micOn": false,
+      "guest/hearVoice": true
     });
 
         firebaseRoomCode = roomCode;
