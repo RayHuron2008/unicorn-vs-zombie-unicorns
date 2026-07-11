@@ -63,8 +63,7 @@
         hearVoice: true,
         x: 0,
         y: 0
-      }
-      }
+        }
     });
 
         firebaseRoomCode = roomCode;
