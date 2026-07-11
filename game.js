@@ -771,7 +771,13 @@
         const elapsed = Math.floor((Date.now() - firebaseCurrentRoom.countdownStartedAt) / 1000);
         const left = Math.max(0, 10 - elapsed);
 
-        lobbyStatusBox.textContent = "Starting in " + left + "...";
+                lobbyStatusBox.textContent = "Starting in " + left + "...";
+
+        if (left <= 0 && !firebaseCountdownStarted) {
+          firebaseCountdownStarted = true;
+          startFirstLevelFromMultiplayer(firebaseCurrentRoom.levelCode || "RNBW1");
+        }
+
         return;
       }
 
