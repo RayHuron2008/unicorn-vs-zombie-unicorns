@@ -760,7 +760,8 @@
         readyGameBtn.textContent = "READY";
         lobbyStatusBox.textContent = "Ready failed. Try again.";
       }
-    });    function updateLobbyStatus() {
+    });   
+ function updateLobbyStatus() {
       if (!firebaseCurrentRoom || !lobbyStatusBox) return;
 
       const hostReady = !!(firebaseCurrentRoom.host && firebaseCurrentRoom.host.ready);
