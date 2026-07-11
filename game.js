@@ -842,10 +842,11 @@
         return;
       }
 
-      try {
+            try {
         const room = await joinFirebaseRoom(code);
-        alert("Joined room " + code + ". Starting level.");
-        startFirstLevelFromMultiplayer(room.levelCode || "RNBW1");
+        roomCodeBox.textContent = code;
+        lobbyStatusBox.textContent = "Joined lobby. Press READY when you are ready.";
+        alert("Joined room " + code + ". Press READY when you are ready.");
       } catch (err) {
         console.error(err);
         alert("Room not found. Check the code and try again.");
