@@ -831,7 +831,8 @@
         }
       }
 
-      startFirstLevelFromMultiplayer(levelCode);
+            lobbyStatusBox.textContent = "Host lobby is ready. Press READY when you are ready.";
+      alert("Host lobby is ready. Give Player 2 the room code, then press READY.");
     });
 
     overlay.querySelector("#joinGameBtn").addEventListener("click", async () => {
