@@ -164,9 +164,27 @@
       });
   };
 
-  window.__uvzuGetRemotePlayer = function() {
+    window.__uvzuGetRemotePlayer = function() {
+    if (!firebaseRemotePlayer) return null;
+
+    if (
+      firebaseRemoteDrawX !== null &&
+      firebaseRemoteDrawY !== null &&
+      firebaseRemoteTargetX !== null &&
+      firebaseRemoteTargetY !== null
+    ) {
+      firebaseRemoteDrawX += (firebaseRemoteTargetX - firebaseRemoteDrawX) * 0.25;
+      firebaseRemoteDrawY += (firebaseRemoteTargetY - firebaseRemoteDrawY) * 0.25;
+
+      return {
+        ...firebaseRemotePlayer,
+        x: firebaseRemoteDrawX,
+        y: firebaseRemoteDrawY
+      };
+    }
+
     return firebaseRemotePlayer;
-  }; 
+  };
     async function setFirebaseReady(isReady) {
     if (!firebaseRoomCode || !firebasePlayerRole) return;
 
