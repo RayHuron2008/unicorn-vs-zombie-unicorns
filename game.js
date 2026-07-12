@@ -124,8 +124,15 @@
       const otherRole = firebasePlayerRole === "host" ? "guest" : "host";
       const other = room[otherRole];
 
-      if (other && other.connected && typeof other.x === "number") {
+            if (other && other.connected && typeof other.x === "number") {
         firebaseRemotePlayer = other;
+        firebaseRemoteTargetX = other.x;
+        firebaseRemoteTargetY = other.y;
+
+        if (firebaseRemoteDrawX === null || firebaseRemoteDrawY === null) {
+          firebaseRemoteDrawX = other.x;
+          firebaseRemoteDrawY = other.y;
+        }
       }
     });
   }
