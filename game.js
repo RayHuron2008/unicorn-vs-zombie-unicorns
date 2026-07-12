@@ -18,9 +18,13 @@
   let firebaseRemotePlayer = null;
   let firebaseRoomListenerStarted = false;
   let firebaseLastWriteAt = 0;
-  let firebaseCurrentRoom = null;
+    let firebaseCurrentRoom = null;
   let firebaseCountdownTimer = null;
   let firebaseCountdownStarted = false;
+  let firebaseRemoteDrawX = null;
+  let firebaseRemoteDrawY = null;
+  let firebaseRemoteTargetX = null;
+  let firebaseRemoteTargetY = null;
   async function getFirebaseDatabase() {
     if (!firebaseReady) {
       firebaseReady = Promise.all([
