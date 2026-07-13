@@ -120,9 +120,9 @@
         dbMod.onValue(roomRef, (snapshot) => {
       if (!snapshot.exists()) return;
 
-      const room = snapshot.val();
+            const room = snapshot.val();
       firebaseCurrentRoom = room;
-
+      firebaseEnemyDeaths = room.enemyDeaths || {};
       const otherRole = firebasePlayerRole === "host" ? "guest" : "host";
       const other = room[otherRole];
 
