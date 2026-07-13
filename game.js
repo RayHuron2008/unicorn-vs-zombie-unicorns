@@ -187,6 +187,33 @@
 
     return firebaseRemotePlayer;
   };
+  window.__uvzuMultiplayerEnemyKilled = function(enemyId) {
+    if (!firebaseRoomCode || !firebasePlayerRole || enemyId === undefined || enemyId === null) return;
+
+    const now = Date.now();
+
+    if (now - firebaseLastEnemyDeathWriteAt < 40) return;
+    firebaseLastEnemyDeathWriteAt = now;
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const safeId = String(enemyId).replace(/[^A-Za-z0-9_-]/g, "_");
+        const path = "rooms/" + firebaseRoomCode + "/enemyDeaths/" + safeId;
+
+        return dbMod.set(dbMod.ref(db, path), {
+          dead: true,
+          by: firebasePlayerRole,
+          at: now
+        });
+      })
+      .catch((err) => {
+        console.error("Enemy death sync failed:", err);
+      });
+  };
+
+  window.__uvzuGetEnemyDeaths = function() {
+    return firebaseEnemyDeaths || {};
+  };
     async function setFirebaseReady(isReady) {
     if (!firebaseRoomCode || !firebasePlayerRole) return;
 
