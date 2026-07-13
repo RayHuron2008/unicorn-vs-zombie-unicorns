@@ -1103,7 +1103,15 @@
         "const wantRay = Math.random() < 0.2;",
         "const wantRay = Math.random() < RAY_CHANCE;"
       );
+      code = code.replace(
+        "let shootCooldown = 0;",
+        "let shootCooldown = 0;\n  let multiplayerEnemyIdCounter = 0;"
+      );
 
+      code = code.replace(
+        "state.enemies.push({\n      x,",
+        "state.enemies.push({\n      id: \"e\" + (++multiplayerEnemyIdCounter),\n      x,"
+      );
       code = code.replace(
         "state.spawnTimer = rand(0.75, 1.2);",
         "state.spawnTimer = rand(SPAWN_MIN, SPAWN_MAX);"
