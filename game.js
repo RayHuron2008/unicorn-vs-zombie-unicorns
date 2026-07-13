@@ -1113,6 +1113,17 @@
         "state.enemies.push({\n      id: \"e\" + (++multiplayerEnemyIdCounter),\n      x,"
       );
       code = code.replace(
+        `    const e = state.enemies[index];
+    const powered = player.ray > 0 || player.giant > 0;`,
+        `    const e = state.enemies[index];
+
+    if (e && e.id && window.__uvzuMultiplayerEnemyKilled && method !== "remote") {
+      window.__uvzuMultiplayerEnemyKilled(e.id);
+    }
+
+    const powered = player.ray > 0 || player.giant > 0;`
+      );
+      code = code.replace(
         "state.spawnTimer = rand(0.75, 1.2);",
         "state.spawnTimer = rand(SPAWN_MIN, SPAWN_MAX);"
       );
