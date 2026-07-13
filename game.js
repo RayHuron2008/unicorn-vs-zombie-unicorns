@@ -1221,13 +1221,26 @@
     }
   }`
       );
-      code = code.replace(
+            code = code.replace(
 `    updateParticles(dt);
     updateEnding(dt);
     updateHud();
   }`,
 `    updateParticles(dt);
     updateEnding(dt);
+
+    if (window.__uvzuGetEnemyDeaths) {
+      const deadEnemies = window.__uvzuGetEnemyDeaths();
+
+      for (let i = state.enemies.length - 1; i >= 0; i--) {
+        const enemy = state.enemies[i];
+
+        if (enemy && enemy.id && deadEnemies[enemy.id]) {
+          killEnemy(i, "remote");
+        }
+      }
+    }
+
     updateHud();
 
     if (window.__uvzuMultiplayerPush) {
