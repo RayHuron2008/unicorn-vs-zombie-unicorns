@@ -21,10 +21,12 @@
     let firebaseCurrentRoom = null;
   let firebaseCountdownTimer = null;
   let firebaseCountdownStarted = false;
-  let firebaseRemoteDrawX = null;
+    let firebaseRemoteDrawX = null;
   let firebaseRemoteDrawY = null;
   let firebaseRemoteTargetX = null;
   let firebaseRemoteTargetY = null;
+  let firebaseEnemyDeaths = {};
+  let firebaseLastEnemyDeathWriteAt = 0;
   async function getFirebaseDatabase() {
     if (!firebaseReady) {
       firebaseReady = Promise.all([
