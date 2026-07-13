@@ -173,8 +173,8 @@
       firebaseRemoteTargetX !== null &&
       firebaseRemoteTargetY !== null
     ) {
-      firebaseRemoteDrawX += (firebaseRemoteTargetX - firebaseRemoteDrawX) * 0.35;
-      firebaseRemoteDrawY += (firebaseRemoteTargetY - firebaseRemoteDrawY) * 0.35;
+      firebaseRemoteDrawX += (firebaseRemoteTargetX - firebaseRemoteDrawX) * 0.25;
+      firebaseRemoteDrawY += (firebaseRemoteTargetY - firebaseRemoteDrawY) * 0.25;
 
       return {
         ...firebaseRemotePlayer,
