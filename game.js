@@ -25,8 +25,10 @@
   let firebaseRemoteDrawY = null;
   let firebaseRemoteTargetX = null;
   let firebaseRemoteTargetY = null;
-  let firebaseEnemyDeaths = {};
+    let firebaseEnemyDeaths = {};
+  let firebaseEnemyState = null;
   let firebaseLastEnemyDeathWriteAt = 0;
+  let firebaseLastEnemyStateWriteAt = 0;
   async function getFirebaseDatabase() {
     if (!firebaseReady) {
       firebaseReady = Promise.all([
