@@ -123,8 +123,9 @@
       if (!snapshot.exists()) return;
 
             const room = snapshot.val();
-      firebaseCurrentRoom = room;
+            firebaseCurrentRoom = room;
       firebaseEnemyDeaths = room.enemyDeaths || {};
+      firebaseEnemyState = room.enemyState || null;
       const otherRole = firebasePlayerRole === "host" ? "guest" : "host";
       const other = room[otherRole];
 
