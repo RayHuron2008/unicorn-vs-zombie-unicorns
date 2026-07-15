@@ -258,8 +258,7 @@
   };
 
   async function setFirebaseReady(isReady) {
-    async function setFirebaseReady(isReady) {
-    if (!firebaseRoomCode || !firebasePlayerRole) return;
+     if (!firebaseRoomCode || !firebasePlayerRole) return;
 
     const { dbMod, db } = await getFirebaseDatabase();
     const roomRef = dbMod.ref(db, "rooms/" + firebaseRoomCode);
