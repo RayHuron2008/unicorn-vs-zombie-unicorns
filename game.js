@@ -1171,7 +1171,23 @@
         "state.spawnTimer = rand(SPAWN_MIN, SPAWN_MAX);"
       );
 
+         code = code.replace(
+`        if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES) {`,
+`        if (
+          state.spawnTimer <= 0 &&
+          state.enemies.length < MAX_ENEMIES &&
+          !(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
+        ) {`
+      );
+
       code = code.replace(
+`      if (state.finalSpawned < FINAL_RAY_COUNT && state.finalSpawnTimer <= 0) {`,
+`      if (
+        state.finalSpawned < FINAL_RAY_COUNT &&
+        state.finalSpawnTimer <= 0 &&
+        !(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
+      ) {`
+      );   code = code.replace(
         "e.x += Math.sign(dx) * 105 * dt;",
         "e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;"
       );
