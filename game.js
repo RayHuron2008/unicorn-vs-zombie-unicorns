@@ -1272,6 +1272,29 @@
 `    updateParticles(dt);
     updateEnding(dt);
 
+        if (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest()) {
+      const enemyState = window.__uvzuGetMultiplayerEnemyState
+        ? window.__uvzuGetMultiplayerEnemyState()
+        : null;
+
+      if (enemyState && Array.isArray(enemyState.enemies)) {
+        state.enemies = enemyState.enemies.map((e) => ({
+          id: e.id,
+          x: e.x,
+          y: e.y,
+          w: e.w || 54,
+          h: e.h || 34,
+          face: e.face || 1,
+          type: e.type || "normal",
+          hp: e.hp || 1,
+          shootTimer: e.shootTimer || 0,
+          sep: e.sep || 1
+        }));
+      }
+    } else if (window.__uvzuMultiplayerPushEnemyState) {
+      window.__uvzuMultiplayerPushEnemyState(state.enemies);
+    }
+
     if (window.__uvzuGetEnemyDeaths) {
       const deadEnemies = window.__uvzuGetEnemyDeaths();
 
@@ -1285,7 +1308,6 @@
     }
 
     updateHud();
-
     if (window.__uvzuMultiplayerPush) {
       window.__uvzuMultiplayerPush(player);
     }
