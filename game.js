@@ -214,8 +214,47 @@
       });
   };
 
-  window.__uvzuGetEnemyDeaths = function() {
-    return firebaseEnemyDeaths || {};
+    window.__uvzuIsMultiplayerGuest = function() {
+    return firebasePlayerRole === "guest";
+  };
+
+  window.__uvzuMultiplayerPushEnemyState = function(enemies) {
+    if (!firebaseRoomCode || firebasePlayerRole !== "host" || !Array.isArray(enemies)) return;
+
+    const now = Date.now();
+
+    if (now - firebaseLastEnemyStateWriteAt < 120) return;
+    firebaseLastEnemyStateWriteAt = now;
+
+    const safeEnemies = enemies.slice(0, 8).map((e) => ({
+      id: e.id || "",
+      x: Math.round(e.x || 0),
+      y: Math.round(e.y || 0),
+      w: e.w || 54,
+      h: e.h || 34,
+      face: e.face || 1,
+      type: e.type || "normal",
+      hp: e.hp || 1,
+      shootTimer: e.shootTimer || 0,
+      sep: e.sep || 1
+    }));
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const path = "rooms/" + firebaseRoomCode + "/enemyState";
+
+        return dbMod.set(dbMod.ref(db, path), {
+          enemies: safeEnemies,
+          updatedAt: now
+        });
+      })
+      .catch((err) => {
+        console.error("Enemy state sync failed:", err);
+      });
+  };
+
+  window.__uvzuGetMultiplayerEnemyState = function() {
+    return firebaseEnemyState;
   };
   window.__uvzuIsMultiplayerGuest = function() {
     return firebasePlayerRole === "guest";
