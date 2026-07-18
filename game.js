@@ -220,13 +220,15 @@
   };
 
   window.__uvzuMultiplayerPushEnemyState = function(enemies) {
-    if (!firebaseRoomCode || firebasePlayerRole !== "host" || !Array.isArray(enemies)) return;
+        if (!firebaseRoomCode || firebasePlayerRole !== "host" || !Array.isArray(enemies)) return;
+    if (firebaseEnemyStateWriteBusy) return;
 
     const now = Date.now();
 
-    if (now - firebaseLastEnemyStateWriteAt < 120) return;
-    firebaseLastEnemyStateWriteAt = now;
+    if (now - firebaseLastEnemyStateWriteAt < 250) return;
 
+    firebaseLastEnemyStateWriteAt = now;
+    firebaseEnemyStateWriteBusy = true;
     const safeEnemies = enemies.slice(0, 8).map((e) => ({
       id: e.id || "",
       x: Math.round(e.x || 0),
