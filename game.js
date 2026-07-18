@@ -251,8 +251,11 @@
           updatedAt: now
         });
       })
-      .catch((err) => {
+            .catch((err) => {
         console.error("Enemy state sync failed:", err);
+      })
+      .finally(() => {
+        firebaseEnemyStateWriteBusy = false;
       });
   };
 
