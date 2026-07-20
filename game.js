@@ -1300,7 +1300,14 @@
         ? window.__uvzuGetMultiplayerEnemyState()
         : null;
 
-      if (enemyState && Array.isArray(enemyState.enemies)) {
+            if (
+        enemyState &&
+        Array.isArray(enemyState.enemies) &&
+        enemyState.updatedAt &&
+        enemyState.updatedAt !== firebaseLastAppliedEnemyStateAt
+      ) {
+        firebaseLastAppliedEnemyStateAt = enemyState.updatedAt;
+
         state.enemies = enemyState.enemies.map((e) => ({
           id: e.id,
           x: e.x,
