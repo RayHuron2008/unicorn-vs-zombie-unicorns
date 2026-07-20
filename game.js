@@ -29,7 +29,8 @@
   let firebaseEnemyState = null;
   let firebaseLastEnemyDeathWriteAt = 0;
     let firebaseLastEnemyStateWriteAt = 0;
-  let firebaseEnemyStateWriteBusy = false;
+    let firebaseEnemyStateWriteBusy = false;
+  let firebaseLastAppliedEnemyStateAt = 0;
   async function getFirebaseDatabase() {
     if (!firebaseReady) {
       firebaseReady = Promise.all([
