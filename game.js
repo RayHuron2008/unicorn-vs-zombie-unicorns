@@ -1304,9 +1304,9 @@
         enemyState &&
         Array.isArray(enemyState.enemies) &&
         enemyState.updatedAt &&
-        enemyState.updatedAt !== firebaseLastAppliedEnemyStateAt
+               enemyState.updatedAt !== window.__uvzuLastAppliedEnemyStateAt
       ) {
-        firebaseLastAppliedEnemyStateAt = enemyState.updatedAt;
+               window.__uvzuLastAppliedEnemyStateAt = enemyState.updatedAt;
 
         state.enemies = enemyState.enemies.map((e) => ({
           id: e.id,
