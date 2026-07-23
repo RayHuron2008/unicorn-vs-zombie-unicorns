@@ -1192,8 +1192,14 @@
     const powered = player.ray > 0 || player.giant > 0;`,
         `    const e = state.enemies[index];
 
-    if (e && e.id && window.__uvzuMultiplayerEnemyKilled && method !== "remote") {
-      window.__uvzuMultiplayerEnemyKilled(e.id);
+       if (e && e.id && method !== "remote") {
+      if (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest()) {
+        if (window.__uvzuRequestEnemyKill) {
+          window.__uvzuRequestEnemyKill(e.id);
+        }
+      } else if (window.__uvzuMultiplayerEnemyKilled) {
+        window.__uvzuMultiplayerEnemyKilled(e.id);
+      }
     }
 
     const powered = player.ray > 0 || player.giant > 0;`
