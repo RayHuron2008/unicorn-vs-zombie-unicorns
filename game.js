@@ -28,6 +28,7 @@
     let firebaseEnemyDeaths = {};
   let firebaseEnemyState = null;
   let firebaseLastEnemyDeathWriteAt = 0;
+  let firebaseLastGuestKillRequestAt = 0;
     let firebaseLastEnemyStateWriteAt = 0;
     let firebaseEnemyStateWriteBusy = false;
    let firebaseLastAppliedEnemyStateAt = 0;
@@ -216,7 +217,30 @@
         console.error("Enemy death sync failed:", err);
       });
   };
+ 
+  window.__uvzuRequestEnemyKill = function(enemyId) {
+    if (!firebaseRoomCode || firebasePlayerRole !== "guest" || enemyId === undefined || enemyId === null) return;
 
+    const now = Date.now();
+
+    if (now - firebaseLastGuestKillRequestAt < 80) return;
+    firebaseLastGuestKillRequestAt = now;
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const safeId = String(enemyId).replace(/[^A-Za-z0-9_-]/g, "_");
+        const path = "rooms/" + firebaseRoomCode + "/guestKillRequests/" + safeId;
+
+        return dbMod.set(dbMod.ref(db, path), {
+          requested: true,
+          by: "guest",
+          at: now
+        });
+      })
+      .catch((err) => {
+        console.error("Guest kill request failed:", err);
+      });
+  };
     window.__uvzuIsMultiplayerGuest = function() {
     return firebasePlayerRole === "guest";
   };
