@@ -1366,6 +1366,20 @@
       window.__uvzuMultiplayerPushEnemyState(state.enemies);
     }
 
+       if (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) {
+      const guestKillRequests = window.__uvzuGetGuestKillRequests
+        ? window.__uvzuGetGuestKillRequests()
+        : {};
+
+      for (let i = state.enemies.length - 1; i >= 0; i--) {
+        const enemy = state.enemies[i];
+
+        if (enemy && enemy.id && guestKillRequests[enemy.id]) {
+          killEnemy(i, "remote");
+        }
+      }
+    }
+
     if (window.__uvzuGetEnemyDeaths) {
       const deadEnemies = window.__uvzuGetEnemyDeaths();
 
