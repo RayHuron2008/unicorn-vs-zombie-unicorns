@@ -1374,8 +1374,12 @@
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const enemy = state.enemies[i];
 
-        if (enemy && enemy.id && guestKillRequests[enemy.id]) {
+               if (enemy && enemy.id && guestKillRequests[enemy.id]) {
           killEnemy(i, "remote");
+
+          if (window.__uvzuClearGuestKillRequest) {
+            window.__uvzuClearGuestKillRequest(enemy.id);
+          }
         }
       }
     }
