@@ -241,8 +241,18 @@
         console.error("Guest kill request failed:", err);
       });
   };
-    window.__uvzuIsMultiplayerGuest = function() {
+     window.__uvzuIsMultiplayerGuest = function() {
     return firebasePlayerRole === "guest";
+  };
+
+  window.__uvzuIsMultiplayerHost = function() {
+    return firebasePlayerRole === "host";
+  };
+
+  window.__uvzuGetGuestKillRequests = function() {
+    return firebaseCurrentRoom && firebaseCurrentRoom.guestKillRequests
+      ? firebaseCurrentRoom.guestKillRequests
+      : {};
   };
 
   window.__uvzuMultiplayerPushEnemyState = function(enemies) {
