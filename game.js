@@ -249,10 +249,25 @@
     return firebasePlayerRole === "host";
   };
 
-  window.__uvzuGetGuestKillRequests = function() {
+   window.__uvzuGetGuestKillRequests = function() {
     return firebaseCurrentRoom && firebaseCurrentRoom.guestKillRequests
       ? firebaseCurrentRoom.guestKillRequests
       : {};
+  };
+
+  window.__uvzuClearGuestKillRequest = function(enemyId) {
+    if (!firebaseRoomCode || firebasePlayerRole !== "host" || !enemyId) return;
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const safeId = String(enemyId).replace(/[^A-Za-z0-9_-]/g, "_");
+        const path = "rooms/" + firebaseRoomCode + "/guestKillRequests/" + safeId;
+
+        return dbMod.remove(dbMod.ref(db, path));
+      })
+      .catch((err) => {
+        console.error("Clear guest kill request failed:", err);
+      });
   };
 
   window.__uvzuMultiplayerPushEnemyState = function(enemies) {
