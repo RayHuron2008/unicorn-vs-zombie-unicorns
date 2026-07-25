@@ -1217,16 +1217,16 @@
     const powered = player.ray > 0 || player.giant > 0;`,
         `    const e = state.enemies[index];
 
-       if (e && e.id && method !== "remote") {
+           if (e && e.id && method !== "remote") {
       if (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest()) {
         if (window.__uvzuRequestEnemyKill) {
           window.__uvzuRequestEnemyKill(e.id);
         }
-              if (window.__uvzuRequestEnemyKill) {
-          window.__uvzuRequestEnemyKill(e.id);
-        }
 
         return;
+      } else if (window.__uvzuMultiplayerEnemyKilled) {
+        window.__uvzuMultiplayerEnemyKilled(e.id);
+      }
     }
 
     const powered = player.ray > 0 || player.giant > 0;`
