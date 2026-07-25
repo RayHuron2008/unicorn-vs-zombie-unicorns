@@ -270,13 +270,13 @@
       });
   };
 
-  window.__uvzuMultiplayerPushEnemyState = function(enemies) {
+    window.__uvzuMultiplayerPushEnemyState = function(enemies, forceNow = false) {
         if (!firebaseRoomCode || firebasePlayerRole !== "host" || !Array.isArray(enemies)) return;
     if (firebaseEnemyStateWriteBusy) return;
 
     const now = Date.now();
 
-    if (now - firebaseLastEnemyStateWriteAt < 250) return;
+        if (!forceNow && now - firebaseLastEnemyStateWriteAt < 250) return;
 
     firebaseLastEnemyStateWriteAt = now;
     firebaseEnemyStateWriteBusy = true;
