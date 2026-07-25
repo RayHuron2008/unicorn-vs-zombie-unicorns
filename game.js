@@ -1222,9 +1222,11 @@
         if (window.__uvzuRequestEnemyKill) {
           window.__uvzuRequestEnemyKill(e.id);
         }
-      } else if (window.__uvzuMultiplayerEnemyKilled) {
-        window.__uvzuMultiplayerEnemyKilled(e.id);
-      }
+              if (window.__uvzuRequestEnemyKill) {
+          window.__uvzuRequestEnemyKill(e.id);
+        }
+
+        return;
     }
 
     const powered = player.ray > 0 || player.giant > 0;`
