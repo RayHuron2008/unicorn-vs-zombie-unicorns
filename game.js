@@ -1379,9 +1379,7 @@
           sep: e.sep || 1
         }));
       }
-    } else if (window.__uvzuMultiplayerPushEnemyState) {
-      window.__uvzuMultiplayerPushEnemyState(state.enemies);
-    }
+        }
 
        if (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) {
       const guestKillRequests = window.__uvzuGetGuestKillRequests
