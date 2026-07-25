@@ -1392,10 +1392,14 @@
                if (enemy && enemy.id && guestKillRequests[enemy.id]) {
           killEnemy(i, "remote");
 
-          if (window.__uvzuClearGuestKillRequest) {
+                    if (window.__uvzuClearGuestKillRequest) {
             window.__uvzuClearGuestKillRequest(enemy.id);
           }
         }
+      }
+
+      if (window.__uvzuMultiplayerPushEnemyState) {
+        window.__uvzuMultiplayerPushEnemyState(state.enemies, true);
       }
     }
 
