@@ -1387,7 +1387,7 @@
         : {};
 
 
-      for (let i = state.enemies.length - 1; i >= 0; i--) {
+           for (let i = state.enemies.length - 1; i >= 0; i--) {
         const enemy = state.enemies[i];
 
                if (enemy && enemy.id && guestKillRequests[enemy.id]) {
@@ -1399,7 +1399,9 @@
         }
       }
 
-       
+      if (window.__uvzuMultiplayerPushEnemyState) {
+        window.__uvzuMultiplayerPushEnemyState(state.enemies);
+      }
     }
 
     if (window.__uvzuGetEnemyDeaths) {
