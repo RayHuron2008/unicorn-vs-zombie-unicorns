@@ -1386,7 +1386,7 @@
         ? window.__uvzuGetGuestKillRequests()
         : {};
 
-      let guestKillHandled = false;
+             guestKillHandled = true;
 
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const enemy = state.enemies[i];
@@ -1401,9 +1401,7 @@
         }
       }
 
-           if (guestKillHandled && window.__uvzuMultiplayerPushEnemyState) {
-        window.__uvzuMultiplayerPushEnemyState(state.enemies, true);
-      }
+       
     }
 
     if (window.__uvzuGetEnemyDeaths) {
