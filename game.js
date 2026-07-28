@@ -1382,15 +1382,18 @@
         }
 
        if (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) {
-      const guestKillRequests = window.__uvzuGetGuestKillRequests
+           const guestKillRequests = window.__uvzuGetGuestKillRequests
         ? window.__uvzuGetGuestKillRequests()
         : {};
+
+      let guestKillHandled = false;
 
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const enemy = state.enemies[i];
 
                if (enemy && enemy.id && guestKillRequests[enemy.id]) {
-          killEnemy(i, "remote");
+                   killEnemy(i, "remote");
+          guestKillHandled = true;
 
                     if (window.__uvzuClearGuestKillRequest) {
             window.__uvzuClearGuestKillRequest(enemy.id);
@@ -1398,7 +1401,7 @@
         }
       }
 
-      if (window.__uvzuMultiplayerPushEnemyState) {
+           if (guestKillHandled && window.__uvzuMultiplayerPushEnemyState) {
         window.__uvzuMultiplayerPushEnemyState(state.enemies, true);
       }
     }
