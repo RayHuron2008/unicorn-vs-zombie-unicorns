@@ -33,6 +33,23 @@
     let firebaseEnemyStateWriteBusy = false;
    let firebaseLastAppliedEnemyStateAt = 0;
   window.__uvzuLastAppliedEnemyStateAt = 0;
+    window.__uvzuGuestShotFlashes = [];
+
+  window.__uvzuAddGuestShotFlash = function(enemy) {
+    const remote = window.__uvzuGetRemotePlayer
+      ? window.__uvzuGetRemotePlayer()
+      : null;
+
+    if (!remote || !enemy) return;
+
+    window.__uvzuGuestShotFlashes.push({
+      x1: remote.x + (remote.face || 1) * 34,
+      y1: remote.y - 32,
+      x2: enemy.x,
+      y2: enemy.y - 24,
+      until: Date.now() + 180
+    });
+  };
   async function getFirebaseDatabase() {
     if (!firebaseReady) {
       firebaseReady = Promise.all([
@@ -1388,7 +1405,11 @@
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const enemy = state.enemies[i];
 
-        if (enemy && enemy.id && guestKillRequests[enemy.id]) {
+               if (enemy && enemy.id && guestKillRequests[enemy.id]) {
+          if (window.__uvzuAddGuestShotFlash) {
+            window.__uvzuAddGuestShotFlash(enemy);
+          }
+
           killEnemy(i, "remote");
 
           if (window.__uvzuClearGuestKillRequest) {
@@ -1531,6 +1552,36 @@
           ctx.restore();
         }
       }`
+      );
+            code = code.replace(
+`  function drawShots() {
+    for (const b of state.playerShots) {`,
+`  function drawShots() {
+    if (window.__uvzuGuestShotFlashes) {
+      const now = Date.now();
+      window.__uvzuGuestShotFlashes = window.__uvzuGuestShotFlashes.filter((flash) => flash.until > now);
+
+      for (const flash of window.__uvzuGuestShotFlashes) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0.15, (flash.until - now) / 180);
+        ctx.strokeStyle = "#66d9ff";
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(flash.x1, flash.y1);
+        ctx.lineTo(flash.x2, flash.y2);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(flash.x1, flash.y1);
+        ctx.lineTo(flash.x2, flash.y2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    for (const b of state.playerShots) {`
       );
       code = replaceFunction(
         code,
