@@ -1492,7 +1492,29 @@
     }
   }`
       );
-                 code = code.replace(
+      
+             code = code.split("startNpcScene();").join(
+`if (
+      (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
+      (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
+    ) {
+      state.mode = "fireworks";
+      state.npc = null;
+      state.enemies.length = 0;
+      state.enemyShots.length = 0;
+      state.playerShots.length = 0;
+      state.fireworks.length = 0;
+      state.victoryTimer = 3.5;
+    } else {
+      startNpcScene();
+    }`
+      );
+
+      code = code.replace(
+        "Victory: Stage 1 Completed!",
+        "LEVEL COMPLETED!"
+      );         
+      code = code.replace(
 `    updateParticles(dt);
     updateEnding(dt);
     updateHud();
