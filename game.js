@@ -50,6 +50,61 @@
       until: Date.now() + 180
     });
   };
+    let firebaseLocalGhost = false;
+
+  window.__uvzuIsLocalGhost = function() {
+    return firebaseLocalGhost;
+  };
+
+  window.__uvzuMarkLocalDead = function(player) {
+    firebaseLocalGhost = true;
+
+    if (!firebaseRoomCode || !firebasePlayerRole) return;
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const path = "rooms/" + firebaseRoomCode + "/" + firebasePlayerRole;
+
+        return dbMod.update(dbMod.ref(db, path), {
+          dead: true,
+          ghost: true,
+          lives: 0,
+          hp: 0,
+          updatedAt: Date.now()
+        });
+      })
+      .catch((err) => {
+        console.error("Mark local dead failed:", err);
+      });
+  };
+
+  window.__uvzuReviveLocalForNextLevel = function(player) {
+    firebaseLocalGhost = false;
+
+    if (player) {
+      player.lives = 5;
+      player.hp = 2;
+      player.invuln = 1.2;
+    }
+
+    if (!firebaseRoomCode || !firebasePlayerRole) return;
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const path = "rooms/" + firebaseRoomCode + "/" + firebasePlayerRole;
+
+        return dbMod.update(dbMod.ref(db, path), {
+          dead: false,
+          ghost: false,
+          lives: 5,
+          hp: 2,
+          updatedAt: Date.now()
+        });
+      })
+      .catch((err) => {
+        console.error("Revive local failed:", err);
+      });
+  };
   async function getFirebaseDatabase() {
     if (!firebaseReady) {
       firebaseReady = Promise.all([
@@ -179,9 +234,13 @@
           connected: true,
           x: Math.round(player.x),
           y: Math.round(player.y),
-          face: player.face || 1,
+                   face: player.face || 1,
           ray: player.ray || 0,
           giant: player.giant || 0,
+          lives: typeof player.lives === "number" ? player.lives : 0,
+          hp: typeof player.hp === "number" ? player.hp : 0,
+          dead: firebaseLocalGhost,
+          ghost: firebaseLocalGhost,
           updatedAt: now
         });
       })
@@ -1223,6 +1282,77 @@
       code = code.replace(
         "let shootCooldown = 0;",
         "let shootCooldown = 0;\n  let multiplayerEnemyIdCounter = 0;"
+      );
+            code = code.replace(
+        "lives: 3,",
+        "lives: 5,"
+      );
+
+      code = code.replace(
+        "player.lives = 3;",
+        "player.lives = 5;"
+      );
+
+      code = code.replace(
+`    if (player.lives <= 0) {
+      fullRestart();
+      return;
+    }
+
+    state.resetQueued = true;`,
+`    if (player.lives <= 0) {
+      if (
+        (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
+        (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
+      ) {
+        player.lives = 0;
+        player.hp = 0;
+        player.invuln = 999999;
+
+        if (window.__uvzuMarkLocalDead) {
+          window.__uvzuMarkLocalDead(player);
+        }
+
+        state.resetQueued = false;
+        return;
+      }
+
+      fullRestart();
+      return;
+    }
+
+    state.resetQueued = true;`
+      );
+
+      code = code.replace(
+`    updateHealthRegen(dt);
+
+    if (state.mode === "play" || state.mode === "final") {`,
+`    updateHealthRegen(dt);
+
+    if (window.__uvzuIsLocalGhost && window.__uvzuIsLocalGhost()) {
+      const remote = window.__uvzuGetRemotePlayer
+        ? window.__uvzuGetRemotePlayer()
+        : null;
+
+      if (remote && typeof remote.x === "number" && typeof remote.y === "number") {
+        player.x = remote.x;
+        player.y = remote.y;
+        player.face = remote.face || player.face;
+      }
+
+      player.hp = 0;
+      player.invuln = 999999;
+      player.headTimer = 0;
+      player.dodgeTimer = 0;
+      player.ray = 0;
+      player.giant = 0;
+    }
+
+    if (
+      (state.mode === "play" || state.mode === "final") &&
+      !(window.__uvzuIsLocalGhost && window.__uvzuIsLocalGhost())
+    ) {`
       );
 
       code = code.replace(
