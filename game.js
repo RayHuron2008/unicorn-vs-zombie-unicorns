@@ -1661,14 +1661,42 @@
     ctx.fillRect(0, GROUND_Y + 25, W, H - GROUND_Y);
   }`
       );
-      code = code.replace(
+            code = code.replace(
         "drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);",
-        `drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);
+        `if (!(window.__uvzuIsLocalGhost && window.__uvzuIsLocalGhost())) {
+        drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);
+      } else {
+        ctx.save();
+        ctx.fillStyle = "rgba(0, 0, 0, 0.58)";
+        ctx.fillRect(0, 0, W, H);
+
+        ctx.fillStyle = "#ffffff";
+        ctx.strokeStyle = "#4b2670";
+        ctx.lineWidth = 5;
+        ctx.textAlign = "center";
+        ctx.font = "900 34px system-ui, sans-serif";
+        ctx.strokeText("YOU ARE NOW A GHOST", W / 2, H / 2 - 40);
+        ctx.fillText("YOU ARE NOW A GHOST", W / 2, H / 2 - 40);
+
+        ctx.font = "800 20px system-ui, sans-serif";
+        ctx.lineWidth = 3;
+        ctx.strokeText("Living Player Must Survive Level To Respawn", W / 2, H / 2 + 5);
+        ctx.fillText("Living Player Must Survive Level To Respawn", W / 2, H / 2 + 5);
+
+        ctx.textAlign = "left";
+        ctx.restore();
+      }
 
       if (window.__uvzuGetRemotePlayer) {
         const remote = window.__uvzuGetRemotePlayer();
 
-        if (remote && typeof remote.x === "number" && typeof remote.y === "number") {
+        if (
+          remote &&
+          typeof remote.x === "number" &&
+          typeof remote.y === "number" &&
+          !remote.ghost &&
+          !remote.dead
+        ) {
           ctx.save();
           ctx.globalAlpha = 0.82;
           drawUnicorn(remote.x, remote.y, remote.face || 1, false, remote.ray > 0, remote.giant > 0);
