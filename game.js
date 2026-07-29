@@ -1250,14 +1250,14 @@
         state.finalSpawnTimer <= 0 &&
         !(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
       ) {`
-      );   code = code.replace(
+           code = code.replace(
         "e.x += Math.sign(dx) * 105 * dt;",
-        "e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;"
+        "if (!(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) {\n        e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;"
       );
 
-      code = code.replace(
+            code = code.replace(
         "e.y += Math.sign(dy) * 70 * dt;",
-        "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;"
+        "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;\n      }"
       );
 
       code = code.replace(
