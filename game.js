@@ -1547,7 +1547,7 @@
     updateEnding(dt);
     updateHud();
   }`,
-`   `    updateParticles(dt);
+`       updateParticles(dt);
     updateEnding(dt);
 
     if (
