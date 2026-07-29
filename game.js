@@ -1243,14 +1243,16 @@
         ) {`
       );
 
-      code = code.replace(
+            code = code.replace(
 `      if (state.finalSpawned < FINAL_RAY_COUNT && state.finalSpawnTimer <= 0) {`,
 `      if (
         state.finalSpawned < FINAL_RAY_COUNT &&
         state.finalSpawnTimer <= 0 &&
         !(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
-      ) {`       );
-           code = code.replace(
+      ) {`
+      );
+
+      code = code.replace(
         "e.x += Math.sign(dx) * 105 * dt;",
         "if (!(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) {\n        e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;"
       );
