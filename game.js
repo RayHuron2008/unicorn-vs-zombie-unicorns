@@ -1542,12 +1542,12 @@
         "Victory: Stage 1 Completed!",
         "LEVEL COMPLETED!"
       );         
-      code = code.replace(
+          code = code.replace(
 `    updateParticles(dt);
     updateEnding(dt);
     updateHud();
   }`,
-`       updateParticles(dt);
+`    updateParticles(dt);
     updateEnding(dt);
 
     if (
