@@ -27,6 +27,7 @@
   let firebaseRemoteTargetY = null;
     let firebaseEnemyDeaths = {};
   let firebaseEnemyState = null;
+    let firebaseLevelCompleted = false;
   let firebaseLastEnemyDeathWriteAt = 0;
   let firebaseLastGuestKillRequestAt = 0;
     let firebaseLastEnemyStateWriteAt = 0;
@@ -202,6 +203,7 @@
             firebaseCurrentRoom = room;
       firebaseEnemyDeaths = room.enemyDeaths || {};
       firebaseEnemyState = room.enemyState || null;
+      firebaseLevelCompleted = !!room.levelCompleted;
       const otherRole = firebasePlayerRole === "host" ? "guest" : "host";
       const other = room[otherRole];
 
@@ -388,6 +390,28 @@
 
     window.__uvzuGetMultiplayerEnemyState = function() {
     return firebaseEnemyState;
+  };
+    window.__uvzuIsLevelCompleted = function() {
+    return firebaseLevelCompleted;
+  };
+
+  window.__uvzuSignalLevelCompleted = function() {
+    if (!firebaseRoomCode || !firebasePlayerRole) return;
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const path = "rooms/" + firebaseRoomCode;
+
+        return dbMod.update(dbMod.ref(db, path), {
+          levelCompleted: true,
+          status: "levelCompleted",
+          completedAt: Date.now(),
+          updatedAt: Date.now()
+        });
+      })
+      .catch((err) => {
+        console.error("Level completed sync failed:", err);
+      });
   };
 
   async function setFirebaseReady(isReady) {
@@ -1493,11 +1517,15 @@
   }`
       );
       
-             code = code.split("startNpcScene();").join(
+                  code = code.split("startNpcScene();").join(
 `if (
       (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
       (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
     ) {
+      if (window.__uvzuSignalLevelCompleted) {
+        window.__uvzuSignalLevelCompleted();
+      }
+
       state.mode = "fireworks";
       state.npc = null;
       state.enemies.length = 0;
@@ -1519,8 +1547,23 @@
     updateEnding(dt);
     updateHud();
   }`,
-`    updateParticles(dt);
+`   `    updateParticles(dt);
     updateEnding(dt);
+
+    if (
+      window.__uvzuIsLevelCompleted &&
+      window.__uvzuIsLevelCompleted() &&
+      state.mode !== "fireworks" &&
+      state.mode !== "victory"
+    ) {
+      state.mode = "fireworks";
+      state.npc = null;
+      state.enemies.length = 0;
+      state.enemyShots.length = 0;
+      state.playerShots.length = 0;
+      state.fireworks.length = 0;
+      state.victoryTimer = 3.5;
+    }
 
     if (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest()) {
       const enemyState = window.__uvzuGetMultiplayerEnemyState
