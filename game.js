@@ -1348,21 +1348,17 @@
     updateEnding(dt);
     updateHud();
   }`,
-`    updateParticles(dt);
-    updateEnding(dt);
-
-        if (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest()) {
+`   `    if (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest()) {
       const enemyState = window.__uvzuGetMultiplayerEnemyState
         ? window.__uvzuGetMultiplayerEnemyState()
         : null;
 
-            if (
+      if (
         enemyState &&
         Array.isArray(enemyState.enemies) &&
-        enemyState.updatedAt &&
-               enemyState.updatedAt !== window.__uvzuLastAppliedEnemyStateAt
+        enemyState.updatedAt
       ) {
-               window.__uvzuLastAppliedEnemyStateAt = enemyState.updatedAt;
+        window.__uvzuLastAppliedEnemyStateAt = enemyState.updatedAt;
 
         state.enemies = enemyState.enemies.map((e) => ({
           id: e.id,
@@ -1377,39 +1373,41 @@
           sep: e.sep || 1
         }));
       }
-        }
+    } else {
+      updateParticles(dt);
+      updateEnding(dt);
 
-       if (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) {
-           const guestKillRequests = window.__uvzuGetGuestKillRequests
-        ? window.__uvzuGetGuestKillRequests()
-        : {};
+      if (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) {
+        const guestKillRequests = window.__uvzuGetGuestKillRequests
+          ? window.__uvzuGetGuestKillRequests()
+          : {};
 
+        for (let i = state.enemies.length - 1; i >= 0; i--) {
+          const enemy = state.enemies[i];
 
-           for (let i = state.enemies.length - 1; i >= 0; i--) {
-        const enemy = state.enemies[i];
+          if (enemy && enemy.id && guestKillRequests[enemy.id]) {
+            killEnemy(i, "remote");
 
-               if (enemy && enemy.id && guestKillRequests[enemy.id]) {
-                   killEnemy(i, "remote");
-
-                    if (window.__uvzuClearGuestKillRequest) {
-            window.__uvzuClearGuestKillRequest(enemy.id);
+            if (window.__uvzuClearGuestKillRequest) {
+              window.__uvzuClearGuestKillRequest(enemy.id);
+            }
           }
         }
+
+        if (window.__uvzuMultiplayerPushEnemyState) {
+          window.__uvzuMultiplayerPushEnemyState(state.enemies);
+        }
       }
 
-      if (window.__uvzuMultiplayerPushEnemyState) {
-        window.__uvzuMultiplayerPushEnemyState(state.enemies);
-      }
-    }
+      if (window.__uvzuGetEnemyDeaths) {
+        const deadEnemies = window.__uvzuGetEnemyDeaths();
 
-    if (window.__uvzuGetEnemyDeaths) {
-      const deadEnemies = window.__uvzuGetEnemyDeaths();
+        for (let i = state.enemies.length - 1; i >= 0; i--) {
+          const enemy = state.enemies[i];
 
-      for (let i = state.enemies.length - 1; i >= 0; i--) {
-        const enemy = state.enemies[i];
-
-        if (enemy && enemy.id && deadEnemies[enemy.id]) {
-          killEnemy(i, "remote");
+          if (enemy && enemy.id && deadEnemies[enemy.id]) {
+            killEnemy(i, "remote");
+          }
         }
       }
     }
