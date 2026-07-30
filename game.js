@@ -121,14 +121,15 @@
     return firebaseReady;
   }
 
-  async function createFirebaseRoom(roomCode, levelCode) {
+   async function createFirebaseRoom(roomCode, levelCode, difficultyName) {
     const { dbMod, db } = await getFirebaseDatabase();
     const roomRef = dbMod.ref(db, "rooms/" + roomCode);
     const now = Date.now();
 
     await dbMod.set(roomRef, {
-      roomCode,
+           roomCode,
       levelCode: levelCode || "RNBW1",
+      difficultyName: difficultyName || "Easy",
             status: "lobby",
       countdownStartedAt: null,
       createdAt: now,
@@ -905,8 +906,9 @@
     return value;
   }
 
-  function startFirstLevelFromMultiplayer(levelCode) {
+   function startFirstLevelFromMultiplayer(levelCode, difficultyName) {
     const finalLevelCode = (levelCode || "").trim().toUpperCase() || "RNBW1";
+    const finalDifficultyName = difficultyName || "Easy";
 
     const menuOverlay = document.getElementById("menuOverlay");
     const multiplayerOverlay = document.getElementById("multiplayerOverlay");
@@ -918,8 +920,8 @@
       return;
     }
 
-    if (typeof window.__uvzuStartGame === "function") {
-      window.__uvzuStartGame("Easy");
+      if (typeof window.__uvzuStartGame === "function") {
+      window.__uvzuStartGame(finalDifficultyName);
     }
 
     if (multiplayerOverlay) multiplayerOverlay.remove();
@@ -956,6 +958,19 @@
             Voice chat controls will go here later. For now this lobby waits until both players are ready.
           </div>
 
+                   <div class="multiplayerSmallText">
+            Host chooses the mode for both players.
+          </div>
+
+          <select
+            id="hostDifficultySelect"
+            style="width:100%;box-sizing:border-box;border:3px solid rgba(76,38,112,.65);border-radius:14px;padding:12px;font:900 18px system-ui,sans-serif;text-align:center;color:#4b2670;margin-bottom:10px;"
+          >
+            <option value="Easy">Easy</option>
+            <option value="Normal">Normal</option>
+            <option value="Chaos">Chaos</option>
+          </select>
+
           <div class="multiplayerSmallText">
             Level Code for the joining player. Blank = Level 1.
           </div>
@@ -969,7 +984,6 @@
           />
 
           <button id="startHostGameBtn" class="pauseBtn">START HOST GAME</button>
-
           <div class="multiplayerSection">JOIN GAME</div>
           <div class="multiplayerSmallText">
             Enter the host room code.
@@ -1001,6 +1015,7 @@
     const readyGameBtn = overlay.querySelector("#readyGameBtn");
     const joinCodeInput = overlay.querySelector("#joinCodeInput");
     const hostLevelCodeInput = overlay.querySelector("#hostLevelCodeInput");
+        const hostDifficultySelect = overlay.querySelector("#hostDifficultySelect");
     readyGameBtn.addEventListener("click", async () => {
       if (!firebaseRoomCode || !firebasePlayerRole) {
         alert("Create or join a room first.");
@@ -1032,7 +1047,10 @@
 
         if (left <= 0 && !firebaseCountdownStarted) {
           firebaseCountdownStarted = true;
-          startFirstLevelFromMultiplayer(firebaseCurrentRoom.levelCode || "RNBW1");
+                   startFirstLevelFromMultiplayer(
+            firebaseCurrentRoom.levelCode || "RNBW1",
+            firebaseCurrentRoom.difficultyName || "Easy"
+          );
         }
 
         return;
@@ -1045,15 +1063,16 @@
 
     setInterval(updateLobbyStatus, 250);
     overlay.querySelector("#hostGameBtn").addEventListener("click", async () => {
-      const code = generateRoomCode();
+          const code = generateRoomCode();
       const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
+      const difficultyName = hostDifficultySelect.value || "Easy";
 
       roomCodeBox.textContent = "Creating...";
 
       try {
-        await createFirebaseRoom(code, levelCode);
+               await createFirebaseRoom(code, levelCode, difficultyName);
         roomCodeBox.textContent = code;
-        alert("Room created. Give this code to Player 2: " + code);
+               alert("Room created in " + difficultyName + " mode. Give this code to Player 2: " + code);
       } catch (err) {
         console.error(err);
         roomCodeBox.textContent = "Room Code";
@@ -1070,15 +1089,15 @@
     });
 
     overlay.querySelector("#startHostGameBtn").addEventListener("click", async () => {
-      let roomCode = roomCodeBox.textContent.trim();
+           let roomCode = roomCodeBox.textContent.trim();
       const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
-
+      const difficultyName = hostDifficultySelect.value || "Easy";
       if (roomCode === "Room Code" || roomCode === "Creating...") {
         roomCode = generateRoomCode();
         roomCodeBox.textContent = "Creating...";
 
         try {
-          await createFirebaseRoom(roomCode, levelCode);
+                   await createFirebaseRoom(roomCode, levelCode, difficultyName);
           roomCodeBox.textContent = roomCode;
         } catch (err) {
           console.error(err);
@@ -1089,7 +1108,7 @@
       }
 
             lobbyStatusBox.textContent = "Host lobby is ready. Press READY when you are ready.";
-      alert("Host lobby is ready. Give Player 2 the room code, then press READY.");
+           alert("Host lobby is ready in " + difficultyName + " mode. Give Player 2 the room code, then press READY.");
     });
 
     overlay.querySelector("#joinGameBtn").addEventListener("click", async () => {
