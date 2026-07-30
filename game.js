@@ -1433,6 +1433,21 @@
       );
 
             code = code.replace(
+`          e.hp -= 1;
+          state.playerShots.splice(i, 1);
+
+          if (e.hp <= 0) killEnemy(j, "ray");`,
+`          if (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest()) {
+            killEnemy(j, "ray");
+          } else {
+            e.hp -= 1;
+
+            if (e.hp <= 0) killEnemy(j, "ray");
+          }
+
+          state.playerShots.splice(i, 1);`
+      );
+            code = code.replace(
         "e.y += Math.sign(dy) * 70 * dt;",
         "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;\n      }"
       );
