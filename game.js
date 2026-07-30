@@ -1134,16 +1134,22 @@
       cleanCodeInput(joinCodeInput, 10, true);
     });
 
-    overlay.querySelector("#startHostGameBtn").addEventListener("click", async () => {
-           let roomCode = roomCodeBox.textContent.trim();
+       overlay.querySelector("#startHostGameBtn").addEventListener("click", async () => {
+      let roomCode = roomCodeBox.textContent.trim();
       const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
       const difficultyName = hostDifficultySelect.value || "Easy";
+
+      if (levelCode !== "RNBW1" && levelCode !== "GRV2") {
+        alert("That level code is saved for later. Use RNBW1 or GRV2.");
+        return;
+      }
+
       if (roomCode === "Room Code" || roomCode === "Creating...") {
         roomCode = generateRoomCode();
         roomCodeBox.textContent = "Creating...";
 
         try {
-                   await createFirebaseRoom(roomCode, levelCode, difficultyName);
+          await createFirebaseRoom(roomCode, levelCode, difficultyName);
           roomCodeBox.textContent = roomCode;
         } catch (err) {
           console.error(err);
@@ -1151,10 +1157,23 @@
           alert("Could not create room. Check Firebase rules.");
           return;
         }
+      } else {
+        try {
+          const { dbMod, db } = await getFirebaseDatabase();
+          await dbMod.update(dbMod.ref(db, "rooms/" + roomCode), {
+            levelCode,
+            difficultyName,
+            updatedAt: Date.now()
+          });
+        } catch (err) {
+          console.error(err);
+          alert("Could not update the room level code.");
+          return;
+        }
       }
 
-            lobbyStatusBox.textContent = "Host lobby is ready. Press READY when you are ready.";
-           alert("Host lobby is ready in " + difficultyName + " mode. Give Player 2 the room code, then press READY.");
+      lobbyStatusBox.textContent = "Host lobby is ready. Press READY when you are ready.";
+      alert("Host lobby is ready in " + difficultyName + " mode using level " + levelCode + ". Give Player 2 the room code, then press READY.");
     });
 
     overlay.querySelector("#joinGameBtn").addEventListener("click", async () => {
