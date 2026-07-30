@@ -964,10 +964,9 @@
       return;
     }
 
-    window.__uvzuLevelTheme = finalLevelCode === "GRV2" ? "graveyard" : "rainbow";
-    }
+       window.__uvzuLevelTheme = finalLevelCode === "GRV2" ? "graveyard" : "rainbow";
 
-      if (typeof window.__uvzuStartGame === "function") {
+    if (typeof window.__uvzuStartGame === "function") {
       window.__uvzuStartGame(finalDifficultyName);
     }
 
