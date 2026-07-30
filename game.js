@@ -1317,7 +1317,7 @@
         "player.lives = 5;"
       );
 
-      code = code.replace(
+           code = code.replace(
 `    if (player.lives <= 0) {
       fullRestart();
       return;
@@ -1342,6 +1342,20 @@
       }
 
       fullRestart();
+      return;
+    }
+
+    if (
+      (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
+      (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
+    ) {
+      player.hp = HP_MAX;
+      player.invuln = 1.2;
+      player.headTimer = 0;
+      player.dodgeTimer = 0;
+      player.dodgeCooldown = 0.25;
+      player.actionLock = 0.25;
+      state.resetQueued = false;
       return;
     }
 
