@@ -1301,7 +1301,7 @@
 
                  code = code.replace(
         "const MIN_Y = GROUND_Y - 58;",
-        "const MIN_Y = GROUND_Y - 120;"
+        "const MIN_Y = GROUND_Y - 95;"
       );
       code = code.replace(
         "const wantRay = Math.random() < 0.2;",
