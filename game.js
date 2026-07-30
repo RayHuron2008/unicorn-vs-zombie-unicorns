@@ -959,9 +959,12 @@
     const hud = document.getElementById("hud");
     const controls = document.getElementById("controls");
 
-    if (finalLevelCode !== "RNBW1") {
-      alert("That level code is saved for later. Right now only Level 1 exists.");
+       if (finalLevelCode !== "RNBW1" && finalLevelCode !== "GRV2") {
+      alert("That level code is saved for later. Right now only Level 1 and Graveyard exist.");
       return;
+    }
+
+    window.__uvzuLevelTheme = finalLevelCode === "GRV2" ? "graveyard" : "rainbow";
     }
 
       if (typeof window.__uvzuStartGame === "function") {
@@ -1352,6 +1355,8 @@
       return response.text();
     })
     .then((code) => {
+         window.__uvzuLevelTheme = window.__uvzuLevelTheme || "rainbow";
+    
       code = code.replace(
         "const MAX_ENEMIES = 4;",
         `let MAX_ENEMIES = 2;
@@ -1370,6 +1375,107 @@
             code = code.replace(
         "const RAY_TIME = 10;",
         "const RAY_TIME = 5;"
+      );
+
+            code = replaceFunction(
+        code,
+        "drawBackground",
+`  function drawBackground() {
+    if (window.__uvzuLevelTheme === "graveyard") {
+      const sky = ctx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, "#071026");
+      sky.addColorStop(0.55, "#15183b");
+      sky.addColorStop(1, "#222034");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = "#f4f0c8";
+      ctx.beginPath();
+      ctx.arc(W * 0.78, 78, 42, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(7, 16, 38, 0.30)";
+      ctx.beginPath();
+      ctx.arc(W * 0.80, 68, 42, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "rgba(255,255,255,.75)";
+      for (let i = 0; i < 28; i++) {
+        const x = (i * 137) % W;
+        const y = 24 + ((i * 53) % 145);
+        ctx.fillRect(x, y, 2, 2);
+      }
+
+      ctx.fillStyle = "#1f3428";
+      ctx.fillRect(0, H * 0.58, W, H * 0.42);
+
+      ctx.fillStyle = "#253c30";
+      for (let x = -40; x < W + 80; x += 95) {
+        ctx.fillRect(x, GROUND_Y - 38, 34, 50);
+        ctx.fillRect(x + 6, GROUND_Y - 52, 22, 18);
+      }
+
+      ctx.fillStyle = "rgba(190, 205, 215, .20)";
+      ctx.fillRect(0, GROUND_Y - 30, W, 22);
+      ctx.fillRect(0, GROUND_Y + 4, W, 18);
+
+      ctx.fillStyle = "#5d6670";
+      ctx.fillRect(W / 2 - 34, GROUND_Y - 112, 68, 104);
+
+      ctx.fillStyle = "#707984";
+      ctx.beginPath();
+      ctx.arc(W / 2, GROUND_Y - 112, 34, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#b8c0ca";
+      ctx.beginPath();
+      ctx.arc(W / 2, GROUND_Y - 91, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#b8c0ca";
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(W / 2 - 8, GROUND_Y - 78);
+      ctx.lineTo(W / 2 - 28, GROUND_Y - 50);
+      ctx.moveTo(W / 2 + 8, GROUND_Y - 78);
+      ctx.lineTo(W / 2 + 28, GROUND_Y - 50);
+      ctx.stroke();
+
+      ctx.fillStyle = "#202025";
+      ctx.fillRect(W / 2 - 18, GROUND_Y - 42, 36, 6);
+
+      ctx.fillStyle = "#17191d";
+      ctx.fillRect(0, GROUND_Y + 20, W, H - GROUND_Y);
+
+      ctx.fillStyle = "#2f573c";
+      ctx.fillRect(0, GROUND_Y + 8, W, 18);
+      return;
+    }
+
+    ctx.fillStyle = "#77ccff";
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = "#a7e9ff";
+    ctx.fillRect(0, 90, W, 90);
+
+    ctx.fillStyle = "#8be37a";
+    ctx.fillRect(0, H * 0.58, W, H * 0.42);
+
+    drawRainbow(W * 0.62, GROUND_Y + 10, 240);
+
+    drawCloud(120, 70);
+    drawCloud(390, 55);
+    drawCloud(750, 85);
+
+    drawTree(90, GROUND_Y + 16);
+    drawTree(820, GROUND_Y + 18);
+
+    ctx.fillStyle = "#7a4a2a";
+    ctx.fillRect(0, GROUND_Y + 20, W, H - GROUND_Y);
+
+    ctx.fillStyle = "#29c768";
+    ctx.fillRect(0, GROUND_Y + 8, W, 18);
+  }`
       );
       code = code.replace(
         "const wantRay = Math.random() < 0.2;",
