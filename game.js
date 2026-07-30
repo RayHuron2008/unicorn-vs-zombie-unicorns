@@ -51,10 +51,23 @@
       until: Date.now() + 180
     });
   };
-    let firebaseLocalGhost = false;
+       let firebaseLocalGhost = false;
+  window.__uvzuBothGhostResetStarted = false;
 
   window.__uvzuIsLocalGhost = function() {
     return firebaseLocalGhost;
+  };
+
+  window.__uvzuAreBothPlayersGhosts = function() {
+    const remote = window.__uvzuGetRemotePlayer
+      ? window.__uvzuGetRemotePlayer()
+      : null;
+
+    return !!(
+      firebaseLocalGhost &&
+      remote &&
+      (remote.ghost || remote.dead)
+    );
   };
 
   window.__uvzuMarkLocalDead = function(player) {
@@ -1377,11 +1390,35 @@
     state.resetQueued = true;`
       );
 
-      code = code.replace(
+           code = code.replace(
 `    updateHealthRegen(dt);
 
     if (state.mode === "play" || state.mode === "final") {`,
 `    updateHealthRegen(dt);
+
+    if (
+      window.__uvzuAreBothPlayersGhosts &&
+      window.__uvzuAreBothPlayersGhosts() &&
+      !window.__uvzuBothGhostResetStarted
+    ) {
+      window.__uvzuBothGhostResetStarted = true;
+
+      if (window.__uvzuReviveLocalForNextLevel) {
+        window.__uvzuReviveLocalForNextLevel(player);
+      }
+
+      fullRestart();
+      player.lives = 5;
+      player.hp = HP_MAX;
+      player.invuln = 1.2;
+      updateHud();
+
+      setTimeout(() => {
+        window.__uvzuBothGhostResetStarted = false;
+      }, 3000);
+
+      return;
+    }
 
     if (window.__uvzuIsLocalGhost && window.__uvzuIsLocalGhost()) {
       const remote = window.__uvzuGetRemotePlayer
