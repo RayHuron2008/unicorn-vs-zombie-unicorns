@@ -28,6 +28,8 @@
     let firebaseEnemyDeaths = {};
   let firebaseEnemyState = null;
     let firebaseLevelCompleted = false;
+    let firebaseGhostResetAt = 0;
+  window.__uvzuLastAppliedGhostResetAt = 0;
   let firebaseLastEnemyDeathWriteAt = 0;
   let firebaseLastGuestKillRequestAt = 0;
     let firebaseLastEnemyStateWriteAt = 0;
@@ -68,6 +70,34 @@
       remote &&
       (remote.ghost || remote.dead)
     );
+  };
+    window.__uvzuGetGhostResetAt = function() {
+    return firebaseGhostResetAt;
+  };
+
+  window.__uvzuSignalBothGhostReset = function() {
+    if (!firebaseRoomCode || !firebasePlayerRole || window.__uvzuBothGhostResetStarted) return;
+
+    window.__uvzuBothGhostResetStarted = true;
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const path = "rooms/" + firebaseRoomCode;
+
+        return dbMod.update(dbMod.ref(db, path), {
+          status: "ghostReset",
+          ghostResetAt: Date.now(),
+          enemyDeaths: null,
+          guestKillRequests: null,
+          enemyState: null,
+          levelCompleted: false,
+          updatedAt: Date.now()
+        });
+      })
+      .catch((err) => {
+        console.error("Both ghost reset signal failed:", err);
+        window.__uvzuBothGhostResetStarted = false;
+      });
   };
 
   window.__uvzuMarkLocalDead = function(player) {
@@ -218,6 +248,7 @@
       firebaseEnemyDeaths = room.enemyDeaths || {};
       firebaseEnemyState = room.enemyState || null;
       firebaseLevelCompleted = !!room.levelCompleted;
+                firebaseGhostResetAt = room.ghostResetAt || 0;
       const otherRole = firebasePlayerRole === "host" ? "guest" : "host";
       const other = room[otherRole];
 
@@ -1396,12 +1427,16 @@
     if (state.mode === "play" || state.mode === "final") {`,
 `    updateHealthRegen(dt);
 
+      const ghostResetAt = window.__uvzuGetGhostResetAt
+      ? window.__uvzuGetGhostResetAt()
+      : 0;
+
     if (
-      window.__uvzuAreBothPlayersGhosts &&
-      window.__uvzuAreBothPlayersGhosts() &&
-      !window.__uvzuBothGhostResetStarted
+      ghostResetAt &&
+      ghostResetAt !== window.__uvzuLastAppliedGhostResetAt
     ) {
-      window.__uvzuBothGhostResetStarted = true;
+      window.__uvzuLastAppliedGhostResetAt = ghostResetAt;
+      window.__uvzuBothGhostResetStarted = false;
 
       if (window.__uvzuReviveLocalForNextLevel) {
         window.__uvzuReviveLocalForNextLevel(player);
@@ -1413,13 +1448,20 @@
       player.invuln = 1.2;
       updateHud();
 
-      setTimeout(() => {
-        window.__uvzuBothGhostResetStarted = false;
-      }, 3000);
-
       return;
     }
 
+    if (
+      window.__uvzuAreBothPlayersGhosts &&
+      window.__uvzuAreBothPlayersGhosts() &&
+      !window.__uvzuBothGhostResetStarted
+    ) {
+      if (window.__uvzuSignalBothGhostReset) {
+        window.__uvzuSignalBothGhostReset();
+      }
+
+      return;
+    }
     if (window.__uvzuIsLocalGhost && window.__uvzuIsLocalGhost()) {
       const remote = window.__uvzuGetRemotePlayer
         ? window.__uvzuGetRemotePlayer()
