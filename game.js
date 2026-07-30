@@ -1366,6 +1366,11 @@
         "const MIN_Y = GROUND_Y - 58;",
         "const MIN_Y = GROUND_Y - 118;"
       );
+      
+            code = code.replace(
+        "const RAY_TIME = 10;",
+        "const RAY_TIME = 5;"
+      );
       code = code.replace(
         "const wantRay = Math.random() < 0.2;",
         "const wantRay = Math.random() < RAY_CHANCE;"
