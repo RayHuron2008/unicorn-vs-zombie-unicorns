@@ -1299,11 +1299,10 @@
   let RAY_CHANCE = 0.12;`
       );
 
-            code = code.replace(
+                 code = code.replace(
         "const MIN_Y = GROUND_Y - 58;",
-        "const MIN_Y = GROUND_Y - 135;"
+        "const MIN_Y = GROUND_Y - 120;"
       );
-
       code = code.replace(
         "const wantRay = Math.random() < 0.2;",
         "const wantRay = Math.random() < RAY_CHANCE;"
