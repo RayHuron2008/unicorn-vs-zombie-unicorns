@@ -1311,15 +1311,7 @@
         "let shootCooldown = 0;",
         "let shootCooldown = 0;\n  let multiplayerEnemyIdCounter = 0;"
       );
-            code = code.replace(
-        "lives: 3,",
-        "lives: 5,"
-      );
-
-      code = code.replace(
-        "player.lives = 3;",
-        "player.lives = 5;"
-      );
+        
 
            code = code.replace(
 `    if (player.lives <= 0) {
@@ -2017,8 +2009,16 @@
   window.__uvzuStartGame = function(name) {
     applyDifficulty(name || "Easy");
 
-    try {
+       try {
       fullRestart();
+
+      if (
+        (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
+        (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
+      ) {
+        player.lives = 5;
+        updateHud();
+      }
     } catch (e) {}
 
     try {
