@@ -2115,8 +2115,95 @@
       ctx.quadraticCurveTo(W * 0.74, GROUND_Y + 8, W, GROUND_Y + 20);
       ctx.stroke();
 
-      return;
+           return;
     }
+
+    const sky = ctx.createLinearGradient(0, 0, 0, H);
+    sky.addColorStop(0, "#75d8ff");
+    sky.addColorStop(0.38, "#c8f4ff");
+    sky.addColorStop(0.68, "#b8efad");
+    sky.addColorStop(1, "#7dd96b");
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    const sunX = W * 0.14;
+    const sunY = H * 0.16;
+    const sunGlow = ctx.createRadialGradient(sunX, sunY, 6, sunX, sunY, 90);
+    sunGlow.addColorStop(0, "rgba(255,255,210,1)");
+    sunGlow.addColorStop(0.35, "rgba(255,232,120,.8)");
+    sunGlow.addColorStop(1, "rgba(255,232,120,0)");
+    ctx.fillStyle = sunGlow;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.fillStyle = "#79d968";
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.58);
+    ctx.quadraticCurveTo(W * 0.18, H * 0.43, W * 0.36, H * 0.56);
+    ctx.quadraticCurveTo(W * 0.56, H * 0.70, W * 0.77, H * 0.51);
+    ctx.quadraticCurveTo(W * 0.90, H * 0.42, W, H * 0.54);
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#5dc95f";
+    ctx.beginPath();
+    ctx.moveTo(0, H * 0.66);
+    ctx.quadraticCurveTo(W * 0.24, H * 0.49, W * 0.5, H * 0.64);
+    ctx.quadraticCurveTo(W * 0.77, H * 0.79, W, H * 0.58);
+    ctx.lineTo(W, H);
+    ctx.lineTo(0, H);
+    ctx.closePath();
+    ctx.fill();
+
+    const rx = W * 0.64;
+    const ry = H * 0.63;
+    const rr = Math.min(W, H) * 0.30;
+    const colors = ["#ff4d5a", "#ff9f43", "#ffe45c", "#5fe26b", "#55d8ff", "#9d6bff"];
+    ctx.lineWidth = 13;
+
+    for (let i = 0; i < colors.length; i++) {
+      ctx.strokeStyle = colors[i];
+      ctx.beginPath();
+      ctx.arc(rx, ry, rr - i * 13, Math.PI, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    const meadow = ctx.createLinearGradient(0, H * 0.54, 0, H);
+    meadow.addColorStop(0, "#8df06f");
+    meadow.addColorStop(0.55, "#4dd45d");
+    meadow.addColorStop(1, "#2daa48");
+    ctx.fillStyle = meadow;
+    ctx.fillRect(0, H * 0.56, W, H * 0.44);
+
+    for (let i = 0; i < 8; i++) {
+      const y = H * 0.60 + i * 27;
+      ctx.strokeStyle = i % 2 === 0
+        ? "rgba(255,255,255,.10)"
+        : "rgba(10,120,30,.10)";
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(-20, y);
+      ctx.quadraticCurveTo(W * 0.35, y + 16, W + 20, y - 8);
+      ctx.stroke();
+    }
+
+    const flowerColors = ["#fff47a", "#ff79c6", "#ffffff", "#ff9f43", "#b36bff"];
+
+    for (let i = 0; i < 90; i++) {
+      const x = (i * 97) % W;
+      const y = H * 0.60 + ((i * 43) % Math.floor(H * 0.28));
+      ctx.fillStyle = flowerColors[i % flowerColors.length];
+      ctx.fillRect(x, y, 3, 3);
+    }
+
+    ctx.fillStyle = "#35c85f";
+    ctx.fillRect(0, GROUND_Y + 8, W, 22);
+
+    ctx.fillStyle = "#8a5a2f";
+    ctx.fillRect(0, GROUND_Y + 25, W, H - GROUND_Y);
+  }`
+      );
             code = code.replace(
         "drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);",
         `if (!(window.__uvzuIsLocalGhost && window.__uvzuIsLocalGhost())) {
