@@ -1976,25 +1976,24 @@
         ctx.stroke();
       }
 
-      // graveyard fence
-      ctx.strokeStyle = "#121217";
-      ctx.lineWidth = 4;
-      for (let x = -10; x < W + 20; x += 22) {
-        ctx.beginPath();
-        ctx.moveTo(x, GROUND_Y - 42);
-        ctx.lineTo(x, GROUND_Y - 14);
-        ctx.stroke();
+     // graveyard fence
+ctx.strokeStyle = "#121217";
+ctx.lineWidth = 4;
+for (let x = -10; x < W + 20; x += 22) {
+  ctx.beginPath();
+  ctx.moveTo(x, GROUND_Y - 86);
+  ctx.lineTo(x, GROUND_Y - 54);
+  ctx.stroke();
 
-        ctx.beginPath();
-        ctx.arc(x, GROUND_Y - 46, 4, Math.PI, 0);
-        ctx.stroke();
-      }
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(0, GROUND_Y - 28);
-      ctx.lineTo(W, GROUND_Y - 28);
-      ctx.stroke();
-
+  ctx.beginPath();
+  ctx.arc(x, GROUND_Y - 90, 4, Math.PI, 0);
+  ctx.stroke();
+}
+ctx.lineWidth = 3;
+ctx.beginPath();
+ctx.moveTo(0, GROUND_Y - 68);
+ctx.lineTo(W, GROUND_Y - 68);
+ctx.stroke();
       // dead trees
       function deadTree(tx, ty, s) {
         ctx.strokeStyle = "#151117";
@@ -2037,18 +2036,18 @@
         }
       }
 
-      const stones = [
-        [65,  GROUND_Y - 6, 24, 34, false],
-        [145, GROUND_Y + 1, 18, 24, true],
-        [220, GROUND_Y - 4, 22, 30, false],
-        [305, GROUND_Y + 2, 18, 22, false],
-        [390, GROUND_Y - 8, 26, 36, true],
-        [505, GROUND_Y - 2, 20, 26, false],
-        [615, GROUND_Y - 4, 24, 30, false],
-        [708, GROUND_Y + 1, 18, 22, true],
-        [785, GROUND_Y - 5, 24, 32, false],
-        [875, GROUND_Y - 1, 20, 25, false]
-      ];
+     const stones = [
+  [72,  GROUND_Y - 34, 22, 30, false],
+  [138, GROUND_Y - 22, 18, 24, true],
+  [210, GROUND_Y - 40, 24, 32, false],
+  [292, GROUND_Y - 18, 18, 22, false],
+  [370, GROUND_Y - 46, 26, 36, true],
+  [470, GROUND_Y - 26, 20, 26, false],
+  [560, GROUND_Y - 42, 24, 30, false],
+  [650, GROUND_Y - 20, 18, 22, true],
+  [742, GROUND_Y - 38, 24, 32, false],
+  [832, GROUND_Y - 24, 20, 25, false]
+];
       for (const s of stones) {
         tombstone(s[0], s[1], s[2], s[3], s[4]);
       }
