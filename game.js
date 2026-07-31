@@ -1954,6 +1954,28 @@
       ctx.closePath();
       ctx.fill();
 
+      // big playable cemetery ground, same height feel as Level 1
+      const graveGround = ctx.createLinearGradient(0, H * 0.56, 0, H);
+      graveGround.addColorStop(0, "#304d35");
+      graveGround.addColorStop(0.35, "#263d2f");
+      graveGround.addColorStop(0.72, "#202923");
+      graveGround.addColorStop(1, "#17191d");
+      ctx.fillStyle = graveGround;
+      ctx.fillRect(0, H * 0.56, W, H * 0.44);
+
+      // darker rolling cemetery grass lines
+      for (let i = 0; i < 8; i++) {
+        const y = H * 0.60 + i * 28;
+        ctx.strokeStyle = i % 2 === 0
+          ? "rgba(210,225,215,.07)"
+          : "rgba(5,20,12,.18)";
+        ctx.lineWidth = 10;
+        ctx.beginPath();
+        ctx.moveTo(-20, y);
+        ctx.quadraticCurveTo(W * 0.35, y + 15, W + 20, y - 9);
+        ctx.stroke();
+      }
+
       // graveyard fence
       ctx.strokeStyle = "#121217";
       ctx.lineWidth = 4;
