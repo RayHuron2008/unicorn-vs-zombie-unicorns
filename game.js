@@ -1976,24 +1976,30 @@
         ctx.stroke();
       }
 
-     // graveyard fence
+     // graveyard fence - pushed far into the background and scaled smaller
+ctx.save();
 ctx.strokeStyle = "#121217";
-ctx.lineWidth = 4;
-for (let x = -10; x < W + 20; x += 22) {
+ctx.globalAlpha = 0.9;
+ctx.lineWidth = 2.5;
+
+for (let x = -10; x < W + 20; x += 18) {
   ctx.beginPath();
-  ctx.moveTo(x, GROUND_Y - 86);
-  ctx.lineTo(x, GROUND_Y - 54);
+  ctx.moveTo(x, GROUND_Y - 148);
+  ctx.lineTo(x, GROUND_Y - 126);
   ctx.stroke();
 
   ctx.beginPath();
-  ctx.arc(x, GROUND_Y - 90, 4, Math.PI, 0);
+  ctx.arc(x, GROUND_Y - 151, 2.6, Math.PI, 0);
   ctx.stroke();
 }
-ctx.lineWidth = 3;
+
+ctx.lineWidth = 2;
 ctx.beginPath();
-ctx.moveTo(0, GROUND_Y - 68);
-ctx.lineTo(W, GROUND_Y - 68);
+ctx.moveTo(0, GROUND_Y - 134);
+ctx.lineTo(W, GROUND_Y - 134);
 ctx.stroke();
+
+ctx.restore();
       // dead trees
       function deadTree(tx, ty, s) {
         ctx.strokeStyle = "#151117";
