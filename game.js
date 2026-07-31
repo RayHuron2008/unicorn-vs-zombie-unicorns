@@ -2076,21 +2076,48 @@ ctx.restore();
       for (const s of stones) {
         tombstone(s[0], s[1], s[2], s[3], s[4]);
       }
-      // thicker spooky fog
-      ctx.fillStyle = "rgba(220,230,240,.08)";
-      ctx.fillRect(0, GROUND_Y - 52, W, 22);
+       // cloudy spooky fog
+      ctx.save();
 
-      ctx.fillStyle = "rgba(220,230,240,.14)";
-      ctx.fillRect(0, GROUND_Y - 30, W, 26);
+      function fogCloud(cx, cy, rx, ry, alpha) {
+        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+        g.addColorStop(0, `rgba(225,235,245,${alpha})`);
+        g.addColorStop(0.45, `rgba(225,235,245,${alpha * 0.65})`);
+        g.addColorStop(1, "rgba(225,235,245,0)");
+        ctx.fillStyle = g;
 
-      ctx.fillStyle = "rgba(220,230,240,.18)";
-      ctx.fillRect(0, GROUND_Y - 6, W, 26);
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
-      ctx.fillStyle = "rgba(220,230,240,.14)";
-      ctx.fillRect(0, GROUND_Y + 18, W, 20);
+      // upper drifting haze
+      fogCloud(W * 0.18, GROUND_Y - 34, 120, 34, 0.12);
+      fogCloud(W * 0.38, GROUND_Y - 18, 150, 42, 0.14);
+      fogCloud(W * 0.62, GROUND_Y - 28, 135, 36, 0.13);
+      fogCloud(W * 0.84, GROUND_Y - 14, 115, 30, 0.11);
 
-      ctx.fillStyle = "rgba(220,230,240,.09)";
-      ctx.fillRect(0, GROUND_Y + 38, W, 14);
+      // middle body of fog
+      fogCloud(W * 0.12, GROUND_Y + 8, 130, 36, 0.14);
+      fogCloud(W * 0.34, GROUND_Y + 18, 170, 46, 0.17);
+      fogCloud(W * 0.58, GROUND_Y + 12, 165, 44, 0.16);
+      fogCloud(W * 0.82, GROUND_Y + 20, 145, 40, 0.14);
+
+      // lower heavier fog near the ground
+      fogCloud(W * 0.22, GROUND_Y + 42, 170, 40, 0.13);
+      fogCloud(W * 0.50, GROUND_Y + 48, 210, 46, 0.15);
+      fogCloud(W * 0.80, GROUND_Y + 44, 175, 40, 0.12);
+
+      // soft base haze so it all blends together
+      const baseFog = ctx.createLinearGradient(0, GROUND_Y - 8, 0, GROUND_Y + 56);
+      baseFog.addColorStop(0, "rgba(220,230,240,0)");
+      baseFog.addColorStop(0.25, "rgba(220,230,240,0.05)");
+      baseFog.addColorStop(0.6, "rgba(220,230,240,0.11)");
+      baseFog.addColorStop(1, "rgba(220,230,240,0.07)");
+      ctx.fillStyle = baseFog;
+      ctx.fillRect(0, GROUND_Y - 8, W, 72);
+
+      ctx.restore();
 
       // curved wisps so it feels less flat
       ctx.strokeStyle = "rgba(235,240,245,.12)";
