@@ -2076,15 +2076,38 @@ ctx.restore();
       for (const s of stones) {
         tombstone(s[0], s[1], s[2], s[3], s[4]);
       }
+      // thicker spooky fog
+      ctx.fillStyle = "rgba(220,230,240,.08)";
+      ctx.fillRect(0, GROUND_Y - 52, W, 22);
 
-      // fog strips
-      ctx.fillStyle = "rgba(215,225,235,.10)";
-      ctx.fillRect(0, GROUND_Y - 24, W, 16);
-      ctx.fillStyle = "rgba(215,225,235,.13)";
-      ctx.fillRect(0, GROUND_Y - 4, W, 20);
-      ctx.fillStyle = "rgba(215,225,235,.08)";
-      ctx.fillRect(0, GROUND_Y + 16, W, 16);
+      ctx.fillStyle = "rgba(220,230,240,.14)";
+      ctx.fillRect(0, GROUND_Y - 30, W, 26);
 
+      ctx.fillStyle = "rgba(220,230,240,.18)";
+      ctx.fillRect(0, GROUND_Y - 6, W, 26);
+
+      ctx.fillStyle = "rgba(220,230,240,.14)";
+      ctx.fillRect(0, GROUND_Y + 18, W, 20);
+
+      ctx.fillStyle = "rgba(220,230,240,.09)";
+      ctx.fillRect(0, GROUND_Y + 38, W, 14);
+
+      // curved wisps so it feels less flat
+      ctx.strokeStyle = "rgba(235,240,245,.12)";
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.moveTo(-20, GROUND_Y - 18);
+      ctx.quadraticCurveTo(W * 0.22, GROUND_Y - 30, W * 0.48, GROUND_Y - 16);
+      ctx.quadraticCurveTo(W * 0.72, GROUND_Y - 4, W + 20, GROUND_Y - 20);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(235,240,245,.10)";
+      ctx.lineWidth = 10;
+      ctx.beginPath();
+      ctx.moveTo(-20, GROUND_Y + 10);
+      ctx.quadraticCurveTo(W * 0.30, GROUND_Y - 2, W * 0.58, GROUND_Y + 12);
+      ctx.quadraticCurveTo(W * 0.80, GROUND_Y + 24, W + 20, GROUND_Y + 8);
+      ctx.stroke();
            // center angel statue pedestal
       const ax = W / 2;
       const ay = GROUND_Y + 4;
