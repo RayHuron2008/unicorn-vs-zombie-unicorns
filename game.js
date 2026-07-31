@@ -2158,52 +2158,7 @@ ctx.restore();
       ctx.fillStyle = "#2b2d31";
       ctx.fillRect(ax - 18, ay - 34, 36, 6);
 
-      // angel body
-      ctx.fillStyle = "#9aa3ae";
-      ctx.beginPath();
-      ctx.arc(ax, ay - 78, 10, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillRect(ax - 8, ay - 68, 16, 34);
-
-      // skirt/body taper
-      ctx.beginPath();
-      ctx.moveTo(ax - 16, ay - 34);
-      ctx.lineTo(ax + 16, ay - 34);
-      ctx.lineTo(ax + 10, ay - 8);
-      ctx.lineTo(ax - 10, ay - 8);
-      ctx.closePath();
-      ctx.fill();
-
-      // wings
-      ctx.fillStyle = "#8d96a2";
-      ctx.beginPath();
-      ctx.moveTo(ax - 10, ay - 62);
-      ctx.quadraticCurveTo(ax - 42, ay - 84, ax - 48, ay - 52);
-      ctx.quadraticCurveTo(ax - 39, ay - 38, ax - 14, ay - 42);
-      ctx.closePath();
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.moveTo(ax + 10, ay - 62);
-      ctx.quadraticCurveTo(ax + 42, ay - 84, ax + 48, ay - 52);
-      ctx.quadraticCurveTo(ax + 39, ay - 38, ax + 14, ay - 42);
-      ctx.closePath();
-      ctx.fill();
-
-      // arms/prayer pose
-      ctx.strokeStyle = "#b8c0ca";
-      ctx.lineWidth = 4;
-      ctx.beginPath();
-      ctx.moveTo(ax - 6, ay - 58);
-      ctx.lineTo(ax, ay - 45);
-      ctx.lineTo(ax + 6, ay - 58);
-      ctx.stroke();
-
-      // base plaque
-      ctx.fillStyle = "#2a2c31";
-      ctx.fillRect(ax - 16, ay - 28, 32, 5);
-
+     
       // solid ground
       const dirt = ctx.createLinearGradient(0, GROUND_Y + 12, 0, H);
       dirt.addColorStop(0, "#2f5d3f");
