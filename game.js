@@ -2076,13 +2076,13 @@ ctx.restore();
       for (const s of stones) {
         tombstone(s[0], s[1], s[2], s[3], s[4]);
       }
-       // cloudy spooky fog
+             // cloudy spooky fog
       ctx.save();
 
       function fogCloud(cx, cy, rx, ry, alpha) {
         const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
-        g.addColorStop(0, `rgba(225,235,245,${alpha})`);
-        g.addColorStop(0.45, `rgba(225,235,245,${alpha * 0.65})`);
+        g.addColorStop(0, "rgba(225,235,245," + alpha + ")");
+        g.addColorStop(0.45, "rgba(225,235,245," + (alpha * 0.65) + ")");
         g.addColorStop(1, "rgba(225,235,245,0)");
         ctx.fillStyle = g;
 
@@ -2119,22 +2119,6 @@ ctx.restore();
 
       ctx.restore();
 
-      // curved wisps so it feels less flat
-      ctx.strokeStyle = "rgba(235,240,245,.12)";
-      ctx.lineWidth = 12;
-      ctx.beginPath();
-      ctx.moveTo(-20, GROUND_Y - 18);
-      ctx.quadraticCurveTo(W * 0.22, GROUND_Y - 30, W * 0.48, GROUND_Y - 16);
-      ctx.quadraticCurveTo(W * 0.72, GROUND_Y - 4, W + 20, GROUND_Y - 20);
-      ctx.stroke();
-
-      ctx.strokeStyle = "rgba(235,240,245,.10)";
-      ctx.lineWidth = 10;
-      ctx.beginPath();
-      ctx.moveTo(-20, GROUND_Y + 10);
-      ctx.quadraticCurveTo(W * 0.30, GROUND_Y - 2, W * 0.58, GROUND_Y + 12);
-      ctx.quadraticCurveTo(W * 0.80, GROUND_Y + 24, W + 20, GROUND_Y + 8);
-      ctx.stroke();
            // center angel statue pedestal
       const ax = W / 2;
       const ay = GROUND_Y + 4;
