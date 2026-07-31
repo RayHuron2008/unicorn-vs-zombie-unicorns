@@ -2091,31 +2091,31 @@ ctx.restore();
         ctx.fill();
       }
 
-      // upper drifting haze
-      fogCloud(W * 0.18, GROUND_Y - 34, 120, 34, 0.12);
-      fogCloud(W * 0.38, GROUND_Y - 18, 150, 42, 0.14);
-      fogCloud(W * 0.62, GROUND_Y - 28, 135, 36, 0.13);
-      fogCloud(W * 0.84, GROUND_Y - 14, 115, 30, 0.11);
+            // upper drifting haze
+      fogCloud(W * 0.18, GROUND_Y - 34, 130, 38, 0.16);
+      fogCloud(W * 0.38, GROUND_Y - 18, 160, 46, 0.18);
+      fogCloud(W * 0.62, GROUND_Y - 28, 145, 40, 0.17);
+      fogCloud(W * 0.84, GROUND_Y - 14, 125, 34, 0.15);
 
       // middle body of fog
-      fogCloud(W * 0.12, GROUND_Y + 8, 130, 36, 0.14);
-      fogCloud(W * 0.34, GROUND_Y + 18, 170, 46, 0.17);
-      fogCloud(W * 0.58, GROUND_Y + 12, 165, 44, 0.16);
-      fogCloud(W * 0.82, GROUND_Y + 20, 145, 40, 0.14);
+      fogCloud(W * 0.12, GROUND_Y + 8, 145, 40, 0.18);
+      fogCloud(W * 0.34, GROUND_Y + 18, 185, 52, 0.21);
+      fogCloud(W * 0.58, GROUND_Y + 12, 178, 50, 0.20);
+      fogCloud(W * 0.82, GROUND_Y + 20, 160, 46, 0.18);
 
       // lower heavier fog near the ground
-      fogCloud(W * 0.22, GROUND_Y + 42, 170, 40, 0.13);
-      fogCloud(W * 0.50, GROUND_Y + 48, 210, 46, 0.15);
-      fogCloud(W * 0.80, GROUND_Y + 44, 175, 40, 0.12);
+      fogCloud(W * 0.22, GROUND_Y + 42, 185, 44, 0.17);
+      fogCloud(W * 0.50, GROUND_Y + 48, 225, 52, 0.20);
+      fogCloud(W * 0.80, GROUND_Y + 44, 190, 44, 0.16);
 
       // soft base haze so it all blends together
-      const baseFog = ctx.createLinearGradient(0, GROUND_Y - 8, 0, GROUND_Y + 56);
-      baseFog.addColorStop(0, "rgba(220,230,240,0)");
-      baseFog.addColorStop(0.25, "rgba(220,230,240,0.05)");
-      baseFog.addColorStop(0.6, "rgba(220,230,240,0.11)");
-      baseFog.addColorStop(1, "rgba(220,230,240,0.07)");
+           const baseFog = ctx.createLinearGradient(0, GROUND_Y - 14, 0, GROUND_Y + 64);
+      baseFog.addColorStop(0, "rgba(220,230,240,0.02)");
+      baseFog.addColorStop(0.20, "rgba(220,230,240,0.08)");
+      baseFog.addColorStop(0.55, "rgba(220,230,240,0.16)");
+      baseFog.addColorStop(1, "rgba(220,230,240,0.11)");
       ctx.fillStyle = baseFog;
-      ctx.fillRect(0, GROUND_Y - 8, W, 72);
+      ctx.fillRect(0, GROUND_Y - 14, W, 86);
 
       ctx.restore();
 
@@ -2302,6 +2302,32 @@ ctx.restore();
     ctx.fillStyle = "#8a5a2f";
     ctx.fillRect(0, GROUND_Y + 25, W, H - GROUND_Y);
   }`
+      );
+            code = code.replace(
+        "drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);",
+        `drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);
+
+      if (window.__uvzuLevelTheme === "graveyard") {
+        ctx.save();
+
+        function frontFog(cx, cy, rx, ry, alpha) {
+          const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+          g.addColorStop(0, "rgba(230,235,245," + alpha + ")");
+          g.addColorStop(0.55, "rgba(230,235,245," + (alpha * 0.55) + ")");
+          g.addColorStop(1, "rgba(230,235,245,0)");
+          ctx.fillStyle = g;
+
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        frontFog(W * 0.22, GROUND_Y + 22, 180, 42, 0.10);
+        frontFog(W * 0.52, GROUND_Y + 28, 220, 50, 0.12);
+        frontFog(W * 0.82, GROUND_Y + 24, 170, 40, 0.09);
+
+        ctx.restore();
+      }`
       );
             code = code.replace(
         "drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);",
