@@ -2087,7 +2087,7 @@ ctx.restore();
 
            // center angel statue pedestal
       const ax = W / 2;
-      const ay = GROUND_Y - 4;
+      const ay = GROUND_Y + 4;
 
       // faint moonlit glow behind statue
       const angelGlow = ctx.createRadialGradient(ax, ay - 82, 10, ax, ay - 82, 74);
