@@ -2024,6 +2024,22 @@ ctx.restore();
       deadTree(110, GROUND_Y - 8, 1.0);
       deadTree(820, GROUND_Y - 6, 1.15);
 
+            // farther-back tombstones near the fence
+      const backStones = [
+        [92,  GROUND_Y - 88, 14, 18, false],
+        [182, GROUND_Y - 96, 12, 16, true],
+        [286, GROUND_Y - 90, 15, 19, false],
+        [404, GROUND_Y - 98, 13, 17, false],
+        [520, GROUND_Y - 92, 15, 19, true],
+        [640, GROUND_Y - 96, 12, 16, false],
+        [748, GROUND_Y - 90, 14, 18, false],
+        [846, GROUND_Y - 94, 12, 16, true]
+      ];
+
+      for (const s of backStones) {
+        tombstone(s[0], s[1], s[2], s[3], s[4]);
+      }
+
       // scattered tombstones
       function tombstone(x, y, w, h, cross) {
         ctx.fillStyle = "#5f6773";
@@ -2042,18 +2058,21 @@ ctx.restore();
         }
       }
 
-     const stones = [
-  [72,  GROUND_Y - 34, 22, 30, false],
-  [138, GROUND_Y - 22, 18, 24, true],
-  [210, GROUND_Y - 40, 24, 32, false],
-  [292, GROUND_Y - 18, 18, 22, false],
-  [370, GROUND_Y - 46, 26, 36, true],
-  [470, GROUND_Y - 26, 20, 26, false],
-  [560, GROUND_Y - 42, 24, 30, false],
-  [650, GROUND_Y - 20, 18, 22, true],
-  [742, GROUND_Y - 38, 24, 32, false],
-  [832, GROUND_Y - 24, 20, 25, false]
-];
+          const stones = [
+        [70,  GROUND_Y - 42, 22, 30, false],
+        [136, GROUND_Y - 24, 18, 24, true],
+        [205, GROUND_Y - 50, 24, 32, false],
+        [286, GROUND_Y - 28, 18, 22, false],
+
+        [382, GROUND_Y - 58, 26, 36, true],
+        [470, GROUND_Y - 30, 20, 26, false],
+
+        // keep center lane more open around the angel
+        [578, GROUND_Y - 52, 24, 30, false],
+        [672, GROUND_Y - 26, 18, 22, true],
+        [760, GROUND_Y - 46, 24, 32, false],
+        [846, GROUND_Y - 28, 20, 25, false]
+      ];
       for (const s of stones) {
         tombstone(s[0], s[1], s[2], s[3], s[4]);
       }
@@ -2066,14 +2085,78 @@ ctx.restore();
       ctx.fillStyle = "rgba(215,225,235,.08)";
       ctx.fillRect(0, GROUND_Y + 16, W, 16);
 
-      // center angel statue pedestal
+           // center angel statue pedestal
       const ax = W / 2;
-      const ay = GROUND_Y - 6;
+      const ay = GROUND_Y - 4;
 
-      ctx.fillStyle = "#4e5560";
-      ctx.fillRect(ax - 34, ay - 44, 68, 38);
-      ctx.fillStyle = "#616975";
-      ctx.fillRect(ax - 40, ay - 12, 80, 10);
+      // faint moonlit glow behind statue
+      const angelGlow = ctx.createRadialGradient(ax, ay - 82, 10, ax, ay - 82, 74);
+      angelGlow.addColorStop(0, "rgba(210,225,255,.20)");
+      angelGlow.addColorStop(0.45, "rgba(170,190,235,.10)");
+      angelGlow.addColorStop(1, "rgba(170,190,235,0)");
+      ctx.fillStyle = angelGlow;
+      ctx.fillRect(ax - 90, ay - 160, 180, 170);
+
+      // shadow behind statue
+      ctx.fillStyle = "rgba(0,0,0,.20)";
+      ctx.beginPath();
+      ctx.ellipse(ax + 3, ay - 12, 44, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // pedestal
+      ctx.fillStyle = "#4b515d";
+      ctx.fillRect(ax - 40, ay - 50, 80, 40);
+      ctx.fillStyle = "#626a76";
+      ctx.fillRect(ax - 48, ay - 16, 96, 12);
+
+      // angel wings first (bigger silhouette)
+      ctx.fillStyle = "#88919d";
+      ctx.beginPath();
+      ctx.moveTo(ax - 14, ay - 84);
+      ctx.quadraticCurveTo(ax - 58, ay - 114, ax - 66, ay - 74);
+      ctx.quadraticCurveTo(ax - 56, ay - 50, ax - 18, ay - 56);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(ax + 14, ay - 84);
+      ctx.quadraticCurveTo(ax + 58, ay - 114, ax + 66, ay - 74);
+      ctx.quadraticCurveTo(ax + 56, ay - 50, ax + 18, ay - 56);
+      ctx.closePath();
+      ctx.fill();
+
+      // head
+      ctx.fillStyle = "#a8b1bc";
+      ctx.beginPath();
+      ctx.arc(ax, ay - 106, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // torso
+      ctx.fillRect(ax - 10, ay - 94, 20, 40);
+
+      // robe / lower body
+      ctx.beginPath();
+      ctx.moveTo(ax - 18, ay - 54);
+      ctx.lineTo(ax + 18, ay - 54);
+      ctx.lineTo(ax + 12, ay - 18);
+      ctx.lineTo(ax - 12, ay - 18);
+      ctx.closePath();
+      ctx.fill();
+
+      // arms in prayer pose
+      ctx.strokeStyle = "#c3cad2";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(ax - 8, ay - 82);
+      ctx.lineTo(ax - 2, ay - 66);
+      ctx.lineTo(ax, ay - 58);
+      ctx.lineTo(ax + 2, ay - 66);
+      ctx.lineTo(ax + 8, ay - 82);
+      ctx.stroke();
+
+      // small base plaque
+      ctx.fillStyle = "#2b2d31";
+      ctx.fillRect(ax - 18, ay - 34, 36, 6);
 
       // angel body
       ctx.fillStyle = "#9aa3ae";
