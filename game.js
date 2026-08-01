@@ -2303,32 +2303,7 @@ ctx.restore();
     ctx.fillRect(0, GROUND_Y + 25, W, H - GROUND_Y);
   }`
       );
-            code = code.replace(
-        "drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);",
-        `drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);
-
-      if (window.__uvzuLevelTheme === "graveyard") {
-        ctx.save();
-
-        function frontFog(cx, cy, rx, ry, alpha) {
-          const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
-          g.addColorStop(0, "rgba(230,235,245," + alpha + ")");
-          g.addColorStop(0.55, "rgba(230,235,245," + (alpha * 0.55) + ")");
-          g.addColorStop(1, "rgba(230,235,245,0)");
-          ctx.fillStyle = g;
-
-          ctx.beginPath();
-          ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        frontFog(W * 0.22, GROUND_Y + 22, 180, 42, 0.10);
-        frontFog(W * 0.52, GROUND_Y + 28, 220, 50, 0.12);
-        frontFog(W * 0.82, GROUND_Y + 24, 170, 40, 0.09);
-
-        ctx.restore();
-      }`
-      );
+           
             code = code.replace(
         "drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);",
         `if (!(window.__uvzuIsLocalGhost && window.__uvzuIsLocalGhost())) {
@@ -2373,10 +2348,32 @@ ctx.restore();
           ctx.strokeStyle = "#4b2670";
           ctx.lineWidth = 3;
           ctx.font = "900 18px system-ui, sans-serif";
-          ctx.strokeText("P2", remote.x - 13, remote.y - 72);
+                   ctx.strokeText("P2", remote.x - 13, remote.y - 72);
           ctx.fillText("P2", remote.x - 13, remote.y - 72);
           ctx.restore();
         }
+      }
+
+      if (window.__uvzuLevelTheme === "graveyard") {
+        ctx.save();
+
+        function frontFog(cx, cy, rx, ry, alpha) {
+          const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+          g.addColorStop(0, "rgba(230,235,245," + alpha + ")");
+          g.addColorStop(0.55, "rgba(230,235,245," + (alpha * 0.55) + ")");
+          g.addColorStop(1, "rgba(230,235,245,0)");
+          ctx.fillStyle = g;
+
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        frontFog(W * 0.22, GROUND_Y + 22, 180, 42, 0.10);
+        frontFog(W * 0.52, GROUND_Y + 28, 220, 50, 0.12);
+        frontFog(W * 0.82, GROUND_Y + 24, 170, 40, 0.09);
+
+        ctx.restore();
       }`
       );
             code = code.replace(
