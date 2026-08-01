@@ -1231,34 +1231,16 @@
           <button class="diffBtn" data-diff="Normal">Normal</button>
           <button class="diffBtn" data-diff="Chaos">Chaos</button>
         </div>
-                 ctx.strokeText("P2", remote.x - 13, remote.y - 72);
-          ctx.fillText("P2", remote.x - 13, remote.y - 72);
-          ctx.restore();
-        }
-      }
+                         <input
+          id="singleLevelCodeInput"
+          maxlength="5"
+          placeholder="LEVEL CODE"
+          autocomplete="off"
+          autocapitalize="characters"
+          style="width:100%;box-sizing:border-box;border:3px solid rgba(76,38,112,.65);border-radius:14px;padding:10px;font:900 16px system-ui,sans-serif;text-align:center;color:#4b2670;margin:8px 0 4px;"
+        />
 
-      if (window.__uvzuLevelTheme === "graveyard") {
-        ctx.save();
-
-        function frontFog(cx, cy, rx, ry, alpha) {
-          const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
-          g.addColorStop(0, "rgba(230,235,245," + alpha + ")");
-          g.addColorStop(0.55, "rgba(230,235,245," + (alpha * 0.55) + ")");
-          g.addColorStop(1, "rgba(230,235,245,0)");
-          ctx.fillStyle = g;
-
-          ctx.beginPath();
-          ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        frontFog(W * 0.22, GROUND_Y + 22, 180, 42, 0.10);
-        frontFog(W * 0.52, GROUND_Y + 28, 220, 50, 0.12);
-        frontFog(W * 0.82, GROUND_Y + 24, 170, 40, 0.09);
-
-        ctx.restore();
-      }`
-      );
+        <div id="menuHint">Choose difficulty, then tap START. Optional code unlocks hidden levels.</div>
       </div>
 
       <button id="titleMultiplayerBtn">MULTIPLAYER</button>
