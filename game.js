@@ -27,7 +27,10 @@
   let firebaseRemoteTargetY = null;
     let firebaseEnemyDeaths = {};
   let firebaseEnemyState = null;
-    let firebaseLevelCompleted = false;
+        let firebaseLevelCompleted = false;
+    let firebaseNextLevelCode = "";
+    let firebaseNextLevelAt = 0;
+    window.__uvzuLastAppliedNextLevelAt = 0;
     let firebaseGhostResetAt = 0;
   window.__uvzuLastAppliedGhostResetAt = 0;
   let firebaseLastEnemyDeathWriteAt = 0;
@@ -176,7 +179,10 @@
             status: "lobby",
       countdownStartedAt: null,
       createdAt: now,
-      updatedAt: now,
+            updatedAt: now,
+      nextLevelCode: "",
+      nextLevelAt: 0,
+      levelCompleted: false,
       host: {
         connected: true,
         ready: false,
@@ -247,7 +253,9 @@
             firebaseCurrentRoom = room;
       firebaseEnemyDeaths = room.enemyDeaths || {};
       firebaseEnemyState = room.enemyState || null;
-      firebaseLevelCompleted = !!room.levelCompleted;
+            firebaseLevelCompleted = !!room.levelCompleted;
+      firebaseNextLevelCode = room.nextLevelCode || "";
+      firebaseNextLevelAt = room.nextLevelAt || 0;
                 firebaseGhostResetAt = room.ghostResetAt || 0;
       const otherRole = firebasePlayerRole === "host" ? "guest" : "host";
       const other = room[otherRole];
@@ -436,8 +444,45 @@
     window.__uvzuGetMultiplayerEnemyState = function() {
     return firebaseEnemyState;
   };
-    window.__uvzuIsLevelCompleted = function() {
+        window.__uvzuIsLevelCompleted = function() {
     return firebaseLevelCompleted;
+  };
+
+  window.__uvzuGetNextLevelSignal = function() {
+    return {
+      code: firebaseNextLevelCode,
+      at: firebaseNextLevelAt
+    };
+  };
+
+  window.__uvzuSignalNextLevel = function(nextLevelCode) {
+    if (!firebaseRoomCode || firebasePlayerRole !== "host") return;
+
+        if (
+      firebasePlayerRole === "host" &&
+      window.__uvzuCurrentLevelCode === "RNBW1"
+    ) {
+      if (window.__uvzuSignalNextLevel) {
+        window.__uvzuSignalNextLevel("GRV2");
+      }
+
+      return;
+    }
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const path = "rooms/" + firebaseRoomCode;
+
+        return dbMod.update(dbMod.ref(db, path), {
+          levelCompleted: true,
+          status: "levelCompleted",
+          completedAt: Date.now(),
+          updatedAt: Date.now()
+        });
+      })
+      .catch((err) => {
+        console.error("Next level sync failed:", err);
+      });
   };
 
   window.__uvzuSignalLevelCompleted = function() {
@@ -964,6 +1009,8 @@
       return;
     }
 
+              window.__uvzuCurrentLevelCode = finalLevelCode;
+       window.__uvzuCurrentDifficultyName = finalDifficultyName;
        window.__uvzuLevelTheme = finalLevelCode === "GRV2" ? "graveyard" : "rainbow";
 
     if (typeof window.__uvzuStartGame === "function") {
@@ -1578,6 +1625,35 @@
 
     if (state.mode === "play" || state.mode === "final") {`,
 `    updateHealthRegen(dt);
+
+            const nextLevelSignal = window.__uvzuGetNextLevelSignal
+      ? window.__uvzuGetNextLevelSignal()
+      : null;
+
+    if (
+      nextLevelSignal &&
+      nextLevelSignal.at &&
+      nextLevelSignal.at !== window.__uvzuLastAppliedNextLevelAt
+    ) {
+      window.__uvzuLastAppliedNextLevelAt = nextLevelSignal.at;
+
+      const nextCode = nextLevelSignal.code || "GRV2";
+
+      window.__uvzuCurrentLevelCode = nextCode;
+      window.__uvzuLevelTheme = nextCode === "GRV2" ? "graveyard" : "rainbow";
+
+      if (window.__uvzuReviveLocalForNextLevel) {
+        window.__uvzuReviveLocalForNextLevel(player);
+      }
+
+      fullRestart();
+      player.lives = 5;
+      player.hp = HP_MAX;
+      player.invuln = 1.2;
+      updateHud();
+
+      return;
+    }
 
       const ghostResetAt = window.__uvzuGetGhostResetAt
       ? window.__uvzuGetGhostResetAt()
