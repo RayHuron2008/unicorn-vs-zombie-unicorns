@@ -1869,29 +1869,45 @@
         if (f.life <= 0) state.fireworks.splice(i, 1);
       }
 
-      if (state.victoryTimer <= 0) {
+            if (state.victoryTimer <= 0) {
+        if (
+          ((window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
+          (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) &&
+          window.__uvzuCurrentLevelCode === "RNBW1"
+        ) {
+          if (window.__uvzuSignalLevelCompleted) {
+            window.__uvzuSignalLevelCompleted();
+          }
+
+          return;
+        }
+
         state.mode = "victory";
       }
     }
   }`
       );
       
-                  code = code.split("startNpcScene();").join(
+                        code = code.split("startNpcScene();").join(
 `if (
       (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
       (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
     ) {
-      if (window.__uvzuSignalLevelCompleted) {
-        window.__uvzuSignalLevelCompleted();
-      }
+      if (window.__uvzuCurrentLevelCode === "RNBW1") {
+        startNpcScene();
+      } else {
+        if (window.__uvzuSignalLevelCompleted) {
+          window.__uvzuSignalLevelCompleted();
+        }
 
-      state.mode = "fireworks";
-      state.npc = null;
-      state.enemies.length = 0;
-      state.enemyShots.length = 0;
-      state.playerShots.length = 0;
-      state.fireworks.length = 0;
-      state.victoryTimer = 3.5;
+        state.mode = "fireworks";
+        state.npc = null;
+        state.enemies.length = 0;
+        state.enemyShots.length = 0;
+        state.playerShots.length = 0;
+        state.fireworks.length = 0;
+        state.victoryTimer = 3.5;
+      }
     } else {
       startNpcScene();
     }`
