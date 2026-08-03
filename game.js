@@ -455,10 +455,34 @@
     };
   };
 
-  window.__uvzuSignalNextLevel = function(nextLevelCode) {
+    window.__uvzuSignalNextLevel = function(nextLevelCode) {
     if (!firebaseRoomCode || firebasePlayerRole !== "host") return;
 
-        if (
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const path = "rooms/" + firebaseRoomCode;
+
+        return dbMod.update(dbMod.ref(db, path), {
+          status: "nextLevel",
+          levelCompleted: false,
+          nextLevelCode: nextLevelCode || "GRV2",
+          nextLevelAt: Date.now(),
+          enemyDeaths: null,
+          guestKillRequests: null,
+          enemyState: null,
+          ghostResetAt: 0,
+          updatedAt: Date.now()
+        });
+      })
+      .catch((err) => {
+        console.error("Next level sync failed:", err);
+      });
+  };
+
+  window.__uvzuSignalLevelCompleted = function() {
+    if (!firebaseRoomCode || !firebasePlayerRole) return;
+
+    if (
       firebasePlayerRole === "host" &&
       window.__uvzuCurrentLevelCode === "RNBW1"
     ) {
@@ -481,29 +505,9 @@
         });
       })
       .catch((err) => {
-        console.error("Next level sync failed:", err);
-      });
-  };
-
-  window.__uvzuSignalLevelCompleted = function() {
-    if (!firebaseRoomCode || !firebasePlayerRole) return;
-
-    getFirebaseDatabase()
-      .then(({ dbMod, db }) => {
-        const path = "rooms/" + firebaseRoomCode;
-
-        return dbMod.update(dbMod.ref(db, path), {
-          levelCompleted: true,
-          status: "levelCompleted",
-          completedAt: Date.now(),
-          updatedAt: Date.now()
-        });
-      })
-      .catch((err) => {
         console.error("Level completed sync failed:", err);
       });
   };
-
   async function setFirebaseReady(isReady) {
      if (!firebaseRoomCode || !firebasePlayerRole) return;
 
