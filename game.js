@@ -28,9 +28,11 @@
     let firebaseEnemyDeaths = {};
   let firebaseEnemyState = null;
         let firebaseLevelCompleted = false;
-    let firebaseNextLevelCode = "";
+        let firebaseNextLevelCode = "";
     let firebaseNextLevelAt = 0;
     window.__uvzuLastAppliedNextLevelAt = 0;
+    let firebaseEndingSceneAt = 0;
+    window.__uvzuLastAppliedEndingSceneAt = 0;
     let firebaseGhostResetAt = 0;
   window.__uvzuLastAppliedGhostResetAt = 0;
   let firebaseLastEnemyDeathWriteAt = 0;
@@ -180,8 +182,9 @@
       countdownStartedAt: null,
       createdAt: now,
             updatedAt: now,
-      nextLevelCode: "",
+           nextLevelCode: "",
       nextLevelAt: 0,
+      endingSceneAt: 0,
       levelCompleted: false,
       host: {
         connected: true,
@@ -254,8 +257,9 @@
       firebaseEnemyDeaths = room.enemyDeaths || {};
       firebaseEnemyState = room.enemyState || null;
             firebaseLevelCompleted = !!room.levelCompleted;
-      firebaseNextLevelCode = room.nextLevelCode || "";
+           firebaseNextLevelCode = room.nextLevelCode || "";
       firebaseNextLevelAt = room.nextLevelAt || 0;
+      firebaseEndingSceneAt = room.endingSceneAt || 0;
                 firebaseGhostResetAt = room.ghostResetAt || 0;
       const otherRole = firebasePlayerRole === "host" ? "guest" : "host";
       const other = room[otherRole];
@@ -453,6 +457,30 @@
       code: firebaseNextLevelCode,
       at: firebaseNextLevelAt
     };
+  };
+    window.__uvzuGetEndingSceneSignal = function() {
+    return {
+      at: firebaseEndingSceneAt
+    };
+  };
+
+  window.__uvzuSignalEndingScene = function() {
+    if (!firebaseRoomCode || firebasePlayerRole !== "host") return;
+
+    getFirebaseDatabase()
+      .then(({ dbMod, db }) => {
+        const path = "rooms/" + firebaseRoomCode;
+
+        return dbMod.update(dbMod.ref(db, path), {
+          status: "endingScene",
+          endingSceneAt: Date.now(),
+          levelCompleted: false,
+          updatedAt: Date.now()
+        });
+      })
+      .catch((err) => {
+        console.error("Ending scene sync failed:", err);
+      });
   };
 
     window.__uvzuSignalNextLevel = function(nextLevelCode) {
@@ -1659,6 +1687,29 @@
       return;
     }
 
+      const endingSceneSignal = window.__uvzuGetEndingSceneSignal
+      ? window.__uvzuGetEndingSceneSignal()
+      : null;
+
+    if (
+      endingSceneSignal &&
+      endingSceneSignal.at &&
+      endingSceneSignal.at !== window.__uvzuLastAppliedEndingSceneAt &&
+      window.__uvzuCurrentLevelCode === "RNBW1" &&
+      state.mode !== "npc" &&
+      state.mode !== "talk" &&
+      state.mode !== "exit" &&
+      state.mode !== "fireworks"
+    ) {
+      window.__uvzuLastAppliedEndingSceneAt = endingSceneSignal.at;
+
+      state.enemies.length = 0;
+      state.enemyShots.length = 0;
+      state.playerShots.length = 0;
+
+      startNpcScene();
+      return;
+    }
       const ghostResetAt = window.__uvzuGetGhostResetAt
       ? window.__uvzuGetGhostResetAt()
       : 0;
@@ -1950,7 +2001,15 @@
       (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
       (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
     ) {
-      if (window.__uvzuCurrentLevelCode === "RNBW1") {
+           if (window.__uvzuCurrentLevelCode === "RNBW1") {
+        if (
+          window.__uvzuIsMultiplayerHost &&
+          window.__uvzuIsMultiplayerHost() &&
+          window.__uvzuSignalEndingScene
+        ) {
+          window.__uvzuSignalEndingScene();
+        }
+
         startNpcScene();
       } else {
         if (window.__uvzuSignalLevelCompleted) {
