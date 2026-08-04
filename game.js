@@ -64,8 +64,12 @@
     graveyardMusic.currentTime = 0;
   }
 
-  window.__uvzuUpdateLevelMusic = function() {
+   window.__uvzuUpdateLevelMusic = function() {
     if (window.__uvzuLevelTheme === "graveyard") {
+      if (window.__uvzuStopMainMusic) {
+        window.__uvzuStopMainMusic();
+      }
+
       startGraveyardMusic();
     } else {
       stopGraveyardMusic();
@@ -1643,6 +1647,31 @@
       code = code.replace(
         "let shootCooldown = 0;",
         "let shootCooldown = 0;\n  let multiplayerEnemyIdCounter = 0;"
+      );
+            code = code.replace(
+`  function startMusic() {
+    music.play().catch(() => {});
+  }`,
+`  function startMusic() {
+    if (window.__uvzuLevelTheme === "graveyard") {
+      music.pause();
+      music.currentTime = 0;
+      return;
+    }
+
+    music.play().catch(() => {});
+  }
+
+  window.__uvzuStopMainMusic = function() {
+    music.pause();
+    music.currentTime = 0;
+  };
+
+  window.__uvzuStartMainMusic = function() {
+    if (window.__uvzuLevelTheme !== "graveyard") {
+      music.play().catch(() => {});
+    }
+  };`
       );
         
 
