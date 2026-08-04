@@ -1694,7 +1694,14 @@
 
       return;
     }
-    if (window.__uvzuIsLocalGhost && window.__uvzuIsLocalGhost()) {
+        if (
+      window.__uvzuIsLocalGhost &&
+      window.__uvzuIsLocalGhost() &&
+      state.mode !== "npc" &&
+      state.mode !== "talk" &&
+      state.mode !== "exit" &&
+      state.mode !== "fireworks"
+    ) {
       const remote = window.__uvzuGetRemotePlayer
         ? window.__uvzuGetRemotePlayer()
         : null;
@@ -1712,7 +1719,6 @@
       player.ray = 0;
       player.giant = 0;
     }
-
     if (
       (state.mode === "play" || state.mode === "final") &&
       !(window.__uvzuIsLocalGhost && window.__uvzuIsLocalGhost())
