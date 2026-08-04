@@ -1797,13 +1797,50 @@
         "player.giant = GIANT_TIME;\n        player.lives += 1;"
       );
 
-            code = replaceFunction(
+                       code = replaceFunction(
         code,
         "updateEnding",
 `  function updateEnding(dt) {
+    function getMultiplayerEndingHero() {
+      const remote = window.__uvzuGetRemotePlayer
+        ? window.__uvzuGetRemotePlayer()
+        : null;
+
+      const localAlive = !(window.__uvzuIsLocalGhost && window.__uvzuIsLocalGhost());
+      const remoteAlive = !!(
+        remote &&
+        typeof remote.x === "number" &&
+        typeof remote.y === "number" &&
+        !remote.ghost &&
+        !remote.dead
+      );
+
+      const localIsHost = window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost();
+      const localIsGuest = window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest();
+
+      // If both are alive, default to host.
+      if (localAlive && remoteAlive) {
+        if (localIsHost) return player;
+        return remote;
+      }
+
+      // If only one is alive, use the living player.
+      if (localAlive) return player;
+      if (remoteAlive) return remote;
+
+      // Emergency fallback.
+      return player;
+    }
+
+    const isMultiplayer =
+      (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
+      (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest());
+
     if (state.mode === "npc") {
+      const hero = isMultiplayer ? getMultiplayerEndingHero() : player;
+
       if (!state.npc) {
-        const fromLeft = player.x > W / 2;
+        const fromLeft = hero.x > W / 2;
 
         state.npc = {
           x: fromLeft ? -30 : W + 30,
@@ -1815,7 +1852,8 @@
 
       state.npc.x += state.npc.vx * dt;
 
-      const target = player.x + (state.npc.vx > 0 ? -70 : 70);
+      const heroX = typeof hero.x === "number" ? hero.x : player.x;
+      const target = heroX + (state.npc.vx > 0 ? -70 : 70);
 
       if (
         (state.npc.vx > 0 && state.npc.x >= target) ||
@@ -1837,20 +1875,33 @@
     }
 
     if (state.mode === "exit") {
-      player.face = 1;
-      player.x += 210 * dt;
+      const hero = isMultiplayer ? getMultiplayerEndingHero() : player;
 
-      if (state.npc) {
-        state.npc.x = player.x - 15;
-        state.npc.y = player.y - 18;
+      if (hero === player) {
+        player.face = 1;
+        player.x += 210 * dt;
       }
 
-      if (player.x > W + 120) {
+      if (state.npc) {
+        const heroX = typeof hero.x === "number" ? hero.x : player.x;
+        const heroY = typeof hero.y === "number" ? hero.y : player.y;
+
+        state.npc.x = heroX - 15;
+        state.npc.y = heroY - 18;
+      }
+
+      const exitX = hero === player
+        ? player.x
+        : (typeof hero.x === "number" ? hero.x + 210 * dt : W + 121);
+
+      if (exitX > W + 120 || state.exitTimer <= 0) {
         state.mode = "fireworks";
         state.npc = null;
         state.fireworks.length = 0;
         state.victoryTimer = 3.5;
       }
+
+      state.exitTimer -= dt;
     }
 
     if (state.mode === "fireworks") {
@@ -1869,7 +1920,7 @@
         if (f.life <= 0) state.fireworks.splice(i, 1);
       }
 
-            if (state.victoryTimer <= 0) {
+      if (state.victoryTimer <= 0) {
         if (
           ((window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
           (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) &&
@@ -1888,7 +1939,7 @@
   }`
       );
       
-                        code = code.split("startNpcScene();").join(
+                             code = code.split("startNpcScene();").join(
 `if (
       (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
       (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
