@@ -42,6 +42,35 @@
    let firebaseLastAppliedEnemyStateAt = 0;
   window.__uvzuLastAppliedEnemyStateAt = 0;
     window.__uvzuGuestShotFlashes = [];
+    const GRAVEYARD_MUSIC_URL = "Graveyard%20Shuffle.mp3";
+  let graveyardMusic = null;
+
+  function startGraveyardMusic() {
+    if (!graveyardMusic) {
+      graveyardMusic = new Audio(GRAVEYARD_MUSIC_URL);
+      graveyardMusic.loop = true;
+      graveyardMusic.volume = 0.45;
+    }
+
+    graveyardMusic.play().catch((err) => {
+      console.warn("Graveyard music play blocked:", err);
+    });
+  }
+
+  function stopGraveyardMusic() {
+    if (!graveyardMusic) return;
+
+    graveyardMusic.pause();
+    graveyardMusic.currentTime = 0;
+  }
+
+  window.__uvzuUpdateLevelMusic = function() {
+    if (window.__uvzuLevelTheme === "graveyard") {
+      startGraveyardMusic();
+    } else {
+      stopGraveyardMusic();
+    }
+  };
 
   window.__uvzuAddGuestShotFlash = function(enemy) {
     const remote = window.__uvzuGetRemotePlayer
@@ -1045,6 +1074,10 @@
        window.__uvzuCurrentDifficultyName = finalDifficultyName;
        window.__uvzuLevelTheme = finalLevelCode === "GRV2" ? "graveyard" : "rainbow";
 
+       if (window.__uvzuUpdateLevelMusic) {
+         window.__uvzuUpdateLevelMusic();
+       }
+
     if (typeof window.__uvzuStartGame === "function") {
       window.__uvzuStartGame(finalDifficultyName);
     }
@@ -1360,7 +1393,12 @@
         return;
       }
 
+     window.__uvzuCurrentLevelCode = typedLevelCode === "GRV2" ? "GRV2" : "RNBW1";
       window.__uvzuLevelTheme = typedLevelCode === "GRV2" ? "graveyard" : "rainbow";
+
+      if (window.__uvzuUpdateLevelMusic) {
+        window.__uvzuUpdateLevelMusic();
+      }
 
       if (typeof window.__uvzuStartGame === "function") {
         window.__uvzuStartGame(selected);
@@ -1420,6 +1458,7 @@
         overlay.querySelector("#exitBtn").addEventListener("pointerup", (e) => {
       e.preventDefault();
       e.stopPropagation();
+    stopGraveyardMusic();
       window.location.href = window.location.pathname + "?v=" + Date.now();
     });
   }
@@ -1671,8 +1710,12 @@
 
       const nextCode = nextLevelSignal.code || "GRV2";
 
-      window.__uvzuCurrentLevelCode = nextCode;
+     window.__uvzuCurrentLevelCode = nextCode;
       window.__uvzuLevelTheme = nextCode === "GRV2" ? "graveyard" : "rainbow";
+
+      if (window.__uvzuUpdateLevelMusic) {
+        window.__uvzuUpdateLevelMusic();
+      }
 
       if (window.__uvzuReviveLocalForNextLevel) {
         window.__uvzuReviveLocalForNextLevel(player);
