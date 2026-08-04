@@ -1539,6 +1539,31 @@
         "const RAY_TIME = 10;",
         "const RAY_TIME = 5;"
       );
+            code = code.replace(
+`  function startMusic() {
+    music.play().catch(() => {});
+  }`,
+`  function startMusic() {
+    if (window.__uvzuLevelTheme === "graveyard") {
+      music.pause();
+      music.currentTime = 0;
+      return;
+    }
+
+    music.play().catch(() => {});
+  }
+
+  window.__uvzuStopMainMusic = function() {
+    music.pause();
+    music.currentTime = 0;
+  };
+
+  window.__uvzuStartMainMusic = function() {
+    if (window.__uvzuLevelTheme !== "graveyard") {
+      music.play().catch(() => {});
+    }
+  };`
+      );
 
             code = replaceFunction(
         code,
