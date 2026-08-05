@@ -2050,10 +2050,10 @@
           startGraveyardFamilyScene();
         }
 
-        state.family.rise += 52 * dt;
+      state.family.rise += 38 * dt;
 
-if (state.family.rise >= 58) {
-  state.family.rise = 58;
+if (state.family.rise >= 34) {
+  state.family.rise = 34;
   state.family.walkTimer = 0;
   state.mode = "approach";
 }
@@ -2674,13 +2674,13 @@ ctx.restore();
         const baseX = state.family.baseX || W / 2;
 
         state.family.mom.x = baseX - 30;
-        state.family.mom.y = GROUND_Y + 18 - rise;
+state.family.mom.y = GROUND_Y - 20 - rise;
 
-        state.family.dad.x = baseX + 2;
-        state.family.dad.y = GROUND_Y + 20 - rise;
+state.family.dad.x = baseX + 2;
+state.family.dad.y = GROUND_Y - 18 - rise;
 
-        state.family.child.x = baseX + 31;
-        state.family.child.y = GROUND_Y + 25 - rise;
+state.family.child.x = baseX + 31;
+state.family.child.y = GROUND_Y - 12 - rise;
 
         drawHiddenFamilyMember(state.family.mom, "mom");
         drawHiddenFamilyMember(state.family.dad, "dad");
