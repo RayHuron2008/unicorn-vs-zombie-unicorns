@@ -2074,19 +2074,28 @@ if (state.family.rise >= 34) {
           state.family.mom.hop = 0;
           state.family.dad.hop = 0;
           state.family.child.hop = 0;
-          state.dialogTimer = 4.3;
-          state.mode = "talk";
+         state.dialogTimer = 7.5;
+state.mode = "talk";
         }
       }
 
-      if (state.mode === "talk") {
-        state.dialogTimer -= dt;
+     if (state.mode === "talk") {
+  state.dialogTimer -= dt;
 
-        if (state.dialogTimer <= 0) {
-          state.mode = "cheer";
-          state.family.cheerTimer = 2.1;
-        }
-      }
+  if (input.a && !player.aConsumed) {
+    player.aConsumed = true;
+    state.dialogTimer = 0;
+  }
+
+  if (!input.a) {
+    player.aConsumed = false;
+  }
+
+  if (state.dialogTimer <= 0) {
+    state.mode = "cheer";
+    state.family.cheerTimer = 2.1;
+  }
+}
 
       if (state.mode === "cheer") {
         state.family.cheerTimer -= dt;
