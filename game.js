@@ -2584,48 +2584,91 @@ ctx.restore();
   state.mode === "npc"
 ) {
         function drawHiddenFamilyMember(p, type) {
-          const x = p.x;
-          const y = p.y - (p.hop || 0);
+  const x = p.x;
+  const y = p.y - (p.hop || 0);
 
-          let shirt = "#ff7fa8";
-          if (type === "dad") shirt = "#6ea8ff";
-          if (type === "child") shirt = "#ffd86a";
+  const isMom = type === "mom";
+  const isDad = type === "dad";
+  const isChild = type === "child";
 
-          const headSize = type === "child" ? 7 : 8;
+  const shirt = isMom ? "#ff7fa8" : isDad ? "#6ea8ff" : "#ffd86a";
+  const headSize = isChild ? 7 : 8;
 
-          ctx.save();
+  ctx.save();
 
-          ctx.fillStyle = "#8b5a3c";
-          ctx.beginPath();
-          ctx.arc(x, y - 18, headSize, 0, Math.PI * 2);
-          ctx.fill();
+  // MOM: long hair behind head
+  if (isMom) {
+    ctx.fillStyle = "#4a2b1b";
+    ctx.beginPath();
+    ctx.ellipse(x, y - 16, 11, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-          ctx.fillStyle = shirt;
-          ctx.fillRect(x - 7, y - 10, 14, type === "child" ? 15 : 19);
+    // side hair strands
+    ctx.fillRect(x - 9, y - 18, 4, 14);
+    ctx.fillRect(x + 5, y - 18, 4, 14);
+  }
 
-          ctx.fillStyle = "#2d2730";
-          ctx.fillRect(x - 5, y + 8, 4, 11);
-          ctx.fillRect(x + 1, y + 8, 4, 11);
+  // head
+  ctx.fillStyle = "#8b5a3c";
+  ctx.beginPath();
+  ctx.arc(x, y - 18, headSize, 0, Math.PI * 2);
+  ctx.fill();
 
-          ctx.strokeStyle = shirt;
-          ctx.lineWidth = 3;
-          ctx.beginPath();
+  // DAD: bald, so no extra hair
+  // CHILD: smaller body
 
-          if (state.mode === "cheer") {
-            ctx.moveTo(x - 5, y - 4);
-            ctx.lineTo(x - 13, y - 18);
-            ctx.moveTo(x + 5, y - 4);
-            ctx.lineTo(x + 13, y - 18);
-          } else {
-            ctx.moveTo(x - 5, y - 3);
-            ctx.lineTo(x - 13, y + 4);
-            ctx.moveTo(x + 5, y - 3);
-            ctx.lineTo(x + 13, y + 4);
-          }
+  if (isMom) {
+    // dress
+    ctx.fillStyle = shirt;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 10);
+    ctx.lineTo(x - 11, y + 12);
+    ctx.lineTo(x + 11, y + 12);
+    ctx.closePath();
+    ctx.fill();
 
-          ctx.stroke();
-          ctx.restore();
-        }
+    // legs
+    ctx.fillStyle = "#2d2730";
+    ctx.fillRect(x - 5, y + 12, 4, 9);
+    ctx.fillRect(x + 1, y + 12, 4, 9);
+  } else if (isDad) {
+    // taller rectangle body
+    ctx.fillStyle = shirt;
+    ctx.fillRect(x - 7, y - 10, 14, 19);
+
+    ctx.fillStyle = "#2d2730";
+    ctx.fillRect(x - 5, y + 9, 4, 11);
+    ctx.fillRect(x + 1, y + 9, 4, 11);
+  } else {
+    // short child
+    ctx.fillStyle = shirt;
+    ctx.fillRect(x - 6, y - 10, 12, 14);
+
+    ctx.fillStyle = "#2d2730";
+    ctx.fillRect(x - 4, y + 4, 3, 8);
+    ctx.fillRect(x + 1, y + 4, 3, 8);
+  }
+
+  // arms
+  ctx.strokeStyle = shirt;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+
+  if (state.mode === "cheer") {
+    ctx.moveTo(x - 5, y - 4);
+    ctx.lineTo(x - 13, y - 18);
+    ctx.moveTo(x + 5, y - 4);
+    ctx.lineTo(x + 13, y - 18);
+  } else {
+    ctx.moveTo(x - 5, y - 3);
+    ctx.lineTo(x - 13, y + 4);
+    ctx.moveTo(x + 5, y - 3);
+    ctx.lineTo(x + 13, y + 4);
+  }
+
+  ctx.stroke();
+  ctx.restore();
+}
 
         const rise = state.family.rise || 0;
         const baseX = state.family.baseX || W / 2;
@@ -2881,58 +2924,95 @@ ctx.restore();
          if (
   state.family &&
   state.endingKind === "graveyardFamily" &&
-  state.mode !== "npc"
-) {
-        function drawFamilyMember(p, type) {
-          const x = p.x;
-          const y = p.y - (p.hop || 0);
+  function drawFamilyMember(p, type) {
+  const x = p.x;
+  const y = p.y - (p.hop || 0);
 
-          let shirt = "#ff7fa8";
-          if (type === "dad") shirt = "#6ea8ff";
-          if (type === "child") shirt = "#ffd86a";
+  const isMom = type === "mom";
+  const isDad = type === "dad";
+  const isChild = type === "child";
 
-          const headSize = type === "child" ? 7 : 8;
+  const shirt = isMom ? "#ff7fa8" : isDad ? "#6ea8ff" : "#ffd86a";
+  const headSize = isChild ? 7 : 8;
 
-          ctx.save();
+  ctx.save();
 
-          ctx.fillStyle = "rgba(0,0,0,.22)";
-          ctx.beginPath();
-          ctx.ellipse(x, y + 20, type === "child" ? 9 : 12, 4, 0, 0, Math.PI * 2);
-          ctx.fill();
+  // shadow
+  ctx.fillStyle = "rgba(0,0,0,.22)";
+  ctx.beginPath();
+  ctx.ellipse(x, y + 20, isChild ? 9 : 12, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-          ctx.fillStyle = "#8b5a3c";
-          ctx.beginPath();
-          ctx.arc(x, y - 18, headSize, 0, Math.PI * 2);
-          ctx.fill();
+  // MOM: long hair behind head
+  if (isMom) {
+    ctx.fillStyle = "#4a2b1b";
+    ctx.beginPath();
+    ctx.ellipse(x, y - 16, 11, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
 
-          ctx.fillStyle = shirt;
-          ctx.fillRect(x - 7, y - 10, 14, type === "child" ? 15 : 19);
+    // side hair strands
+    ctx.fillRect(x - 9, y - 18, 4, 14);
+    ctx.fillRect(x + 5, y - 18, 4, 14);
+  }
 
-          ctx.fillStyle = "#2d2730";
-          ctx.fillRect(x - 5, y + 8, 4, 11);
-          ctx.fillRect(x + 1, y + 8, 4, 11);
+  // head
+  ctx.fillStyle = "#8b5a3c";
+  ctx.beginPath();
+  ctx.arc(x, y - 18, headSize, 0, Math.PI * 2);
+  ctx.fill();
 
-          ctx.strokeStyle = shirt;
-          ctx.lineWidth = 3;
-          ctx.beginPath();
+  if (isMom) {
+    // dress
+    ctx.fillStyle = shirt;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 10);
+    ctx.lineTo(x - 11, y + 12);
+    ctx.lineTo(x + 11, y + 12);
+    ctx.closePath();
+    ctx.fill();
 
-          if (state.mode === "cheer") {
-            ctx.moveTo(x - 5, y - 4);
-            ctx.lineTo(x - 13, y - 18);
-            ctx.moveTo(x + 5, y - 4);
-            ctx.lineTo(x + 13, y - 18);
-          } else {
-            ctx.moveTo(x - 5, y - 3);
-            ctx.lineTo(x - 13, y + 4);
-            ctx.moveTo(x + 5, y - 3);
-            ctx.lineTo(x + 13, y + 4);
-          }
+    // legs
+    ctx.fillStyle = "#2d2730";
+    ctx.fillRect(x - 5, y + 12, 4, 9);
+    ctx.fillRect(x + 1, y + 12, 4, 9);
+  } else if (isDad) {
+    // bald dad
+    ctx.fillStyle = shirt;
+    ctx.fillRect(x - 7, y - 10, 14, 19);
 
-          ctx.stroke();
+    ctx.fillStyle = "#2d2730";
+    ctx.fillRect(x - 5, y + 9, 4, 11);
+    ctx.fillRect(x + 1, y + 9, 4, 11);
+  } else {
+    // short child
+    ctx.fillStyle = shirt;
+    ctx.fillRect(x - 6, y - 10, 12, 14);
 
-          ctx.restore();
-        }
+    ctx.fillStyle = "#2d2730";
+    ctx.fillRect(x - 4, y + 4, 3, 8);
+    ctx.fillRect(x + 1, y + 4, 3, 8);
+  }
 
+  // arms
+  ctx.strokeStyle = shirt;
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+
+  if (state.mode === "cheer") {
+    ctx.moveTo(x - 5, y - 4);
+    ctx.lineTo(x - 13, y - 18);
+    ctx.moveTo(x + 5, y - 4);
+    ctx.lineTo(x + 13, y - 18);
+  } else {
+    ctx.moveTo(x - 5, y - 3);
+    ctx.lineTo(x - 13, y + 4);
+    ctx.moveTo(x + 5, y - 3);
+    ctx.lineTo(x + 13, y + 4);
+  }
+
+  ctx.stroke();
+  ctx.restore();
+}
         const rise = state.family.rise || 0;
         const baseX = state.family.baseX || W / 2;
 
