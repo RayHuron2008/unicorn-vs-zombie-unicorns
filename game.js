@@ -2921,10 +2921,12 @@ ctx.restore();
         }
       }
 
-         if (
+        if (
   state.family &&
   state.endingKind === "graveyardFamily" &&
-  function drawFamilyMember(p, type) {
+  state.mode !== "npc"
+) {
+        function drawFamilyMember(p, type) {
   const x = p.x;
   const y = p.y - (p.hop || 0);
 
