@@ -1942,18 +1942,214 @@
         ) {`
       );
 
+                code = code.replace(
+`        spawnEnemy("ray");`,
+`        if (window.__uvzuCurrentLevelCode === "GRV2") {
+          state.enemies.push({
+            id: "t" + (++multiplayerEnemyIdCounter),
+            x: -70,
+            y: GROUND_Y - 4,
+            w: 82,
+            h: 46,
+            face: 1,
+            type: "tarantula",
+            hp: 4,
+            shootTimer: 0,
+            sep: 1,
+            vx: 145,
+            vy: 0,
+            groundY: GROUND_Y - 4,
+            jumpTimer: 0.35
+          });
+
+          state.enemies.push({
+            id: "t" + (++multiplayerEnemyIdCounter),
+            x: W + 70,
+            y: GROUND_Y - 4,
+            w: 82,
+            h: 46,
+            face: -1,
+            type: "tarantula",
+            hp: 4,
+            shootTimer: 0,
+            sep: 1,
+            vx: -145,
+            vy: 0,
+            groundY: GROUND_Y - 4,
+            jumpTimer: 0.55
+          });
+
+          state.finalSpawned = FINAL_RAY_COUNT;
+        } else {
+          spawnEnemy("ray");
+        }`
+      );
+
+          code = code.replace(
+        "e.x += Math.sign(dx) * 105 * dt;",
+`if (!(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) {
+        if (e.type === "tarantula") {
+          if (typeof e.groundY !== "number") e.groundY = GROUND_Y - 4;
+          if (typeof e.vx !== "number") e.vx = e.face * 135;
+          if (typeof e.vy !== "number") e.vy = 0;
+          if (typeof e.jumpTimer !== "number") e.jumpTimer = rand(0.45, 0.85);
+
+          e.jumpTimer -= dt;
+
+          if (e.y >= e.groundY - 2 && e.jumpTimer <= 0) {
+            e.vy = -360;
+            e.vx = Math.sign(player.x - e.x || e.face || 1) * rand(120, 170);
+            e.face = e.vx >= 0 ? 1 : -1;
+            e.jumpTimer = rand(0.65, 1.05);
+          }
+
+          e.x += e.vx * dt;
+          e.vy += 760 * dt;
+          e.y += e.vy * dt;
+
+          if (e.y > e.groundY) {
+            e.y = e.groundY;
+            e.vy = 0;
+          }
+
+          if (e.x < 28) {
+            e.x = 28;
+            e.vx = Math.abs(e.vx);
+          }
+
+          if (e.x > W - 28) {
+            e.x = W - 28;
+            e.vx = -Math.abs(e.vx);
+          }
+        } else {
+          e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;`
+      );
+
             code = code.replace(
-`      if (state.finalSpawned < FINAL_RAY_COUNT && state.finalSpawnTimer <= 0) {`,
-`      if (
-        state.finalSpawned < FINAL_RAY_COUNT &&
-        state.finalSpawnTimer <= 0 &&
-        !(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
-      ) {`
+        "e.x += Math.sign(dx) * 105 * dt;",
+`if (!(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) {
+        if (e.type === "tarantula") {
+          if (typeof e.groundY !== "number") e.groundY = GROUND_Y - 4;
+          if (typeof e.vx !== "number") e.vx = e.face * 135;
+          if (typeof e.vy !== "number") e.vy = 0;
+          if (typeof e.jumpTimer !== "number") e.jumpTimer = rand(0.45, 0.85);
+
+          e.jumpTimer -= dt;
+
+          if (e.y >= e.groundY - 2 && e.jumpTimer <= 0) {
+            e.vy = -360;
+            e.vx = Math.sign(player.x - e.x || e.face || 1) * rand(120, 170);
+            e.face = e.vx >= 0 ? 1 : -1;
+            e.jumpTimer = rand(0.65, 1.05);
+          }
+
+          e.x += e.vx * dt;
+          e.vy += 760 * dt;
+          e.y += e.vy * dt;
+
+          if (e.y > e.groundY) {
+            e.y = e.groundY;
+            e.vy = 0;
+          }
+
+          if (e.x < 28) {
+            e.x = 28;
+            e.vx = Math.abs(e.vx);
+          }
+
+          if (e.x > W - 28) {
+            e.x = W - 28;
+            e.vx = -Math.abs(e.vx);
+          }
+        } else {
+          e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;`
       );
 
       code = code.replace(
-        "e.x += Math.sign(dx) * 105 * dt;",
-        "if (!(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) {\n        e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;"
+        "e.y += Math.sign(dy) * 70 * dt;",
+        "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;\n        }\n      }"
+      );
+            code = code.replace(
+`  function drawEnemy(e) {`,
+`  function drawTarantula(e) {
+    const x = e.x;
+    const y = e.y;
+    const face = e.face || 1;
+
+    ctx.save();
+
+    ctx.fillStyle = "rgba(0,0,0,.28)";
+    ctx.beginPath();
+    ctx.ellipse(x, y + 18, 42, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // legs behind body
+    ctx.strokeStyle = "#241018";
+    ctx.lineWidth = 6;
+    ctx.lineCap = "round";
+
+    for (let i = -1; i <= 1; i += 2) {
+      ctx.beginPath();
+      ctx.moveTo(x - 16, y - 6);
+      ctx.lineTo(x - 42, y - 24 + i * 9);
+      ctx.lineTo(x - 58, y - 8 + i * 10);
+      ctx.moveTo(x - 6, y - 4);
+      ctx.lineTo(x - 32, y + 2 + i * 11);
+      ctx.lineTo(x - 50, y + 20 + i * 5);
+      ctx.moveTo(x + 16, y - 6);
+      ctx.lineTo(x + 42, y - 24 + i * 9);
+      ctx.lineTo(x + 58, y - 8 + i * 10);
+      ctx.moveTo(x + 6, y - 4);
+      ctx.lineTo(x + 32, y + 2 + i * 11);
+      ctx.lineTo(x + 50, y + 20 + i * 5);
+      ctx.stroke();
+    }
+
+    // body
+    ctx.fillStyle = "#3a1722";
+    ctx.beginPath();
+    ctx.ellipse(x, y - 10, 34, 24, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#5b2632";
+    ctx.beginPath();
+    ctx.ellipse(x + face * 30, y - 14, 18, 15, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // eyes
+    ctx.fillStyle = "#f04a4a";
+    ctx.beginPath();
+    ctx.arc(x + face * 35, y - 18, 3, 0, Math.PI * 2);
+    ctx.arc(x + face * 35, y - 9, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // fangs
+    ctx.strokeStyle = "#f2eee0";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x + face * 43, y - 8);
+    ctx.lineTo(x + face * 50, y + 4);
+    ctx.moveTo(x + face * 39, y - 4);
+    ctx.lineTo(x + face * 45, y + 7);
+    ctx.stroke();
+
+    // health ticks for gun hits
+    if (e.hp > 0 && e.hp < 4) {
+      ctx.fillStyle = "rgba(255,255,255,.85)";
+      ctx.fillRect(x - 24, y - 48, 48, 5);
+
+      ctx.fillStyle = "#e64545";
+      ctx.fillRect(x - 24, y - 48, 12 * e.hp, 5);
+    }
+
+    ctx.restore();
+  }
+
+  function drawEnemy(e) {
+    if (e.type === "tarantula") {
+      drawTarantula(e);
+      return;
+    }`
       );
 
             code = code.replace(
@@ -1961,8 +2157,12 @@
           state.playerShots.splice(i, 1);
 
           if (e.hp <= 0) killEnemy(j, "ray");`,
-`          if (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest()) {
-            killEnemy(j, "ray");
+`        if (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest()) {
+            e.hp -= 1;
+
+            if (e.hp <= 0) {
+              killEnemy(j, "ray");
+            }
           } else {
             e.hp -= 1;
 
