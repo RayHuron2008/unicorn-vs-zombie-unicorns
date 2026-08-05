@@ -1817,7 +1817,7 @@
       endingSceneSignal &&
       endingSceneSignal.at &&
       endingSceneSignal.at !== window.__uvzuLastAppliedEndingSceneAt &&
-      window.__uvzuCurrentLevelCode === "RNBW1" &&
+         (window.__uvzuCurrentLevelCode === "RNBW1" || window.__uvzuCurrentLevelCode === "GRV2") &&
       state.mode !== "npc" &&
       state.mode !== "talk" &&
       state.mode !== "exit" &&
@@ -1829,7 +1829,12 @@
       state.enemyShots.length = 0;
       state.playerShots.length = 0;
 
-      startNpcScene();
+            if (window.__uvzuCurrentLevelCode === "GRV2") {
+        startGraveyardFamilyScene();
+      } else {
+        startNpcScene();
+      }
+
       return;
     }
       const ghostResetAt = window.__uvzuGetGhostResetAt
@@ -1975,8 +1980,36 @@
         "player.giant = GIANT_TIME;",
         "player.giant = GIANT_TIME;\n        player.lives += 1;"
       );
+            code = code.replace(
+`  function startNpcScene() {`,
+`  function startGraveyardFamilyScene() {
+    clearBattlefield();
 
-                       code = replaceFunction(
+    state.mode = "npc";
+    state.endingKind = "graveyardFamily";
+    state.npc = null;
+    state.dialogTimer = 0;
+    state.exitTimer = 0;
+    state.victoryTimer = 0;
+    state.fireworks.length = 0;
+
+    const ax = W / 2;
+
+    state.family = {
+      baseX: ax,
+      baseY: GROUND_Y + 2,
+      rise: 0,
+      cheerTimer: 0,
+      mom: { x: ax - 28, y: GROUND_Y + 34, hop: 0 },
+      dad: { x: ax + 2, y: GROUND_Y + 36, hop: 0 },
+      child: { x: ax + 30, y: GROUND_Y + 40, hop: 0 }
+    };
+  }
+
+  function startNpcScene() {`
+      );
+
+                                              code = replaceFunction(
         code,
         "updateEnding",
 `  function updateEnding(dt) {
@@ -1995,19 +2028,15 @@
       );
 
       const localIsHost = window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost();
-      const localIsGuest = window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest();
 
-      // If both are alive, default to host.
       if (localAlive && remoteAlive) {
         if (localIsHost) return player;
         return remote;
       }
 
-      // If only one is alive, use the living player.
       if (localAlive) return player;
       if (remoteAlive) return remote;
 
-      // Emergency fallback.
       return player;
     }
 
@@ -2015,72 +2044,112 @@
       (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
       (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest());
 
-    if (state.mode === "npc") {
-      const hero = isMultiplayer ? getMultiplayerEndingHero() : player;
+    if (state.endingKind === "graveyardFamily") {
+      if (state.mode === "npc") {
+        if (!state.family) {
+          startGraveyardFamilyScene();
+        }
 
-      if (!state.npc) {
-        const fromLeft = hero.x > W / 2;
+        state.family.rise += 42 * dt;
 
-        state.npc = {
-          x: fromLeft ? -30 : W + 30,
-          y: GROUND_Y,
-          vx: fromLeft ? 160 : -160,
-          face: fromLeft ? 1 : -1
-        };
+        if (state.family.rise >= 42) {
+          state.family.rise = 42;
+          state.dialogTimer = 4.3;
+          state.mode = "talk";
+        }
       }
 
-      state.npc.x += state.npc.vx * dt;
+      if (state.mode === "talk") {
+        state.dialogTimer -= dt;
 
-      const heroX = typeof hero.x === "number" ? hero.x : player.x;
-      const target = heroX + (state.npc.vx > 0 ? -70 : 70);
-
-      if (
-        (state.npc.vx > 0 && state.npc.x >= target) ||
-        (state.npc.vx < 0 && state.npc.x <= target)
-      ) {
-        state.npc.x = target;
-        state.dialogTimer = 2.5;
-        state.mode = "talk";
-      }
-    }
-
-    if (state.mode === "talk") {
-      state.dialogTimer -= dt;
-
-      if (state.dialogTimer <= 0) {
-        state.mode = "exit";
-        state.exitTimer = 1.7;
-      }
-    }
-
-    if (state.mode === "exit") {
-      const hero = isMultiplayer ? getMultiplayerEndingHero() : player;
-
-      if (hero === player) {
-        player.face = 1;
-        player.x += 210 * dt;
+        if (state.dialogTimer <= 0) {
+          state.mode = "cheer";
+          state.family.cheerTimer = 2.1;
+        }
       }
 
-      if (state.npc) {
+      if (state.mode === "cheer") {
+        state.family.cheerTimer -= dt;
+
+        const elapsed = 2.1 - Math.max(0, state.family.cheerTimer);
+        state.family.mom.hop = Math.max(0, Math.sin(elapsed * 10)) * 8;
+        state.family.dad.hop = Math.max(0, Math.sin(elapsed * 10 + 0.8)) * 8;
+        state.family.child.hop = Math.max(0, Math.sin(elapsed * 12 + 1.3)) * 10;
+
+        if (state.family.cheerTimer <= 0) {
+          state.mode = "fireworks";
+          state.fireworks.length = 0;
+          state.victoryTimer = 3.5;
+        }
+      }
+    } else {
+      if (state.mode === "npc") {
+        const hero = isMultiplayer ? getMultiplayerEndingHero() : player;
+
+        if (!state.npc) {
+          const fromLeft = hero.x > W / 2;
+
+          state.npc = {
+            x: fromLeft ? -30 : W + 30,
+            y: GROUND_Y,
+            vx: fromLeft ? 160 : -160,
+            face: fromLeft ? 1 : -1
+          };
+        }
+
+        state.npc.x += state.npc.vx * dt;
+
         const heroX = typeof hero.x === "number" ? hero.x : player.x;
-        const heroY = typeof hero.y === "number" ? hero.y : player.y;
+        const target = heroX + (state.npc.vx > 0 ? -70 : 70);
 
-        state.npc.x = heroX - 15;
-        state.npc.y = heroY - 18;
+        if (
+          (state.npc.vx > 0 && state.npc.x >= target) ||
+          (state.npc.vx < 0 && state.npc.x <= target)
+        ) {
+          state.npc.x = target;
+          state.dialogTimer = 2.5;
+          state.mode = "talk";
+        }
       }
 
-      const exitX = hero === player
-        ? player.x
-        : (typeof hero.x === "number" ? hero.x + 210 * dt : W + 121);
+      if (state.mode === "talk") {
+        state.dialogTimer -= dt;
 
-      if (exitX > W + 120 || state.exitTimer <= 0) {
-        state.mode = "fireworks";
-        state.npc = null;
-        state.fireworks.length = 0;
-        state.victoryTimer = 3.5;
+        if (state.dialogTimer <= 0) {
+          state.mode = "exit";
+          state.exitTimer = 1.7;
+        }
       }
 
-      state.exitTimer -= dt;
+      if (state.mode === "exit") {
+        const hero = isMultiplayer ? getMultiplayerEndingHero() : player;
+
+        if (hero === player) {
+          player.face = 1;
+          player.x += 210 * dt;
+        }
+
+        if (state.npc) {
+          const heroX = typeof hero.x === "number" ? hero.x : player.x;
+          const heroY = typeof hero.y === "number" ? hero.y : player.y;
+
+          state.npc.x = heroX - 15;
+          state.npc.y = heroY - 18;
+        }
+
+        const exitX = hero === player
+          ? player.x
+          : (typeof hero.x === "number" ? hero.x + 210 * dt : W + 121);
+
+        if (exitX > W + 120 || state.exitTimer <= 0) {
+          state.mode = "fireworks";
+          state.npc = null;
+          state.fireworks.length = 0;
+          state.victoryTimer = 3.5;
+        }
+
+        state.exitTimer -= dt;
+      }
     }
 
     if (state.mode === "fireworks") {
@@ -2117,13 +2186,12 @@
     }
   }`
       );
-      
-                             code = code.split("startNpcScene();").join(
+                                                        code = code.split("startNpcScene();").join(
 `if (
       (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
       (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
     ) {
-           if (window.__uvzuCurrentLevelCode === "RNBW1") {
+      if (window.__uvzuCurrentLevelCode === "RNBW1") {
         if (
           window.__uvzuIsMultiplayerHost &&
           window.__uvzuIsMultiplayerHost() &&
@@ -2133,6 +2201,16 @@
         }
 
         startNpcScene();
+      } else if (window.__uvzuCurrentLevelCode === "GRV2") {
+        if (
+          window.__uvzuIsMultiplayerHost &&
+          window.__uvzuIsMultiplayerHost() &&
+          window.__uvzuSignalEndingScene
+        ) {
+          window.__uvzuSignalEndingScene();
+        }
+
+        startGraveyardFamilyScene();
       } else {
         if (window.__uvzuSignalLevelCompleted) {
           window.__uvzuSignalLevelCompleted();
@@ -2147,7 +2225,11 @@
         state.victoryTimer = 3.5;
       }
     } else {
-      startNpcScene();
+      if (window.__uvzuCurrentLevelCode === "GRV2") {
+        startGraveyardFamilyScene();
+      } else {
+        startNpcScene();
+      }
     }`
       );
 
@@ -2707,6 +2789,102 @@ ctx.restore();
           ctx.font = "900 18px system-ui, sans-serif";
                    ctx.strokeText("P2", remote.x - 13, remote.y - 72);
           ctx.fillText("P2", remote.x - 13, remote.y - 72);
+          ctx.restore();
+        }
+      }
+
+           if (state.family && state.endingKind === "graveyardFamily") {
+        function drawFamilyMember(p, type) {
+          const x = p.x;
+          const y = p.y - (p.hop || 0);
+
+          let shirt = "#ff7fa8";
+          if (type === "dad") shirt = "#6ea8ff";
+          if (type === "child") shirt = "#ffd86a";
+
+          const headSize = type === "child" ? 7 : 8;
+
+          ctx.save();
+
+          ctx.fillStyle = "rgba(0,0,0,.22)";
+          ctx.beginPath();
+          ctx.ellipse(x, y + 20, type === "child" ? 9 : 12, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = "#8b5a3c";
+          ctx.beginPath();
+          ctx.arc(x, y - 18, headSize, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = shirt;
+          ctx.fillRect(x - 7, y - 10, 14, type === "child" ? 15 : 19);
+
+          ctx.fillStyle = "#2d2730";
+          ctx.fillRect(x - 5, y + 8, 4, 11);
+          ctx.fillRect(x + 1, y + 8, 4, 11);
+
+          ctx.strokeStyle = shirt;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+
+          if (state.mode === "cheer") {
+            ctx.moveTo(x - 5, y - 4);
+            ctx.lineTo(x - 13, y - 18);
+            ctx.moveTo(x + 5, y - 4);
+            ctx.lineTo(x + 13, y - 18);
+          } else {
+            ctx.moveTo(x - 5, y - 3);
+            ctx.lineTo(x - 13, y + 4);
+            ctx.moveTo(x + 5, y - 3);
+            ctx.lineTo(x + 13, y + 4);
+          }
+
+          ctx.stroke();
+
+          ctx.restore();
+        }
+
+        const rise = state.family.rise || 0;
+        const baseX = state.family.baseX || W / 2;
+
+        state.family.mom.x = baseX - 30;
+        state.family.mom.y = GROUND_Y + 36 - rise;
+
+        state.family.dad.x = baseX + 2;
+        state.family.dad.y = GROUND_Y + 38 - rise;
+
+        state.family.child.x = baseX + 31;
+        state.family.child.y = GROUND_Y + 43 - rise;
+
+        drawFamilyMember(state.family.mom, "mom");
+        drawFamilyMember(state.family.dad, "dad");
+        drawFamilyMember(state.family.child, "child");
+
+        if (state.mode === "talk") {
+          const boxX = W / 2 - 290;
+          const boxY = 70;
+          const boxW = 580;
+          const boxH = 95;
+
+          ctx.save();
+
+          ctx.fillStyle = "rgba(255,255,255,.94)";
+          ctx.strokeStyle = "#4b2670";
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.roundRect(boxX, boxY, boxW, boxH, 16);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.fillStyle = "#4b2670";
+          ctx.font = "900 18px system-ui, sans-serif";
+          ctx.fillText("Mom", boxX + 20, boxY + 28);
+
+          ctx.fillStyle = "#1e1530";
+          ctx.font = "800 17px system-ui, sans-serif";
+          ctx.fillText("You saved us! I thought all of the unicorns", boxX + 20, boxY + 55);
+          ctx.fillText("in the world had turned into those creepy eaters.", boxX + 20, boxY + 78);
+
           ctx.restore();
         }
       }
