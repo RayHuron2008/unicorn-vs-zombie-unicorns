@@ -2054,6 +2054,26 @@
 
 if (state.family.rise >= 58) {
   state.family.rise = 58;
+  state.family.walkTimer = 0;
+  state.mode = "approach";
+}
+      }
+
+      if (state.mode === "approach") {
+        state.family.walkTimer += dt;
+
+        const targetX = W / 2 - 130;
+        state.family.baseX += (targetX - state.family.baseX) * Math.min(1, dt * 2.6);
+
+        state.family.mom.hop = Math.abs(Math.sin(state.family.walkTimer * 9)) * 4;
+        state.family.dad.hop = Math.abs(Math.sin(state.family.walkTimer * 9 + 0.7)) * 4;
+        state.family.child.hop = Math.abs(Math.sin(state.family.walkTimer * 11 + 1.2)) * 5;
+
+        if (Math.abs(state.family.baseX - targetX) < 4) {
+          state.family.baseX = targetX;
+          state.family.mom.hop = 0;
+          state.family.dad.hop = 0;
+          state.family.child.hop = 0;
           state.dialogTimer = 4.3;
           state.mode = "talk";
         }
@@ -2558,7 +2578,11 @@ ctx.restore();
 
       ctx.restore();
       // family hidden behind the angel grave
-      if (state.family && state.endingKind === "graveyardFamily") {
+     if (
+  state.family &&
+  state.endingKind === "graveyardFamily" &&
+  state.mode === "npc"
+) {
         function drawHiddenFamilyMember(p, type) {
           const x = p.x;
           const y = p.y - (p.hop || 0);
@@ -2854,7 +2878,11 @@ ctx.restore();
         }
       }
 
-          if (false && state.family && state.endingKind === "graveyardFamily") {
+         if (
+  state.family &&
+  state.endingKind === "graveyardFamily" &&
+  state.mode !== "npc"
+) {
         function drawFamilyMember(p, type) {
           const x = p.x;
           const y = p.y - (p.hop || 0);
@@ -2908,15 +2936,19 @@ ctx.restore();
         const rise = state.family.rise || 0;
         const baseX = state.family.baseX || W / 2;
 
-        state.family.mom.x = baseX - 30;
-        state.family.mom.y = GROUND_Y + 36 - rise;
+      state.family.mom.x = baseX - 30;
+state.family.dad.x = baseX + 2;
+state.family.child.x = baseX + 31;
 
-        state.family.dad.x = baseX + 2;
-        state.family.dad.y = GROUND_Y + 38 - rise;
-
-        state.family.child.x = baseX + 31;
-        state.family.child.y = GROUND_Y + 43 - rise;
-
+if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer") {
+  state.family.mom.y = GROUND_Y - 4;
+  state.family.dad.y = GROUND_Y - 2;
+  state.family.child.y = GROUND_Y + 4;
+} else {
+  state.family.mom.y = GROUND_Y + 36 - rise;
+  state.family.dad.y = GROUND_Y + 38 - rise;
+  state.family.child.y = GROUND_Y + 43 - rise;
+}
         drawFamilyMember(state.family.mom, "mom");
         drawFamilyMember(state.family.dad, "dad");
         drawFamilyMember(state.family.child, "child");
