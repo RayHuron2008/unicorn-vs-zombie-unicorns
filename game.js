@@ -2025,46 +2025,7 @@
           e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;`
       );
 
-            code = code.replace(
-        "e.x += Math.sign(dx) * 105 * dt;",
-`if (!(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) {
-        if (e.type === "tarantula") {
-          if (typeof e.groundY !== "number") e.groundY = GROUND_Y - 4;
-          if (typeof e.vx !== "number") e.vx = e.face * 135;
-          if (typeof e.vy !== "number") e.vy = 0;
-          if (typeof e.jumpTimer !== "number") e.jumpTimer = rand(0.45, 0.85);
-
-          e.jumpTimer -= dt;
-
-          if (e.y >= e.groundY - 2 && e.jumpTimer <= 0) {
-            e.vy = -360;
-            e.vx = Math.sign(player.x - e.x || e.face || 1) * rand(120, 170);
-            e.face = e.vx >= 0 ? 1 : -1;
-            e.jumpTimer = rand(0.65, 1.05);
-          }
-
-          e.x += e.vx * dt;
-          e.vy += 760 * dt;
-          e.y += e.vy * dt;
-
-          if (e.y > e.groundY) {
-            e.y = e.groundY;
-            e.vy = 0;
-          }
-
-          if (e.x < 28) {
-            e.x = 28;
-            e.vx = Math.abs(e.vx);
-          }
-
-          if (e.x > W - 28) {
-            e.x = W - 28;
-            e.vx = -Math.abs(e.vx);
-          }
-        } else {
-          e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;`
-      );
-
+            
       code = code.replace(
         "e.y += Math.sign(dy) * 70 * dt;",
         "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;\n        }\n      }"
