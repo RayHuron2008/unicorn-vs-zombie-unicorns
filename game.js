@@ -2050,10 +2050,10 @@
           startGraveyardFamilyScene();
         }
 
-        state.family.rise += 42 * dt;
+        state.family.rise += 52 * dt;
 
-        if (state.family.rise >= 42) {
-          state.family.rise = 42;
+if (state.family.rise >= 58) {
+  state.family.rise = 58;
           state.dialogTimer = 4.3;
           state.mode = "talk";
         }
@@ -2557,7 +2557,68 @@ ctx.restore();
       ctx.fillRect(0, GROUND_Y - 14, W, 86);
 
       ctx.restore();
+      // family hidden behind the angel grave
+      if (state.family && state.endingKind === "graveyardFamily") {
+        function drawHiddenFamilyMember(p, type) {
+          const x = p.x;
+          const y = p.y - (p.hop || 0);
 
+          let shirt = "#ff7fa8";
+          if (type === "dad") shirt = "#6ea8ff";
+          if (type === "child") shirt = "#ffd86a";
+
+          const headSize = type === "child" ? 7 : 8;
+
+          ctx.save();
+
+          ctx.fillStyle = "#8b5a3c";
+          ctx.beginPath();
+          ctx.arc(x, y - 18, headSize, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = shirt;
+          ctx.fillRect(x - 7, y - 10, 14, type === "child" ? 15 : 19);
+
+          ctx.fillStyle = "#2d2730";
+          ctx.fillRect(x - 5, y + 8, 4, 11);
+          ctx.fillRect(x + 1, y + 8, 4, 11);
+
+          ctx.strokeStyle = shirt;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+
+          if (state.mode === "cheer") {
+            ctx.moveTo(x - 5, y - 4);
+            ctx.lineTo(x - 13, y - 18);
+            ctx.moveTo(x + 5, y - 4);
+            ctx.lineTo(x + 13, y - 18);
+          } else {
+            ctx.moveTo(x - 5, y - 3);
+            ctx.lineTo(x - 13, y + 4);
+            ctx.moveTo(x + 5, y - 3);
+            ctx.lineTo(x + 13, y + 4);
+          }
+
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        const rise = state.family.rise || 0;
+        const baseX = state.family.baseX || W / 2;
+
+        state.family.mom.x = baseX - 30;
+        state.family.mom.y = GROUND_Y + 18 - rise;
+
+        state.family.dad.x = baseX + 2;
+        state.family.dad.y = GROUND_Y + 20 - rise;
+
+        state.family.child.x = baseX + 31;
+        state.family.child.y = GROUND_Y + 25 - rise;
+
+        drawHiddenFamilyMember(state.family.mom, "mom");
+        drawHiddenFamilyMember(state.family.dad, "dad");
+        drawHiddenFamilyMember(state.family.child, "child");
+      }
            // center angel statue pedestal
       const ax = W / 2;
       const ay = GROUND_Y + 4;
@@ -2793,7 +2854,7 @@ ctx.restore();
         }
       }
 
-           if (state.family && state.endingKind === "graveyardFamily") {
+          if (false && state.family && state.endingKind === "graveyardFamily") {
         function drawFamilyMember(p, type) {
           const x = p.x;
           const y = p.y - (p.hop || 0);
@@ -2889,6 +2950,35 @@ ctx.restore();
         }
       }
 
+      if (state.endingKind === "graveyardFamily" && state.mode === "talk") {
+        const boxX = W / 2 - 290;
+        const boxY = 70;
+        const boxW = 580;
+        const boxH = 105;
+
+        ctx.save();
+
+        ctx.fillStyle = "rgba(255,255,255,.96)";
+        ctx.strokeStyle = "#4b2670";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 16);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#4b2670";
+        ctx.font = "900 18px system-ui, sans-serif";
+        ctx.fillText("Mom", boxX + 20, boxY + 28);
+
+        ctx.fillStyle = "#1e1530";
+        ctx.font = "800 17px system-ui, sans-serif";
+        ctx.fillText("You saved us! I thought all of the unicorns", boxX + 20, boxY + 58);
+        ctx.fillText("in the world had turned into those creepy eaters.", boxX + 20, boxY + 82);
+
+        ctx.restore();
+
+        return;
+      }
       if (window.__uvzuLevelTheme === "graveyard") {
         ctx.save();
 
