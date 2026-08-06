@@ -2030,86 +2030,89 @@
         "e.y += Math.sign(dy) * 70 * dt;",
         "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;\n        }\n      }"
       );
-            code = code.replace(
-`  function drawEnemy(e) {`,
-`  function drawTarantula(e) {
-    const x = e.x;
-    const y = e.y;
-    const face = e.face || 1;
+                code = code.replace(
+`    for (const e of state.enemies) {
+      drawUnicorn(e.x, e.y, e.face, true, e.type === "ray", false);
+    }`,
+`    function drawTarantula(e) {
+      const x = e.x;
+      const y = e.y;
+      const face = e.face || 1;
 
-    ctx.save();
+      ctx.save();
 
-    ctx.fillStyle = "rgba(0,0,0,.28)";
-    ctx.beginPath();
-    ctx.ellipse(x, y + 18, 42, 10, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // legs behind body
-    ctx.strokeStyle = "#241018";
-    ctx.lineWidth = 6;
-    ctx.lineCap = "round";
-
-    for (let i = -1; i <= 1; i += 2) {
+      ctx.fillStyle = "rgba(0,0,0,.28)";
       ctx.beginPath();
-      ctx.moveTo(x - 16, y - 6);
-      ctx.lineTo(x - 42, y - 24 + i * 9);
-      ctx.lineTo(x - 58, y - 8 + i * 10);
-      ctx.moveTo(x - 6, y - 4);
-      ctx.lineTo(x - 32, y + 2 + i * 11);
-      ctx.lineTo(x - 50, y + 20 + i * 5);
-      ctx.moveTo(x + 16, y - 6);
-      ctx.lineTo(x + 42, y - 24 + i * 9);
-      ctx.lineTo(x + 58, y - 8 + i * 10);
-      ctx.moveTo(x + 6, y - 4);
-      ctx.lineTo(x + 32, y + 2 + i * 11);
-      ctx.lineTo(x + 50, y + 20 + i * 5);
+      ctx.ellipse(x, y + 18, 42, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#241018";
+      ctx.lineWidth = 6;
+      ctx.lineCap = "round";
+
+      for (let i = -1; i <= 1; i += 2) {
+        ctx.beginPath();
+        ctx.moveTo(x - 16, y - 6);
+        ctx.lineTo(x - 42, y - 24 + i * 9);
+        ctx.lineTo(x - 58, y - 8 + i * 10);
+
+        ctx.moveTo(x - 6, y - 4);
+        ctx.lineTo(x - 32, y + 2 + i * 11);
+        ctx.lineTo(x - 50, y + 20 + i * 5);
+
+        ctx.moveTo(x + 16, y - 6);
+        ctx.lineTo(x + 42, y - 24 + i * 9);
+        ctx.lineTo(x + 58, y - 8 + i * 10);
+
+        ctx.moveTo(x + 6, y - 4);
+        ctx.lineTo(x + 32, y + 2 + i * 11);
+        ctx.lineTo(x + 50, y + 20 + i * 5);
+
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#3a1722";
+      ctx.beginPath();
+      ctx.ellipse(x, y - 10, 34, 24, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#5b2632";
+      ctx.beginPath();
+      ctx.ellipse(x + face * 30, y - 14, 18, 15, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#f04a4a";
+      ctx.beginPath();
+      ctx.arc(x + face * 35, y - 18, 3, 0, Math.PI * 2);
+      ctx.arc(x + face * 35, y - 9, 3, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "#f2eee0";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(x + face * 43, y - 8);
+      ctx.lineTo(x + face * 50, y + 4);
+      ctx.moveTo(x + face * 39, y - 4);
+      ctx.lineTo(x + face * 45, y + 7);
       ctx.stroke();
+
+      if (e.hp > 0 && e.hp < 4) {
+        ctx.fillStyle = "rgba(255,255,255,.85)";
+        ctx.fillRect(x - 24, y - 48, 48, 5);
+
+        ctx.fillStyle = "#e64545";
+        ctx.fillRect(x - 24, y - 48, 12 * e.hp, 5);
+      }
+
+      ctx.restore();
     }
 
-    // body
-    ctx.fillStyle = "#3a1722";
-    ctx.beginPath();
-    ctx.ellipse(x, y - 10, 34, 24, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = "#5b2632";
-    ctx.beginPath();
-    ctx.ellipse(x + face * 30, y - 14, 18, 15, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // eyes
-    ctx.fillStyle = "#f04a4a";
-    ctx.beginPath();
-    ctx.arc(x + face * 35, y - 18, 3, 0, Math.PI * 2);
-    ctx.arc(x + face * 35, y - 9, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // fangs
-    ctx.strokeStyle = "#f2eee0";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(x + face * 43, y - 8);
-    ctx.lineTo(x + face * 50, y + 4);
-    ctx.moveTo(x + face * 39, y - 4);
-    ctx.lineTo(x + face * 45, y + 7);
-    ctx.stroke();
-
-    // health ticks for gun hits
-    if (e.hp > 0 && e.hp < 4) {
-      ctx.fillStyle = "rgba(255,255,255,.85)";
-      ctx.fillRect(x - 24, y - 48, 48, 5);
-
-      ctx.fillStyle = "#e64545";
-      ctx.fillRect(x - 24, y - 48, 12 * e.hp, 5);
-    }
-
-    ctx.restore();
-  }
-
-  function drawEnemy(e) {
-    if (e.type === "tarantula") {
-      drawTarantula(e);
-      return;
+    for (const e of state.enemies) {
+      if (e.type === "tarantula") {
+        drawTarantula(e);
+      } else {
+        drawUnicorn(e.x, e.y, e.face, true, e.type === "ray", false);
+      }
     }`
       );
 
