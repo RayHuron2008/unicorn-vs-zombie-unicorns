@@ -1776,6 +1776,8 @@
     if (state.mode === "play" || state.mode === "final") {`,
 `    updateHealthRegen(dt);
 
+    player.webbedTimer = Math.max(0, (player.webbedTimer || 0) - dt);
+
             const nextLevelSignal = window.__uvzuGetNextLevelSignal
       ? window.__uvzuGetNextLevelSignal()
       : null;
@@ -1903,6 +1905,19 @@
     ) {`
       );
 
+            code = code.replace(
+`      if (!updateDodgeMovement(dt)) {
+        player.x += dir.dx * speed * dt;
+        player.y += dir.dy * speed * 0.72 * dt;
+      }`,
+`      if (!updateDodgeMovement(dt)) {
+        if (!(player.webbedTimer > 0)) {
+          player.x += dir.dx * speed * dt;
+          player.y += dir.dy * speed * 0.72 * dt;
+        }
+      }`
+      );
+
       code = code.replace(
         "state.enemies.push({\n      x,",
         "state.enemies.push({\n      id: \"e\" + (++multiplayerEnemyIdCounter),\n      x,"
@@ -1944,7 +1959,14 @@
 
                 code = code.replace(
 `        spawnEnemy("ray");`,
-`        if (window.__uvzuCurrentLevelCode === "GRV2") {
+`       `        if (window.__uvzuCurrentLevelCode === "GRV2") {
+          const isSecondGroup = state.finalSpawned >= 1;
+
+                       code = code.replace(
+        "state.finalSpawnTimer = 0.9;",
+        "state.finalSpawnTimer = window.__uvzuCurrentLevelCode === \"GRV2\" ? 2.2 : 0.9;"
+      ); 
+
           state.enemies.push({
             id: "t" + (++multiplayerEnemyIdCounter),
             x: -70,
@@ -1952,14 +1974,15 @@
             w: 82,
             h: 46,
             face: 1,
-            type: "tarantula",
+            type: isSecondGroup ? "webTarantula" : "tarantula",
             hp: 4,
             shootTimer: 0,
             sep: 1,
             vx: 145,
             vy: 0,
             groundY: GROUND_Y - 4,
-            jumpTimer: 0.35
+            jumpTimer: 0.35,
+            webTimer: isSecondGroup ? 1.2 : 999
           });
 
           state.enemies.push({
@@ -1969,19 +1992,21 @@
             w: 82,
             h: 46,
             face: -1,
-            type: "tarantula",
+            type: isSecondGroup ? "webTarantula" : "tarantula",
             hp: 4,
             shootTimer: 0,
             sep: 1,
             vx: -145,
             vy: 0,
             groundY: GROUND_Y - 4,
-            jumpTimer: 0.55
+            jumpTimer: 0.55,
+            webTimer: isSecondGroup ? 1.6 : 999
           });
 
-          state.finalSpawned = FINAL_RAY_COUNT;
+         if (window.__uvzuCurrentLevelCode !== "GRV2") state.finalSpawned += 1;
         } else {
           spawnEnemy("ray");
+          state.finalSpawned += 1;
         }`
       );
 
@@ -2016,11 +2041,34 @@
             e.x = 28;
             e.vx = Math.abs(e.vx);
           }
+          if (e.type === "webTarantula") {
+            if (typeof e.webTimer !== "number") e.webTimer = rand(1.1, 1.8);
 
+            e.webTimer -= dt;
+
+            if (e.webTimer <= 0) {
+              const sx = e.x + e.face * 36;
+              const sy = e.y - 18;
+              const angle = Math.atan2(player.y - 24 - sy, player.x - sx);
+
+              state.enemyShots.push({
+                x: sx,
+                y: sy,
+                vx: Math.cos(angle) * 245,
+                vy: Math.sin(angle) * 245,
+                r: 9,
+                life: 2.4,
+                type: "web"
+              });
+
+              e.webTimer = rand(1.7, 2.5);
+            }
+          }
           if (e.x > W - 28) {
             e.x = W - 28;
             e.vx = -Math.abs(e.vx);
           }
+          
         } else {
           e.x += Math.sign(dx) * ENEMY_X_SPEED * dt;`
       );
@@ -2108,7 +2156,7 @@
     }
 
     for (const e of state.enemies) {
-      if (e.type === "tarantula") {
+      if (e.type === "tarantula" || e.type === "webTarantula") {
         drawTarantula(e);
       } else {
         drawUnicorn(e.x, e.y, e.face, true, e.type === "ray", false);
@@ -2135,6 +2183,63 @@
 
           state.playerShots.splice(i, 1);`
       );
+            code = code.replace(
+`        if (rectsOverlap(pBox, bBox)) {
+          damagePlayerByLaser();
+          state.enemyShots.splice(i, 1);
+        }`,
+`        if (rectsOverlap(pBox, bBox)) {
+          if (b.type === "web") {
+            player.webbedTimer = 2.0;
+            player.actionLock = Math.max(player.actionLock || 0, 2.0);
+            player.dodgeTimer = 0;
+            player.dodgeCooldown = Math.max(player.dodgeCooldown || 0, 0.4);
+            addParticles(player.x, player.y - 20, "shield");
+          } else {
+            damagePlayerByLaser();
+          }
+
+          state.enemyShots.splice(i, 1);
+        }`
+      );
+
+            code = code.replace(
+`      ctx.fillStyle = "#ff2a2a";
+      ctx.fillRect(b.x - 8, b.y - 3, 16, 6);
+
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(b.x - 4, b.y - 2, 8, 4);`,
+`      if (b.type === "web") {
+        ctx.save();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.globalAlpha = 0.9;
+
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 10, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(b.x - 10, b.y);
+        ctx.lineTo(b.x + 10, b.y);
+        ctx.moveTo(b.x, b.y - 10);
+        ctx.lineTo(b.x, b.y + 10);
+        ctx.moveTo(b.x - 7, b.y - 7);
+        ctx.lineTo(b.x + 7, b.y + 7);
+        ctx.moveTo(b.x + 7, b.y - 7);
+        ctx.lineTo(b.x - 7, b.y + 7);
+        ctx.stroke();
+
+        ctx.restore();
+      } else {
+        ctx.fillStyle = "#ff2a2a";
+        ctx.fillRect(b.x - 8, b.y - 3, 16, 6);
+
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(b.x - 4, b.y - 2, 8, 4);
+      }`
+      );
+      
             code = code.replace(
         "e.y += Math.sign(dy) * 70 * dt;",
         "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;\n      }"
@@ -3237,6 +3342,33 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
         }
       }
 
+                if (player.webbedTimer > 0) {
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,255,255,.92)";
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+        ctx.arc(player.x, player.y - 24, 34, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(player.x - 34, player.y - 24);
+        ctx.lineTo(player.x + 34, player.y - 24);
+        ctx.moveTo(player.x, player.y - 58);
+        ctx.lineTo(player.x, player.y + 10);
+        ctx.moveTo(player.x - 24, player.y - 48);
+        ctx.lineTo(player.x + 24, player.y);
+        ctx.moveTo(player.x + 24, player.y - 48);
+        ctx.lineTo(player.x - 24, player.y);
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "900 18px system-ui, sans-serif";
+        ctx.fillText("WEBBED!", player.x - 38, player.y - 70);
+
+        ctx.restore();
+      }
+          
       if (state.endingKind === "graveyardFamily" && state.mode === "talk") {
         const boxX = W / 2 - 290;
         const boxY = 70;
