@@ -1819,7 +1819,13 @@
       endingSceneSignal &&
       endingSceneSignal.at &&
       endingSceneSignal.at !== window.__uvzuLastAppliedEndingSceneAt &&
-         (window.__uvzuCurrentLevelCode === "RNBW1" || window.__uvzuCurrentLevelCode === "GRV2") &&
+        (
+  window.__uvzuCurrentLevelCode === "RNBW1" ||
+  (
+    window.__uvzuCurrentLevelCode === "GRV2" &&
+    (state.grv2TarantulasKilled || 0) >= 4
+  )
+) &&
       state.mode !== "npc" &&
       state.mode !== "talk" &&
       state.mode !== "exit" &&
