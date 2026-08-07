@@ -1923,7 +1923,16 @@
         "state.enemies.push({\n      id: \"e\" + (++multiplayerEnemyIdCounter),\n      x,"
       );
       code = code.replace(
-        `    const e = state.enemies[index];
+        `    const e = state.enemies[index]; 
+            if (
+      e &&
+      window.__uvzuCurrentLevelCode === "GRV2" &&
+      (e.type === "tarantula" || e.type === "webTarantula") &&
+      method !== "remote"
+    ) {
+      state.grv2TarantulasKilled = (state.grv2TarantulasKilled || 0) + 1;
+    }
+    
     const powered = player.ray > 0 || player.giant > 0;`,
         `    const e = state.enemies[index];
 
@@ -1961,8 +1970,12 @@
 `        spawnEnemy("ray");
         state.finalSpawned += 1;
         state.finalSpawnTimer = 0.9;`,
-`        if (window.__uvzuCurrentLevelCode === "GRV2") {
-          const isSecondGroup = state.finalSpawned >= 1;
+`      if (window.__uvzuCurrentLevelCode === "GRV2") {
+  if (typeof state.grv2TarantulasKilled !== "number") {
+    state.grv2TarantulasKilled = 0;
+  }
+
+  const isSecondGroup = state.finalSpawned >= 1;
 
           state.enemies.push({
             id: "t" + (++multiplayerEnemyIdCounter),
@@ -2499,6 +2512,10 @@ state.mode = "talk";
 
         startNpcScene();
       } else if (window.__uvzuCurrentLevelCode === "GRV2") {
+              if ((state.grv2TarantulasKilled || 0) < 4) {
+          return;
+        }
+        
         if (
           window.__uvzuIsMultiplayerHost &&
           window.__uvzuIsMultiplayerHost() &&
@@ -2522,11 +2539,15 @@ state.mode = "talk";
         state.victoryTimer = 3.5;
       }
     } else {
-      if (window.__uvzuCurrentLevelCode === "GRV2") {
-        startGraveyardFamilyScene();
-      } else {
-        startNpcScene();
-      }
+    if (window.__uvzuCurrentLevelCode === "GRV2") {
+  if ((state.grv2TarantulasKilled || 0) < 4) {
+    return;
+  }
+
+  startGraveyardFamilyScene();
+} else {
+  startNpcScene();
+}
     }`
       );
 
