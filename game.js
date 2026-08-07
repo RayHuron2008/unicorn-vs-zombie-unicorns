@@ -1957,15 +1957,12 @@
         ) {`
       );
 
-                code = code.replace(
-`        spawnEnemy("ray");`,
-`       `        if (window.__uvzuCurrentLevelCode === "GRV2") {
+                     code = code.replace(
+`        spawnEnemy("ray");
+        state.finalSpawned += 1;
+        state.finalSpawnTimer = 0.9;`,
+`        if (window.__uvzuCurrentLevelCode === "GRV2") {
           const isSecondGroup = state.finalSpawned >= 1;
-
-                       code = code.replace(
-        "state.finalSpawnTimer = 0.9;",
-        "state.finalSpawnTimer = window.__uvzuCurrentLevelCode === \"GRV2\" ? 2.2 : 0.9;"
-      ); 
 
           state.enemies.push({
             id: "t" + (++multiplayerEnemyIdCounter),
@@ -2003,17 +2000,19 @@
             webTimer: isSecondGroup ? 1.6 : 999
           });
 
-         if (window.__uvzuCurrentLevelCode !== "GRV2") state.finalSpawned += 1;
+          state.finalSpawned += 1;
+          state.finalSpawnTimer = 2.2;
         } else {
           spawnEnemy("ray");
           state.finalSpawned += 1;
+          state.finalSpawnTimer = 0.9;
         }`
       );
 
           code = code.replace(
         "e.x += Math.sign(dx) * 105 * dt;",
 `if (!(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) {
-        if (e.type === "tarantula") {
+       if (e.type === "tarantula" || e.type === "webTarantula") {
           if (typeof e.groundY !== "number") e.groundY = GROUND_Y - 4;
           if (typeof e.vx !== "number") e.vx = e.face * 135;
           if (typeof e.vy !== "number") e.vy = 0;
