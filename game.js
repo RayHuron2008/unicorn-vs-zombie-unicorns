@@ -1922,9 +1922,12 @@
         "state.enemies.push({\n      x,",
         "state.enemies.push({\n      id: \"e\" + (++multiplayerEnemyIdCounter),\n      x,"
       );
-      code = code.replace(
-        `    const e = state.enemies[index]; 
-            if (
+                 code = code.replace(
+        `    const e = state.enemies[index];
+    const powered = player.ray > 0 || player.giant > 0;`,
+        `    const e = state.enemies[index];
+
+    if (
       e &&
       window.__uvzuCurrentLevelCode === "GRV2" &&
       (e.type === "tarantula" || e.type === "webTarantula") &&
@@ -1932,9 +1935,6 @@
     ) {
       state.grv2TarantulasKilled = (state.grv2TarantulasKilled || 0) + 1;
     }
-    
-    const powered = player.ray > 0 || player.giant > 0;`,
-        `    const e = state.enemies[index];
 
                 if (e && e.id && method !== "remote") {
   if (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest()) {
@@ -2563,9 +2563,13 @@ state.mode = "talk";
 `    updateParticles(dt);
     updateEnding(dt);
 
-    if (
+   if (
       window.__uvzuIsLevelCompleted &&
       window.__uvzuIsLevelCompleted() &&
+      !(
+        window.__uvzuCurrentLevelCode === "GRV2" &&
+        (state.grv2TarantulasKilled || 0) < 4
+      ) &&
       state.mode !== "fireworks" &&
       state.mode !== "victory"
     ) {
