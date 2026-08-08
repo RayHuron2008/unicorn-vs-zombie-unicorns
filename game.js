@@ -2280,15 +2280,15 @@ if (!isSecondGroup) {
         }`
       );
 
-            code = code.replace(
+                 code = code.replace(
 `      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 19) {
         damagePlayerByLaser();
         state.enemyShots.splice(i, 1);
         if (state.resetQueued) return;
         continue;
       }`,
-`      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + (b.type === "web" ? 48 : 19)) {
-        if (b.type === "web") {
+`      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 48) {
+        if (window.__uvzuCurrentLevelCode === "GRV2") {
           applySpiderWebTrap();
           addParticles(player.x, player.y - 20, "shield");
         } else {
