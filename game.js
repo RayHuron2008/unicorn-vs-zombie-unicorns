@@ -2289,9 +2289,9 @@ if (!isSecondGroup) {
         if (state.resetQueued) return;
         continue;
       }`,
-`      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 48) {
-        if (window.__uvzuCurrentLevelCode === "GRV2") {
-         window.__uvzuApplySpiderWebTrap(player);
+`      `      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 48) {
+        if (b.type === "web") {
+          window.__uvzuApplySpiderWebTrap(player);
           addParticles(player.x, player.y - 20, "shield");
         } else {
           damagePlayerByLaser();
