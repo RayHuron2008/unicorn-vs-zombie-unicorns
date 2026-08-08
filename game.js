@@ -1929,64 +1929,26 @@
     ) {`
       );
 
-                      if (player.webbedTimer > 0) {
-        const pulse = 0.78 + Math.sin((player.webFlash || player.webbedTimer) * 14) * 0.12;
+               code = code.replace(
+`      if (!updateDodgeMovement(dt)) {
+        player.x += dir.dx * speed * dt;
+        player.y += dir.dy * speed * 0.72 * dt;
+      }`,
+`      if (player.webbedTimer > 0) {
+        player.dodgeTimer = 0;
+        player.headTimer = 0;
+        player.actionLock = player.webbedTimer;
 
-        ctx.save();
-        ctx.globalAlpha = pulse;
-        ctx.strokeStyle = "rgba(255,255,255,0.96)";
-        ctx.lineWidth = 3;
-
-        // main cocoon ring
-        ctx.beginPath();
-        ctx.ellipse(player.x, player.y - 20, 34, 40, 0, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // horizontal strands
-        ctx.beginPath();
-        ctx.moveTo(player.x - 28, player.y - 42);
-        ctx.lineTo(player.x + 28, player.y - 42);
-
-        ctx.moveTo(player.x - 32, player.y - 26);
-        ctx.lineTo(player.x + 32, player.y - 26);
-
-        ctx.moveTo(player.x - 30, player.y - 10);
-        ctx.lineTo(player.x + 30, player.y - 10);
-
-        ctx.moveTo(player.x - 24, player.y + 6);
-        ctx.lineTo(player.x + 24, player.y + 6);
-        ctx.stroke();
-
-        // vertical + diagonal strands
-        ctx.beginPath();
-        ctx.moveTo(player.x, player.y - 58);
-        ctx.lineTo(player.x, player.y + 14);
-
-        ctx.moveTo(player.x - 22, player.y - 50);
-        ctx.lineTo(player.x + 22, player.y + 2);
-
-        ctx.moveTo(player.x + 22, player.y - 50);
-        ctx.lineTo(player.x - 22, player.y + 2);
-
-        ctx.moveTo(player.x - 30, player.y - 30);
-        ctx.lineTo(player.x + 30, player.y - 18);
-
-        ctx.moveTo(player.x + 30, player.y - 30);
-        ctx.lineTo(player.x - 30, player.y - 18);
-        ctx.stroke();
-
-        // top knot / extra webbing
-        ctx.beginPath();
-        ctx.arc(player.x, player.y - 60, 8, 0, Math.PI * 2);
-        ctx.stroke();
-
-        ctx.fillStyle = "rgba(255,255,255,0.96)";
-        ctx.font = "900 18px system-ui, sans-serif";
-        ctx.fillText("WEBBED!", player.x - 38, player.y - 74);
-
-        ctx.restore();
-      }
-
+        if (typeof dir !== "undefined") {
+          dir.dx = 0;
+          dir.dy = 0;
+        }
+      } else if (!updateDodgeMovement(dt)) {
+        player.x += dir.dx * speed * dt;
+        player.y += dir.dy * speed * 0.72 * dt;
+      }`
+      );
+      
       code = code.replace(
         "state.enemies.push({\n      x,",
         "state.enemies.push({\n      id: \"e\" + (++multiplayerEnemyIdCounter),\n      x,"
@@ -2282,15 +2244,23 @@ if (!isSecondGroup) {
           state.enemyShots.splice(i, 1);
         }`,
 `        if (rectsOverlap(pBox, bBox)) {
-          if (b.type === "web") {
-            player.webbedTimer = 2.6;
-           player.actionLock = Math.max(player.actionLock || 0, 2.6);
-            player.dodgeTimer = 0;
-            player.dodgeCooldown = Math.max(player.dodgeCooldown || 0, 0.4);
-            addParticles(player.x, player.y - 20, "shield");
-          } else {
-            damagePlayerByLaser();
-          }
+         if (b.type === "web") {
+  player.webbedTimer = 2.6;
+  player.webFlash = 2.6;
+  player.actionLock = 2.6;
+  player.headTimer = 0;
+  player.dodgeTimer = 0;
+  player.dodgeCooldown = Math.max(player.dodgeCooldown || 0, 0.5);
+
+  if (typeof dir !== "undefined") {
+    dir.dx = 0;
+    dir.dy = 0;
+  }
+
+  addParticles(player.x, player.y - 20, "shield");
+} else {
+  damagePlayerByLaser();
+}
 
           state.enemyShots.splice(i, 1);
         }`
