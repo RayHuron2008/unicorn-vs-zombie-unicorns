@@ -1927,16 +1927,18 @@
     ) {`
       );
 
-            code = code.replace(
+                  code = code.replace(
 `      if (!updateDodgeMovement(dt)) {
         player.x += dir.dx * speed * dt;
         player.y += dir.dy * speed * 0.72 * dt;
       }`,
-`      if (!updateDodgeMovement(dt)) {
-        if (!(player.webbedTimer > 0)) {
-          player.x += dir.dx * speed * dt;
-          player.y += dir.dy * speed * 0.72 * dt;
-        }
+`      if (player.webbedTimer > 0) {
+        player.dodgeTimer = 0;
+        player.headTimer = 0;
+        player.actionLock = Math.max(player.actionLock || 0, player.webbedTimer);
+      } else if (!updateDodgeMovement(dt)) {
+        player.x += dir.dx * speed * dt;
+        player.y += dir.dy * speed * 0.72 * dt;
       }`
       );
 
@@ -2234,8 +2236,8 @@
         }`,
 `        if (rectsOverlap(pBox, bBox)) {
           if (b.type === "web") {
-            player.webbedTimer = 2.0;
-            player.actionLock = Math.max(player.actionLock || 0, 2.0);
+            player.webbedTimer = 2.6;
+           player.actionLock = Math.max(player.actionLock || 0, 2.6);
             player.dodgeTimer = 0;
             player.dodgeCooldown = Math.max(player.dodgeCooldown || 0, 0.4);
             addParticles(player.x, player.y - 20, "shield");
