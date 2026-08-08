@@ -2289,7 +2289,7 @@ if (!isSecondGroup) {
         if (state.resetQueued) return;
         continue;
       }`,
-`      `      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 48) {
+      `      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 48) {
         if (b.type === "web") {
           window.__uvzuApplySpiderWebTrap(player);
           addParticles(player.x, player.y - 20, "shield");
