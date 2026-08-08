@@ -1794,7 +1794,9 @@
 
     player.webbedTimer = Math.max(0, (player.webbedTimer || 0) - dt);
  player.webFlash = Math.max(0, (player.webFlash || 0) - dt);
- function applySpiderWebTrap() {
+ window.__uvzuApplySpiderWebTrap = function(player) {
+  if (!player) return;
+
   player.webbedTimer = 2.6;
   player.webFlash = 2.6;
   player.actionLock = 2.6;
@@ -1803,7 +1805,7 @@
   player.dodgeCooldown = Math.max(player.dodgeCooldown || 0, 0.5);
   player.webTrapX = player.x;
   player.webTrapY = player.y;
-}
+};
 
             const nextLevelSignal = window.__uvzuGetNextLevelSignal
       ? window.__uvzuGetNextLevelSignal()
@@ -2261,7 +2263,7 @@ if (!isSecondGroup) {
           const webDist = Math.hypot(webDx, webDy);
 
           if (webDist < 48) {
-            applySpiderWebTrap();
+            window.__uvzuApplySpiderWebTrap(player);
             addParticles(player.x, player.y - 20, "shield");
             state.enemyShots.splice(i, 1);
             continue;
@@ -2270,7 +2272,7 @@ if (!isSecondGroup) {
 
         if (rectsOverlap(pBox, bBox)) {
           if (b.type === "web") {
-            applySpiderWebTrap();
+            window.__uvzuApplySpiderWebTrap(player);
             addParticles(player.x, player.y - 20, "shield");
           } else {
             damagePlayerByLaser();
