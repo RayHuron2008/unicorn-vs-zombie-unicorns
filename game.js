@@ -2029,6 +2029,7 @@
             webTimer: isSecondGroup ? 1.2 : 999
           });
 
+if (!isSecondGroup) {
           state.enemies.push({
             id: "t" + (++multiplayerEnemyIdCounter),
             x: W + 70,
@@ -2046,6 +2047,7 @@
             jumpTimer: 0.55,
             webTimer: isSecondGroup ? 1.6 : 999
           });
+}
 
           state.finalSpawned += 1;
           state.finalSpawnTimer = 2.2;
