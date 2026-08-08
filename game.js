@@ -1997,9 +1997,19 @@
     state.grv2TarantulasKilled = 0;
   }
 
+  const livingTarantulas = state.enemies.some((enemy) =>
+    enemy &&
+    (enemy.type === "tarantula" || enemy.type === "webTarantula")
+  );
+
+  if (state.finalSpawned >= 1 && livingTarantulas) {
+    state.finalSpawnTimer = 0.35;
+    return;
+  }
+
   const isSecondGroup = state.finalSpawned >= 1;
 
-          state.enemies.push({
+  state.enemies.push({
             id: "t" + (++multiplayerEnemyIdCounter),
             x: -70,
             y: GROUND_Y - 4,
