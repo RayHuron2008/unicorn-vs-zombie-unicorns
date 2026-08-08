@@ -2250,18 +2250,32 @@ if (!isSecondGroup) {
 
           state.playerShots.splice(i, 1);`
       );
-            code = code.replace(
+                 code = code.replace(
 `        if (rectsOverlap(pBox, bBox)) {
           damagePlayerByLaser();
           state.enemyShots.splice(i, 1);
         }`,
-`        if (rectsOverlap(pBox, bBox)) {
-        if (b.type === "web") {
-  applySpiderWebTrap();
-  addParticles(player.x, player.y - 20, "shield");
-} else {
-  damagePlayerByLaser();
-}
+`        if (b.type === "web") {
+          const webDx = b.x - player.x;
+          const webDy = b.y - (player.y - 24);
+          const webDist = Math.hypot(webDx, webDy);
+
+          if (webDist < 48) {
+            applySpiderWebTrap();
+            addParticles(player.x, player.y - 20, "shield");
+            state.enemyShots.splice(i, 1);
+            continue;
+          }
+        }
+
+        if (rectsOverlap(pBox, bBox)) {
+          if (b.type === "web") {
+            applySpiderWebTrap();
+            addParticles(player.x, player.y - 20, "shield");
+          } else {
+            damagePlayerByLaser();
+          }
+
           state.enemyShots.splice(i, 1);
         }`
       );
