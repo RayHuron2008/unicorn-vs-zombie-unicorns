@@ -1793,8 +1793,17 @@
 `    updateHealthRegen(dt);
 
     player.webbedTimer = Math.max(0, (player.webbedTimer || 0) - dt);
-
-    player.webFlash = Math.max(0, (player.webFlash || 0) - dt);
+ player.webFlash = Math.max(0, (player.webFlash || 0) - dt);
+ function applySpiderWebTrap() {
+  player.webbedTimer = 2.6;
+  player.webFlash = 2.6;
+  player.actionLock = 2.6;
+  player.headTimer = 0;
+  player.dodgeTimer = 0;
+  player.dodgeCooldown = Math.max(player.dodgeCooldown || 0, 0.5);
+  player.webTrapX = player.x;
+  player.webTrapY = player.y;
+}
 
             const nextLevelSignal = window.__uvzuGetNextLevelSignal
       ? window.__uvzuGetNextLevelSignal()
@@ -1934,15 +1943,18 @@
         player.x += dir.dx * speed * dt;
         player.y += dir.dy * speed * 0.72 * dt;
       }`,
-`      if (player.webbedTimer > 0) {
-        player.dodgeTimer = 0;
-        player.headTimer = 0;
-        player.actionLock = player.webbedTimer;
+`if (player.webbedTimer > 0) {
+  player.dodgeTimer = 0;
+  player.headTimer = 0;
+  player.actionLock = player.webbedTimer;
 
-        if (typeof dir !== "undefined") {
-          dir.dx = 0;
-          dir.dy = 0;
-        }
+  if (typeof player.webTrapX === "number") player.x = player.webTrapX;
+  if (typeof player.webTrapY === "number") player.y = player.webTrapY;
+
+  if (typeof dir !== "undefined") {
+    dir.dx = 0;
+    dir.dy = 0;
+  }
       } else if (!updateDodgeMovement(dt)) {
         player.x += dir.dx * speed * dt;
         player.y += dir.dy * speed * 0.72 * dt;
@@ -2244,24 +2256,12 @@ if (!isSecondGroup) {
           state.enemyShots.splice(i, 1);
         }`,
 `        if (rectsOverlap(pBox, bBox)) {
-         if (b.type === "web") {
-  player.webbedTimer = 2.6;
-  player.webFlash = 2.6;
-  player.actionLock = 2.6;
-  player.headTimer = 0;
-  player.dodgeTimer = 0;
-  player.dodgeCooldown = Math.max(player.dodgeCooldown || 0, 0.5);
-
-  if (typeof dir !== "undefined") {
-    dir.dx = 0;
-    dir.dy = 0;
-  }
-
+        if (b.type === "web") {
+  applySpiderWebTrap();
   addParticles(player.x, player.y - 20, "shield");
 } else {
   damagePlayerByLaser();
 }
-
           state.enemyShots.splice(i, 1);
         }`
       );
