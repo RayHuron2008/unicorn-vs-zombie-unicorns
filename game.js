@@ -2281,6 +2281,27 @@ if (!isSecondGroup) {
       );
 
             code = code.replace(
+`      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 19) {
+        damagePlayerByLaser();
+        state.enemyShots.splice(i, 1);
+        if (state.resetQueued) return;
+        continue;
+      }`,
+`      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + (b.type === "web" ? 48 : 19)) {
+        if (b.type === "web") {
+          applySpiderWebTrap();
+          addParticles(player.x, player.y - 20, "shield");
+        } else {
+          damagePlayerByLaser();
+        }
+
+        state.enemyShots.splice(i, 1);
+        if (state.resetQueued) return;
+        continue;
+      }`
+      );
+      
+            code = code.replace(
 `      ctx.fillStyle = "#ff2a2a";
       ctx.fillRect(b.x - 8, b.y - 3, 16, 6);
 
