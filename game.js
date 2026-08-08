@@ -1725,7 +1725,7 @@
       );
         
 
-           code = code.replace(
+                code = code.replace(
 `    if (player.lives <= 0) {
       fullRestart();
       return;
@@ -1733,7 +1733,6 @@
 
     state.resetQueued = true;`,
 `    if (player.lives <= 0) {
-
       if (
         (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
         (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
@@ -1754,7 +1753,19 @@
       return;
     }
 
-          fullRestart();
+    if (
+      window.__uvzuCurrentLevelCode === "GRV2" &&
+      state.mode === "final"
+    ) {
+      player.hp = HP_MAX;
+      player.invuln = 1.2;
+      player.headTimer = 0;
+      player.dodgeTimer = 0;
+      player.dodgeCooldown = 0.25;
+      player.actionLock = 0.25;
+      player.webbedTimer = 0;
+      state.resetQueued = false;
+      updateHud();
       return;
     }
 
