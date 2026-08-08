@@ -1794,6 +1794,8 @@
 
     player.webbedTimer = Math.max(0, (player.webbedTimer || 0) - dt);
 
+    player.webFlash = Math.max(0, (player.webFlash || 0) - dt);
+
             const nextLevelSignal = window.__uvzuGetNextLevelSignal
       ? window.__uvzuGetNextLevelSignal()
       : null;
@@ -1932,14 +1934,7 @@
         player.x += dir.dx * speed * dt;
         player.y += dir.dy * speed * 0.72 * dt;
       }`,
-`      if (player.webbedTimer > 0) {
-        player.dodgeTimer = 0;
-        player.headTimer = 0;
-        player.actionLock = Math.max(player.actionLock || 0, player.webbedTimer);
-      } else if (!updateDodgeMovement(dt)) {
-        player.x += dir.dx * speed * dt;
-        player.y += dir.dy * speed * 0.72 * dt;
-      }`
+`    player.webFlash = Math.max(0, (player.webFlash || 0) - dt);
       );
 
       code = code.replace(
@@ -3402,29 +3397,60 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
         }
       }
 
-                if (player.webbedTimer > 0) {
+      if (player.webbedTimer > 0) {
+        const pulse = 0.78 + Math.sin((player.webFlash || player.webbedTimer) * 14) * 0.12;
+
         ctx.save();
-        ctx.strokeStyle = "rgba(255,255,255,.92)";
+        ctx.globalAlpha = pulse;
+        ctx.strokeStyle = "rgba(255,255,255,0.96)";
         ctx.lineWidth = 3;
 
+        // main cocoon ring
         ctx.beginPath();
-        ctx.arc(player.x, player.y - 24, 34, 0, Math.PI * 2);
+        ctx.ellipse(player.x, player.y - 20, 34, 40, 0, 0, Math.PI * 2);
         ctx.stroke();
 
+        // horizontal strands
         ctx.beginPath();
-        ctx.moveTo(player.x - 34, player.y - 24);
-        ctx.lineTo(player.x + 34, player.y - 24);
+        ctx.moveTo(player.x - 28, player.y - 42);
+        ctx.lineTo(player.x + 28, player.y - 42);
+
+        ctx.moveTo(player.x - 32, player.y - 26);
+        ctx.lineTo(player.x + 32, player.y - 26);
+
+        ctx.moveTo(player.x - 30, player.y - 10);
+        ctx.lineTo(player.x + 30, player.y - 10);
+
+        ctx.moveTo(player.x - 24, player.y + 6);
+        ctx.lineTo(player.x + 24, player.y + 6);
+        ctx.stroke();
+
+        // vertical + diagonal strands
+        ctx.beginPath();
         ctx.moveTo(player.x, player.y - 58);
-        ctx.lineTo(player.x, player.y + 10);
-        ctx.moveTo(player.x - 24, player.y - 48);
-        ctx.lineTo(player.x + 24, player.y);
-        ctx.moveTo(player.x + 24, player.y - 48);
-        ctx.lineTo(player.x - 24, player.y);
+        ctx.lineTo(player.x, player.y + 14);
+
+        ctx.moveTo(player.x - 22, player.y - 50);
+        ctx.lineTo(player.x + 22, player.y + 2);
+
+        ctx.moveTo(player.x + 22, player.y - 50);
+        ctx.lineTo(player.x - 22, player.y + 2);
+
+        ctx.moveTo(player.x - 30, player.y - 30);
+        ctx.lineTo(player.x + 30, player.y - 18);
+
+        ctx.moveTo(player.x + 30, player.y - 30);
+        ctx.lineTo(player.x - 30, player.y - 18);
         ctx.stroke();
 
-        ctx.fillStyle = "#ffffff";
+        // top knot / extra webbing
+        ctx.beginPath();
+        ctx.arc(player.x, player.y - 60, 8, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(255,255,255,0.96)";
         ctx.font = "900 18px system-ui, sans-serif";
-        ctx.fillText("WEBBED!", player.x - 38, player.y - 70);
+        ctx.fillText("WEBBED!", player.x - 38, player.y - 74);
 
         ctx.restore();
       }
