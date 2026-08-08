@@ -1929,13 +1929,63 @@
     ) {`
       );
 
-                  code = code.replace(
-`      if (!updateDodgeMovement(dt)) {
-        player.x += dir.dx * speed * dt;
-        player.y += dir.dy * speed * 0.72 * dt;
-      }`,
-`    player.webFlash = Math.max(0, (player.webFlash || 0) - dt);
-      );
+                      if (player.webbedTimer > 0) {
+        const pulse = 0.78 + Math.sin((player.webFlash || player.webbedTimer) * 14) * 0.12;
+
+        ctx.save();
+        ctx.globalAlpha = pulse;
+        ctx.strokeStyle = "rgba(255,255,255,0.96)";
+        ctx.lineWidth = 3;
+
+        // main cocoon ring
+        ctx.beginPath();
+        ctx.ellipse(player.x, player.y - 20, 34, 40, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // horizontal strands
+        ctx.beginPath();
+        ctx.moveTo(player.x - 28, player.y - 42);
+        ctx.lineTo(player.x + 28, player.y - 42);
+
+        ctx.moveTo(player.x - 32, player.y - 26);
+        ctx.lineTo(player.x + 32, player.y - 26);
+
+        ctx.moveTo(player.x - 30, player.y - 10);
+        ctx.lineTo(player.x + 30, player.y - 10);
+
+        ctx.moveTo(player.x - 24, player.y + 6);
+        ctx.lineTo(player.x + 24, player.y + 6);
+        ctx.stroke();
+
+        // vertical + diagonal strands
+        ctx.beginPath();
+        ctx.moveTo(player.x, player.y - 58);
+        ctx.lineTo(player.x, player.y + 14);
+
+        ctx.moveTo(player.x - 22, player.y - 50);
+        ctx.lineTo(player.x + 22, player.y + 2);
+
+        ctx.moveTo(player.x + 22, player.y - 50);
+        ctx.lineTo(player.x - 22, player.y + 2);
+
+        ctx.moveTo(player.x - 30, player.y - 30);
+        ctx.lineTo(player.x + 30, player.y - 18);
+
+        ctx.moveTo(player.x + 30, player.y - 30);
+        ctx.lineTo(player.x - 30, player.y - 18);
+        ctx.stroke();
+
+        // top knot / extra webbing
+        ctx.beginPath();
+        ctx.arc(player.x, player.y - 60, 8, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(255,255,255,0.96)";
+        ctx.font = "900 18px system-ui, sans-serif";
+        ctx.fillText("WEBBED!", player.x - 38, player.y - 74);
+
+        ctx.restore();
+      }
 
       code = code.replace(
         "state.enemies.push({\n      x,",
