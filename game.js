@@ -1733,8 +1733,14 @@
   player.webTrapY = null;
   player.actionLock = 0;
 
-  fullRestart();
-  return;
+       player.webbedTimer = 0;
+      player.webFlash = 0;
+      player.webTrapX = null;
+      player.webTrapY = null;
+      player.actionLock = 0;
+
+      fullRestart();
+      return;
 }
 
     state.resetQueued = true;`,
