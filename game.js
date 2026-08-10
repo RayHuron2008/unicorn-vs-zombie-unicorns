@@ -2372,10 +2372,16 @@ if (!isSecondGroup) {
       );
             code = code.replace(
 `  function startNpcScene() {`,
-`  function startGraveyardFamilyScene() {
-    clearBattlefield();
+` function startGraveyardFamilyScene() {
+  clearBattlefield();
 
-    state.mode = "npc";
+  player.webbedTimer = 0;
+  player.webFlash = 0;
+  player.webTrapX = null;
+  player.webTrapY = null;
+  player.actionLock = 0;
+
+  state.mode = "npc";
     state.endingKind = "graveyardFamily";
     state.npc = null;
     state.dialogTimer = 0;
