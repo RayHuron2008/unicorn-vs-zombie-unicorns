@@ -1726,22 +1726,10 @@
         
 
                 code = code.replace(
-` if (player.lives <= 0) {
-  player.webbedTimer = 0;
-  player.webFlash = 0;
-  player.webTrapX = null;
-  player.webTrapY = null;
-  player.actionLock = 0;
-
-       player.webbedTimer = 0;
-      player.webFlash = 0;
-      player.webTrapX = null;
-      player.webTrapY = null;
-      player.actionLock = 0;
-
+`    if (player.lives <= 0) {
       fullRestart();
       return;
-}
+    }
 
     state.resetQueued = true;`,
 `    if (player.lives <= 0) {
