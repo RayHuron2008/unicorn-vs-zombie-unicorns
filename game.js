@@ -2101,6 +2101,21 @@ if (!isSecondGroup) {
           e.vy += 760 * dt;
           e.y += e.vy * dt;
 
+          if (
+  player.webbedTimer > 0 &&
+  Math.abs(e.x - player.x) < 42 &&
+  Math.abs((e.y - 12) - (player.y - 20)) < 38
+) {
+  // A spider touching a webbed player is an instant kill.
+  player.hp = 1;
+  player.invuln = 0;
+
+  damagePlayerByLaser();
+
+  player.webbedTimer = 0;
+  player.webFlash = 0;
+}
+
           if (e.y > e.groundY) {
             e.y = e.groundY;
             e.vy = 0;
@@ -3505,9 +3520,7 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
         ctx.arc(player.x, player.y - 60, 8, 0, Math.PI * 2);
         ctx.stroke();
 
-        ctx.fillStyle = "rgba(255,255,255,0.96)";
-        ctx.font = "900 18px system-ui, sans-serif";
-        ctx.fillText("WEBBED!", player.x - 38, player.y - 74);
+       
 
         ctx.restore();
       }
