@@ -996,6 +996,74 @@
     return code.slice(0, start) + replacement + code.slice(end);
   }
 
+  function createGameOverScreen(retryLevel) {
+  if (document.getElementById("gameOverOverlay")) return;
+
+  if (window.__uvzuSetPaused) {
+    window.__uvzuSetPaused(true);
+  }
+
+  const controls = document.getElementById("controls");
+  if (controls) controls.style.display = "none";
+
+  const overlay = document.createElement("div");
+  overlay.id = "gameOverOverlay";
+
+  overlay.style.position = "fixed";
+  overlay.style.inset = "0";
+  overlay.style.zIndex = "10050";
+  overlay.style.display = "flex";
+  overlay.style.alignItems = "center";
+  overlay.style.justifyContent = "center";
+  overlay.style.background = "rgba(0,0,0,.72)";
+
+  overlay.innerHTML = `
+    <div id="pausePanel">
+      <div
+        style="
+          font:900 34px system-ui,sans-serif;
+          color:#4b2670;
+          line-height:1.15;
+          margin-bottom:8px;
+        "
+      >
+        YOU HAVE BECOME THE DEAD
+      </div>
+
+      <button id="retryLevelBtn" class="pauseBtn">
+        RETRY LEVEL
+      </button>
+
+      <button id="gameOverMenuBtn" class="pauseBtn exit">
+        MENU
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector("#retryLevelBtn").addEventListener("click", () => {
+    overlay.remove();
+
+    if (typeof retryLevel === "function") {
+      retryLevel();
+    }
+
+    if (controls) controls.style.display = "";
+
+    if (window.__uvzuSetPaused) {
+      window.__uvzuSetPaused(false);
+    }
+  });
+
+  overlay.querySelector("#gameOverMenuBtn").addEventListener("click", () => {
+    window.location.href =
+      window.location.pathname + "?v=" + Date.now();
+  });
+}
+
+  window.__uvzuShowGameOver = createGameOverScreen;
+  
   function createControlsPopup() {
     if (document.getElementById("controlsOverlay")) return;
 
@@ -1749,14 +1817,21 @@
         return;
       }
 
-           player.webbedTimer = 0;
-      player.webFlash = 0;
-      player.webTrapX = null;
-      player.webTrapY = null;
-      player.actionLock = 0;
+          player.webbedTimer = 0;
+player.webFlash = 0;
+player.webTrapX = null;
+player.webTrapY = null;
+player.actionLock = 0;
 
-      fullRestart();
-      return;
+player.hp = 0;
+player.invuln = 999999;
+state.resetQueued = false;
+
+window.__uvzuShowGameOver(() => {
+  fullRestart();
+});
+
+return;
     }
 
   if (
