@@ -2758,8 +2758,6 @@ state.mode = "talk";
           }
 
           return;
-
-          return;
         }
 
         state.mode = "victory";
