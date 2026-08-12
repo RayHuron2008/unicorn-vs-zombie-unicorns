@@ -2140,8 +2140,7 @@ return;
             vy: 0,
             groundY: GROUND_Y - 4,
             jumpTimer: 0.35,
-            webTimer: isSecondGroup ? 1.2 : 999
-          });
+           webTimer: isSecondGroup ? 0.9 : 999
 
 state.enemies.push({
   id: "t" + (++multiplayerEnemyIdCounter),
@@ -2158,7 +2157,7 @@ state.enemies.push({
   vy: 0,
   groundY: GROUND_Y - 4,
   jumpTimer: 0.55,
-  webTimer: isSecondGroup ? 1.6 : 999
+ webTimer: isSecondGroup ? 2.2 : 999
 });
           state.finalSpawned += 1;
           state.finalSpawnTimer = 2.2;
