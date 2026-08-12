@@ -3855,6 +3855,8 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
   let paused = false;
 
   function applyDifficulty(name) {
+  window.__uvzuCurrentDifficultyName = name;
+  
     if (name === "Easy") {
       MAX_ENEMIES = 2;
       ENEMY_X_SPEED = 85;
