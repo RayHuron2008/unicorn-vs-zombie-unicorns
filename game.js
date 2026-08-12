@@ -2705,7 +2705,23 @@ state.mode = "talk";
           return;
         }
 
-        state.mode = "victory";
+        if (
+  window.__uvzuCurrentLevelCode === "RNBW1" &&
+  !(window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) &&
+  !(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
+) {
+  window.__uvzuCurrentLevelCode = "GRV2";
+  window.__uvzuLevelTheme = "graveyard";
+
+  if (window.__uvzuUpdateLevelMusic) {
+    window.__uvzuUpdateLevelMusic();
+  }
+
+  fullRestart();
+  return;
+}
+
+state.mode = "victory";
       }
     }
   }`
