@@ -2171,6 +2171,21 @@ if (!(isSecondGroup && window.__uvzuCurrentDifficultyName === "Easy")) {
         }`
       );
 
+      code = code.replace(
+`        if (player.headTimer > 0) {
+          killEnemy(i, "headbutt");
+        } else {`,
+`        const enemyIsInFront =
+          (player.face > 0 && e.x >= player.x) ||
+          (player.face < 0 && e.x <= player.x);
+
+        if (player.headTimer > 0 && enemyIsInFront) {
+          killEnemy(i, "headbutt");
+        } else {`
+);
+
+code = code.replace(
+  "e.x += Math.sign(dx) * 105 * dt;",
           code = code.replace(
         "e.x += Math.sign(dx) * 105 * dt;",
 `if (!(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) {
