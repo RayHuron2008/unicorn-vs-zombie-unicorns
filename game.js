@@ -2184,9 +2184,7 @@ if (!(isSecondGroup && window.__uvzuCurrentDifficultyName === "Easy")) {
         } else {`
 );
 
-code = code.replace(
-  "e.x += Math.sign(dx) * 105 * dt;",
-          code = code.replace(
+      code = code.replace(
         "e.x += Math.sign(dx) * 105 * dt;",
 `if (!(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())) {
        if (e.type === "tarantula" || e.type === "webTarantula") {
