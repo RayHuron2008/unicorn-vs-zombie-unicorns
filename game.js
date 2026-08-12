@@ -2733,8 +2733,12 @@ state.mode = "talk";
             document.body.appendChild(prompt);
           }
 
-          if (input.a && !state.continuePressed) {
-            state.continuePressed = true;
+                  if (!input.a) {
+            state.continueReady = true;
+          }
+
+          if (input.a && state.continueReady) {
+            state.continueReady = false;
 
             prompt.remove();
 
@@ -2753,9 +2757,7 @@ state.mode = "talk";
             state.mode = "victory";
           }
 
-          if (!input.a) {
-            state.continuePressed = false;
-          }
+          return;
 
           return;
         }
