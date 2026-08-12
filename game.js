@@ -1384,7 +1384,7 @@
     });
   }
 
-  function createTitleMenu() {
+    function createTitleMenu() {
     const existing = document.getElementById("menuOverlay");
     if (existing) existing.remove();
 
@@ -1405,83 +1405,150 @@
 
     const overlay = document.createElement("div");
     overlay.id = "menuOverlay";
+
     overlay.innerHTML = `
       <div id="menuShade"></div>
 
       <div id="menuPanel">
-        <button id="playBtn" class="menuBtn">START</button>
-        <div id="difficultyRow">
-          <button class="diffBtn active" data-diff="Easy">Easy</button>
-          <button class="diffBtn" data-diff="Normal">Normal</button>
-          <button class="diffBtn" data-diff="Chaos">Chaos</button>
-        </div>
-                         <input
-          id="singleLevelCodeInput"
-          maxlength="5"
-          placeholder="LEVEL CODE"
-          autocomplete="off"
-          autocapitalize="characters"
-          style="width:100%;box-sizing:border-box;border:3px solid rgba(76,38,112,.65);border-radius:14px;padding:10px;font:900 16px system-ui,sans-serif;text-align:center;color:#4b2670;margin:8px 0 4px;"
-        />
 
-        <div id="menuHint">Choose difficulty, then tap START. Optional code unlocks hidden levels.</div>
+        <button id="playBtn" class="menuBtn">
+          START
+        </button>
+
+        <div
+          id="difficultyRow"
+          style="display:none;"
+        >
+          <button class="diffBtn" data-diff="Easy">
+            Easy
+          </button>
+
+          <button class="diffBtn" data-diff="Normal">
+            Normal
+          </button>
+
+          <button class="diffBtn" data-diff="Chaos">
+            Chaos
+          </button>
+        </div>
+
+        <button
+          id="levelCodeBtn"
+          class="diffBtn"
+          style="width:auto;min-width:150px;padding:9px 18px;"
+        >
+          LEVEL CODE
+        </button>
+
+        <div id="levelCodeArea" style="display:none;">
+          <input
+            id="singleLevelCodeInput"
+            maxlength="5"
+            placeholder="ENTER CODE"
+            autocomplete="off"
+            autocapitalize="characters"
+            style="
+              width:170px;
+              box-sizing:border-box;
+              border:3px solid rgba(76,38,112,.65);
+              border-radius:14px;
+              padding:10px;
+              font:900 16px system-ui,sans-serif;
+              text-align:center;
+              color:#4b2670;
+            "
+          />
+        </div>
+
       </div>
 
-      <button id="titleMultiplayerBtn">MULTIPLAYER</button>
-      <button id="titleControlsBtn">CONTROLS</button>
+      <button id="titleMultiplayerBtn">
+        MULTIPLAYER
+      </button>
+
+      <button id="titleControlsBtn">
+        CONTROLS
+      </button>
     `;
+
     document.body.appendChild(overlay);
 
-    let selected = "Easy";
+    const playBtn = overlay.querySelector("#playBtn");
+    const difficultyRow = overlay.querySelector("#difficultyRow");
+    const diffButtons = [...overlay.querySelectorAll(".diffBtn[data-diff]")];
 
-    const diffButtons = [...overlay.querySelectorAll(".diffBtn")];
-    diffButtons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        selected = btn.dataset.diff;
-        diffButtons.forEach((b) => b.classList.toggle("active", b === btn));
-      });
+    const levelCodeBtn = overlay.querySelector("#levelCodeBtn");
+    const levelCodeArea = overlay.querySelector("#levelCodeArea");
+    const singleLevelCodeInput = overlay.querySelector("#singleLevelCodeInput");
+
+    levelCodeBtn.addEventListener("click", () => {
+      levelCodeBtn.style.display = "none";
+      levelCodeArea.style.display = "block";
+      singleLevelCodeInput.focus();
     });
-
-    overlay.querySelector("#titleMultiplayerBtn").addEventListener("click", () => {
-      createMultiplayerPopup();
-    });
-
-    overlay.querySelector("#titleControlsBtn").addEventListener("click", () => {
-      createControlsPopup();
-    });
-
-       const singleLevelCodeInput = overlay.querySelector("#singleLevelCodeInput");
 
     singleLevelCodeInput.addEventListener("input", () => {
       cleanCodeInput(singleLevelCodeInput, 5, false);
     });
 
-    const playBtn = overlay.querySelector("#playBtn");
     playBtn.addEventListener("click", () => {
-            const typedLevelCode = singleLevelCodeInput.value.trim().toUpperCase();
-
-      if (typedLevelCode && typedLevelCode !== "RNBW1" && typedLevelCode !== "GRV2") {
-        alert("Unknown level code.");
-        return;
-      }
-
-     window.__uvzuCurrentLevelCode = typedLevelCode === "GRV2" ? "GRV2" : "RNBW1";
-      window.__uvzuLevelTheme = typedLevelCode === "GRV2" ? "graveyard" : "rainbow";
-
-      if (window.__uvzuUpdateLevelMusic) {
-        window.__uvzuUpdateLevelMusic();
-      }
-
-      if (typeof window.__uvzuStartGame === "function") {
-        window.__uvzuStartGame(selected);
-      }
-      overlay.remove();
-
-      if (hud) hud.style.display = "";
-      if (controls) controls.style.display = "";
+      difficultyRow.style.display = "flex";
+      playBtn.style.display = "none";
     });
-  }
 
+    diffButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const selected = btn.dataset.diff;
+
+        const typedLevelCode =
+          singleLevelCodeInput.value.trim().toUpperCase();
+
+        if (
+          typedLevelCode &&
+          typedLevelCode !== "RNBW1" &&
+          typedLevelCode !== "GRV2"
+        ) {
+          alert("Unknown level code.");
+          return;
+        }
+
+        window.__uvzuCurrentLevelCode =
+          typedLevelCode === "GRV2"
+            ? "GRV2"
+            : "RNBW1";
+
+        window.__uvzuLevelTheme =
+          typedLevelCode === "GRV2"
+            ? "graveyard"
+            : "rainbow";
+
+        if (window.__uvzuUpdateLevelMusic) {
+          window.__uvzuUpdateLevelMusic();
+        }
+
+        if (typeof window.__uvzuStartGame === "function") {
+          window.__uvzuStartGame(selected);
+        }
+
+        overlay.remove();
+
+        if (hud) hud.style.display = "";
+        if (controls) controls.style.display = "";
+      });
+    });
+
+    overlay
+      .querySelector("#titleMultiplayerBtn")
+      .addEventListener("click", () => {
+        createMultiplayerPopup();
+      });
+
+    overlay
+      .querySelector("#titleControlsBtn")
+      .addEventListener("click", () => {
+        createControlsPopup();
+      });
+  }
   function createPauseMenu() {
     if (document.getElementById("pauseOverlay")) return;
     if (typeof window.__uvzuSetPaused !== "function") return;
