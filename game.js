@@ -2141,6 +2141,7 @@ return;
             groundY: GROUND_Y - 4,
             jumpTimer: 0.35,
            webTimer: isSecondGroup ? 0.9 : 999
+});
 
 state.enemies.push({
   id: "t" + (++multiplayerEnemyIdCounter),
