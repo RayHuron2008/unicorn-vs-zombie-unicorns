@@ -2143,23 +2143,25 @@ return;
            webTimer: isSecondGroup ? 0.9 : 999
 });
 
-state.enemies.push({
-  id: "t" + (++multiplayerEnemyIdCounter),
-  x: W + 70,
-  y: GROUND_Y - 4,
-  w: 82,
-  h: 46,
-  face: -1,
-  type: isSecondGroup ? "webTarantula" : "tarantula",
-  hp: 4,
-  shootTimer: 0,
-  sep: 1,
-  vx: -145,
-  vy: 0,
-  groundY: GROUND_Y - 4,
-  jumpTimer: 0.55,
- webTimer: isSecondGroup ? 2.2 : 999
-});
+if (!(isSecondGroup && window.__uvzuCurrentDifficultyName === "Easy")) {
+  state.enemies.push({
+    id: "t" + (++multiplayerEnemyIdCounter),
+    x: W + 70,
+    y: GROUND_Y - 4,
+    w: 82,
+    h: 46,
+    face: -1,
+    type: isSecondGroup ? "webTarantula" : "tarantula",
+    hp: 4,
+    shootTimer: 0,
+    sep: 1,
+    vx: -145,
+    vy: 0,
+    groundY: GROUND_Y - 4,
+    jumpTimer: 0.55,
+    webTimer: isSecondGroup ? 2.2 : 999
+  });
+}
           state.finalSpawned += 1;
           state.finalSpawnTimer = 2.2;
         } else {
