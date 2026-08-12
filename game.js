@@ -2705,23 +2705,62 @@ state.mode = "talk";
           return;
         }
 
-        if (
-  window.__uvzuCurrentLevelCode === "RNBW1" &&
-  !(window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) &&
-  !(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
-) {
-  window.__uvzuCurrentLevelCode = "GRV2";
-  window.__uvzuLevelTheme = "graveyard";
+               const isOffline =
+          !(window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) &&
+          !(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest());
 
-  if (window.__uvzuUpdateLevelMusic) {
-    window.__uvzuUpdateLevelMusic();
-  }
+        if (isOffline) {
+          let prompt = document.getElementById("continueLevelPrompt");
 
-  fullRestart();
-  return;
-}
+          if (!prompt) {
+            prompt = document.createElement("div");
+            prompt.id = "continueLevelPrompt";
+            prompt.textContent = "PRESS A TO CONTINUE";
 
-state.mode = "victory";
+            prompt.style.position = "fixed";
+            prompt.style.left = "50%";
+            prompt.style.top = "50%";
+            prompt.style.transform = "translate(-50%, -50%)";
+            prompt.style.zIndex = "9999";
+            prompt.style.padding = "12px 20px";
+            prompt.style.borderRadius = "12px";
+            prompt.style.background = "rgba(0, 0, 0, 0.55)";
+            prompt.style.color = "white";
+            prompt.style.font = "900 18px system-ui, sans-serif";
+            prompt.style.textAlign = "center";
+            prompt.style.pointerEvents = "none";
+
+            document.body.appendChild(prompt);
+          }
+
+          if (input.a && !state.continuePressed) {
+            state.continuePressed = true;
+
+            prompt.remove();
+
+            if (window.__uvzuCurrentLevelCode === "RNBW1") {
+              window.__uvzuCurrentLevelCode = "GRV2";
+              window.__uvzuLevelTheme = "graveyard";
+
+              if (window.__uvzuUpdateLevelMusic) {
+                window.__uvzuUpdateLevelMusic();
+              }
+
+              fullRestart();
+              return;
+            }
+
+            state.mode = "victory";
+          }
+
+          if (!input.a) {
+            state.continuePressed = false;
+          }
+
+          return;
+        }
+
+        state.mode = "victory";
       }
     }
   }`
