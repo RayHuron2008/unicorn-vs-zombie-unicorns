@@ -2297,7 +2297,7 @@ return;
         player.x += dir.dx * speed * dt;
         player.y += dir.dy * speed * 0.72 * dt;
       }`,
-if (window.__uvzuCurrentLevelCode === "TOMB1") {
+`if (window.__uvzuCurrentLevelCode === "TOMB1") {
         player.x += dir.dx * 180 * dt;
         player.y += dir.dy * 180 * dt;
 
