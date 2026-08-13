@@ -3298,6 +3298,147 @@ state.mode = "talk";
         code,
         "drawBackground",
 `  function drawBackground() {
+if (window.__uvzuCurrentLevelCode === "TOMB1") {
+  // Floor
+  ctx.fillStyle = "#87966c";
+  ctx.fillRect(0, 0, W, H);
+
+  // Simple Game Boy Color-style floor tiles
+  ctx.strokeStyle = "#74835f";
+  ctx.lineWidth = 2;
+
+  for (let x = 70; x < W - 70; x += 48) {
+    ctx.beginPath();
+    ctx.moveTo(x, 72);
+    ctx.lineTo(x, H - 42);
+    ctx.stroke();
+  }
+
+  for (let y = 72; y < H - 42; y += 48) {
+    ctx.beginPath();
+    ctx.moveTo(70, y);
+    ctx.lineTo(W - 70, y);
+    ctx.stroke();
+  }
+
+  // Outer stone walls
+  ctx.fillStyle = "#475744";
+  ctx.fillRect(0, 0, W, 68);
+  ctx.fillRect(0, H - 42, W, 42);
+  ctx.fillRect(0, 0, 70, H);
+  ctx.fillRect(W - 70, 0, 70, H);
+
+  ctx.fillStyle = "#66785a";
+
+  // Wall stone blocks
+  for (let x = 4; x < W; x += 52) {
+    ctx.fillRect(x, 8, 46, 48);
+    ctx.fillRect(x, H - 36, 46, 28);
+  }
+
+  for (let y = 68; y < H - 42; y += 52) {
+    ctx.fillRect(8, y, 50, 46);
+    ctx.fillRect(W - 58, y, 50, 46);
+  }
+
+  function drawCasket(x, y, vertical) {
+    ctx.fillStyle = "#31283e";
+
+    if (vertical) {
+      ctx.fillRect(x - 22, y - 38, 44, 76);
+
+      ctx.strokeStyle = "#645575";
+      ctx.lineWidth = 5;
+      ctx.strokeRect(x - 22, y - 38, 44, 76);
+
+      // Human zombie inside
+      ctx.fillStyle = "#b8c88b";
+      ctx.fillRect(x - 10, y - 22, 20, 18);
+
+      ctx.fillStyle = "#202020";
+      ctx.fillRect(x - 6, y - 17, 4, 4);
+      ctx.fillRect(x + 3, y - 17, 4, 4);
+
+      ctx.fillStyle = "#776879";
+      ctx.fillRect(x - 10, y, 20, 25);
+    } else {
+      ctx.fillRect(x - 38, y - 22, 76, 44);
+
+      ctx.strokeStyle = "#645575";
+      ctx.lineWidth = 5;
+      ctx.strokeRect(x - 38, y - 22, 76, 44);
+
+      // Human zombie inside
+      ctx.fillStyle = "#b8c88b";
+      ctx.fillRect(x - 22, y - 10, 18, 20);
+
+      ctx.fillStyle = "#202020";
+      ctx.fillRect(x - 18, y - 6, 4, 4);
+      ctx.fillRect(x - 18, y + 3, 4, 4);
+
+      ctx.fillStyle = "#776879";
+      ctx.fillRect(x + 2, y - 10, 25, 20);
+    }
+  }
+
+  function drawBlankSign(x, y, vertical) {
+    ctx.fillStyle = "#a9a77b";
+
+    if (vertical) {
+      ctx.fillRect(x - 17, y - 30, 34, 60);
+      ctx.strokeStyle = "#454936";
+      ctx.strokeRect(x - 17, y - 30, 34, 60);
+    } else {
+      ctx.fillRect(x - 42, y - 17, 84, 34);
+      ctx.strokeStyle = "#454936";
+      ctx.strokeRect(x - 42, y - 17, 84, 34);
+    }
+  }
+
+  // TOP WALL
+  drawCasket(W * 0.30, 104, true);
+  drawCasket(W * 0.70, 104, true);
+  drawBlankSign(W / 2, 84, false);
+
+  // BOTTOM WALL
+  drawCasket(W * 0.30, H - 78, true);
+  drawCasket(W * 0.70, H - 78, true);
+  drawBlankSign(W / 2, H - 66, false);
+
+  // LEFT WALL
+  drawCasket(96, H * 0.34, true);
+  drawCasket(96, H * 0.67, true);
+  drawBlankSign(83, H / 2, true);
+
+  // RIGHT WALL
+  drawCasket(W - 96, H * 0.34, true);
+  drawCasket(W - 96, H * 0.67, true);
+  drawBlankSign(W - 83, H / 2, true);
+
+  // Tiny simple cobwebs
+  ctx.strokeStyle = "#d7dfc7";
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+  ctx.moveTo(70, 68);
+  ctx.lineTo(105, 68);
+  ctx.moveTo(70, 68);
+  ctx.lineTo(70, 103);
+  ctx.moveTo(70, 68);
+  ctx.lineTo(100, 98);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(W - 70, H - 42);
+  ctx.lineTo(W - 105, H - 42);
+  ctx.moveTo(W - 70, H - 42);
+  ctx.lineTo(W - 70, H - 77);
+  ctx.moveTo(W - 70, H - 42);
+  ctx.lineTo(W - 100, H - 72);
+  ctx.stroke();
+
+  return;
+}
        if (window.__uvzuLevelTheme === "graveyard") {
       const sky = ctx.createLinearGradient(0, 0, 0, H);
       sky.addColorStop(0, "#050814");
