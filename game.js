@@ -1688,9 +1688,9 @@
     music.play().catch(() => {});
   }`,
 `  function startMusic() {
-  if (
+ if (
   window.__uvzuLevelTheme === "graveyard" ||
-  window.__uvzuLevelTheme === "tomb"
+  window.__uvzuCurrentLevelCode === "TOMB1"
 ) {
       music.pause();
       music.currentTime = 0;
@@ -1706,9 +1706,9 @@
   };
 
   window.__uvzuStartMainMusic = function() {
-   if (
+  if (
   window.__uvzuLevelTheme !== "graveyard" &&
-  window.__uvzuLevelTheme !== "tomb"
+  window.__uvzuCurrentLevelCode !== "TOMB1"
 ) {
       music.play().catch(() => {});
     }
@@ -1719,7 +1719,7 @@
         code,
         "drawBackground",
 `  function drawBackground() {
-    if (window.__uvzuLevelTheme === "tomb") {
+if (window.__uvzuCurrentLevelCode === "TOMB1") {
       // Floor
       ctx.fillStyle = "#87966c";
       ctx.fillRect(0, 0, W, H);
@@ -2297,9 +2297,17 @@ return;
         player.x += dir.dx * speed * dt;
         player.y += dir.dy * speed * 0.72 * dt;
       }`,
-`if (window.__uvzuCurrentLevelCode === "TOMB1") {
+if (window.__uvzuCurrentLevelCode === "TOMB1") {
         player.x += dir.dx * 180 * dt;
         player.y += dir.dy * 180 * dt;
+
+        if (dir.dx !== 0 || dir.dy !== 0) {
+          if (Math.abs(dir.dx) > Math.abs(dir.dy)) {
+            player.tombDir = dir.dx > 0 ? "right" : "left";
+          } else {
+            player.tombDir = dir.dy > 0 ? "down" : "up";
+          }
+        }
       } else if (player.webbedTimer > 0) {
         player.dodgeTimer = 0;
         player.headTimer = 0;
@@ -2367,6 +2375,15 @@ return;
         // Simple top-down unicorn sprite
         ctx.save();
         ctx.translate(player.x, player.y);
+        const tombDir = player.tombDir || "up";
+
+        if (tombDir === "right") {
+          ctx.rotate(Math.PI / 2);
+        } else if (tombDir === "down") {
+          ctx.rotate(Math.PI);
+        } else if (tombDir === "left") {
+          ctx.rotate(-Math.PI / 2);
+        }
 
         ctx.fillStyle = "rgba(0,0,0,.20)";
         ctx.fillRect(-22, 16, 44, 7);
