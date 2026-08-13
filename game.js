@@ -64,18 +64,23 @@
     graveyardMusic.currentTime = 0;
   }
 
-   window.__uvzuUpdateLevelMusic = function() {
+      window.__uvzuUpdateLevelMusic = function() {
     if (window.__uvzuLevelTheme === "graveyard") {
       if (window.__uvzuStopMainMusic) {
         window.__uvzuStopMainMusic();
       }
 
       startGraveyardMusic();
+    } else if (window.__uvzuLevelTheme === "tomb") {
+      stopGraveyardMusic();
+
+      if (window.__uvzuStopMainMusic) {
+        window.__uvzuStopMainMusic();
+      }
     } else {
       stopGraveyardMusic();
     }
   };
-
   window.__uvzuAddGuestShotFlash = function(enemy) {
     const remote = window.__uvzuGetRemotePlayer
       ? window.__uvzuGetRemotePlayer()
@@ -1503,10 +1508,11 @@
         const typedLevelCode =
           singleLevelCodeInput.value.trim().toUpperCase();
 
-        if (
+               if (
           typedLevelCode &&
           typedLevelCode !== "RNBW1" &&
-          typedLevelCode !== "GRV2"
+          typedLevelCode !== "GRV2" &&
+          typedLevelCode !== "TOMB1"
         ) {
           alert("Unknown level code.");
           return;
@@ -1515,13 +1521,16 @@
         window.__uvzuCurrentLevelCode =
           typedLevelCode === "GRV2"
             ? "GRV2"
-            : "RNBW1";
+            : typedLevelCode === "TOMB1"
+              ? "TOMB1"
+              : "RNBW1";
 
         window.__uvzuLevelTheme =
           typedLevelCode === "GRV2"
             ? "graveyard"
-            : "rainbow";
-
+            : typedLevelCode === "TOMB1"
+              ? "tomb"
+              : "rainbow";
         if (window.__uvzuUpdateLevelMusic) {
           window.__uvzuUpdateLevelMusic();
         }
@@ -1679,7 +1688,10 @@
     music.play().catch(() => {});
   }`,
 `  function startMusic() {
-    if (window.__uvzuLevelTheme === "graveyard") {
+  if (
+  window.__uvzuLevelTheme === "graveyard" ||
+  window.__uvzuLevelTheme === "tomb"
+) {
       music.pause();
       music.currentTime = 0;
       return;
@@ -1694,7 +1706,10 @@
   };
 
   window.__uvzuStartMainMusic = function() {
-    if (window.__uvzuLevelTheme !== "graveyard") {
+   if (
+  window.__uvzuLevelTheme !== "graveyard" &&
+  window.__uvzuLevelTheme !== "tomb"
+) {
       music.play().catch(() => {});
     }
   };`
@@ -1704,6 +1719,147 @@
         code,
         "drawBackground",
 `  function drawBackground() {
+    if (window.__uvzuLevelTheme === "tomb") {
+      // Floor
+      ctx.fillStyle = "#87966c";
+      ctx.fillRect(0, 0, W, H);
+
+      // Simple Game Boy Color-style floor tiles
+      ctx.strokeStyle = "#74835f";
+      ctx.lineWidth = 2;
+
+      for (let x = 70; x < W - 70; x += 48) {
+        ctx.beginPath();
+        ctx.moveTo(x, 72);
+        ctx.lineTo(x, H - 42);
+        ctx.stroke();
+      }
+
+      for (let y = 72; y < H - 42; y += 48) {
+        ctx.beginPath();
+        ctx.moveTo(70, y);
+        ctx.lineTo(W - 70, y);
+        ctx.stroke();
+      }
+
+      // Outer stone walls
+      ctx.fillStyle = "#475744";
+      ctx.fillRect(0, 0, W, 68);
+      ctx.fillRect(0, H - 42, W, 42);
+      ctx.fillRect(0, 0, 70, H);
+      ctx.fillRect(W - 70, 0, 70, H);
+
+      ctx.fillStyle = "#66785a";
+
+      // Wall stone blocks
+      for (let x = 4; x < W; x += 52) {
+        ctx.fillRect(x, 8, 46, 48);
+        ctx.fillRect(x, H - 36, 46, 28);
+      }
+
+      for (let y = 68; y < H - 42; y += 52) {
+        ctx.fillRect(8, y, 50, 46);
+        ctx.fillRect(W - 58, y, 50, 46);
+      }
+
+      function drawCasket(x, y, vertical) {
+        ctx.fillStyle = "#31283e";
+
+        if (vertical) {
+          ctx.fillRect(x - 22, y - 38, 44, 76);
+
+          ctx.strokeStyle = "#645575";
+          ctx.lineWidth = 5;
+          ctx.strokeRect(x - 22, y - 38, 44, 76);
+
+          // Human zombie inside
+          ctx.fillStyle = "#b8c88b";
+          ctx.fillRect(x - 10, y - 22, 20, 18);
+
+          ctx.fillStyle = "#202020";
+          ctx.fillRect(x - 6, y - 17, 4, 4);
+          ctx.fillRect(x + 3, y - 17, 4, 4);
+
+          ctx.fillStyle = "#776879";
+          ctx.fillRect(x - 10, y, 20, 25);
+        } else {
+          ctx.fillRect(x - 38, y - 22, 76, 44);
+
+          ctx.strokeStyle = "#645575";
+          ctx.lineWidth = 5;
+          ctx.strokeRect(x - 38, y - 22, 76, 44);
+
+          // Human zombie inside
+          ctx.fillStyle = "#b8c88b";
+          ctx.fillRect(x - 22, y - 10, 18, 20);
+
+          ctx.fillStyle = "#202020";
+          ctx.fillRect(x - 18, y - 6, 4, 4);
+          ctx.fillRect(x - 18, y + 3, 4, 4);
+
+          ctx.fillStyle = "#776879";
+          ctx.fillRect(x + 2, y - 10, 25, 20);
+        }
+      }
+
+      function drawBlankSign(x, y, vertical) {
+        ctx.fillStyle = "#a9a77b";
+
+        if (vertical) {
+          ctx.fillRect(x - 17, y - 30, 34, 60);
+          ctx.strokeStyle = "#454936";
+          ctx.strokeRect(x - 17, y - 30, 34, 60);
+        } else {
+          ctx.fillRect(x - 42, y - 17, 84, 34);
+          ctx.strokeStyle = "#454936";
+          ctx.strokeRect(x - 42, y - 17, 84, 34);
+        }
+      }
+
+      // TOP WALL
+      drawCasket(W * 0.30, 104, true);
+      drawCasket(W * 0.70, 104, true);
+      drawBlankSign(W / 2, 84, false);
+
+      // BOTTOM WALL
+      drawCasket(W * 0.30, H - 78, true);
+      drawCasket(W * 0.70, H - 78, true);
+      drawBlankSign(W / 2, H - 66, false);
+
+      // LEFT WALL
+      drawCasket(96, H * 0.34, true);
+      drawCasket(96, H * 0.67, true);
+      drawBlankSign(83, H / 2, true);
+
+      // RIGHT WALL
+      drawCasket(W - 96, H * 0.34, true);
+      drawCasket(W - 96, H * 0.67, true);
+      drawBlankSign(W - 83, H / 2, true);
+
+      // Tiny simple cobwebs
+      ctx.strokeStyle = "#d7dfc7";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(70, 68);
+      ctx.lineTo(105, 68);
+      ctx.moveTo(70, 68);
+      ctx.lineTo(70, 103);
+      ctx.moveTo(70, 68);
+      ctx.lineTo(100, 98);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(W - 70, H - 42);
+      ctx.lineTo(W - 105, H - 42);
+      ctx.moveTo(W - 70, H - 42);
+      ctx.lineTo(W - 70, H - 77);
+      ctx.moveTo(W - 70, H - 42);
+      ctx.lineTo(W - 100, H - 72);
+      ctx.stroke();
+
+      return;
+    }
     if (window.__uvzuLevelTheme === "graveyard") {
       const sky = ctx.createLinearGradient(0, 0, 0, H);
       sky.addColorStop(0, "#071026");
@@ -2120,6 +2276,138 @@ return;
       } else if (!updateDodgeMovement(dt)) {
         player.x += dir.dx * speed * dt;
         player.y += dir.dy * speed * 0.72 * dt;
+      }`
+      );
+
+            // TOMB1: top-down walking test level
+      code = code.replace(
+`if (player.webbedTimer > 0) {
+  player.dodgeTimer = 0;
+  player.headTimer = 0;
+  player.actionLock = player.webbedTimer;
+
+  if (typeof player.webTrapX === "number") player.x = player.webTrapX;
+  if (typeof player.webTrapY === "number") player.y = player.webTrapY;
+
+  if (typeof dir !== "undefined") {
+    dir.dx = 0;
+    dir.dy = 0;
+  }
+      } else if (!updateDodgeMovement(dt)) {
+        player.x += dir.dx * speed * dt;
+        player.y += dir.dy * speed * 0.72 * dt;
+      }`,
+`if (window.__uvzuCurrentLevelCode === "TOMB1") {
+        player.x += dir.dx * 180 * dt;
+        player.y += dir.dy * 180 * dt;
+      } else if (player.webbedTimer > 0) {
+        player.dodgeTimer = 0;
+        player.headTimer = 0;
+        player.actionLock = player.webbedTimer;
+
+        if (typeof player.webTrapX === "number") player.x = player.webTrapX;
+        if (typeof player.webTrapY === "number") player.y = player.webTrapY;
+
+        if (typeof dir !== "undefined") {
+          dir.dx = 0;
+          dir.dy = 0;
+        }
+      } else if (!updateDodgeMovement(dt)) {
+        player.x += dir.dx * speed * dt;
+        player.y += dir.dy * speed * 0.72 * dt;
+      }`
+      );
+
+      code = code.replace(
+`      player.x = clamp(player.x, 25, W - 25);
+      player.y = clamp(player.y, MIN_Y, MAX_Y);
+
+      if (dir.dx !== 0 && player.dodgeTimer <= 0) {`,
+`      if (window.__uvzuCurrentLevelCode === "TOMB1") {
+        player.x = clamp(player.x, 86, W - 86);
+        player.y = clamp(player.y, 105, H - 78);
+      } else {
+        player.x = clamp(player.x, 25, W - 25);
+        player.y = clamp(player.y, MIN_Y, MAX_Y);
+      }
+
+      if (dir.dx !== 0 && player.dodgeTimer <= 0) {`
+      );
+
+      code = code.replace(
+`    if (state.mode === "play") {
+      state.time += dt;`,
+`    if (
+      state.mode === "play" &&
+      window.__uvzuCurrentLevelCode !== "TOMB1"
+    ) {
+      state.time += dt;`
+      );
+
+      code = code.replace(
+`    spawnEnemy("normal");
+  }
+
+  function safeLifeReset() {`,
+`    if (window.__uvzuCurrentLevelCode === "TOMB1") {
+      player.x = W / 2;
+      player.y = H * 0.72;
+      state.enemies.length = 0;
+    } else {
+      spawnEnemy("normal");
+    }
+  }
+
+  function safeLifeReset() {`
+      );
+
+      code = code.replace(
+`      drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);`,
+`      if (window.__uvzuCurrentLevelCode === "TOMB1") {
+        // Simple top-down unicorn sprite
+        ctx.save();
+        ctx.translate(player.x, player.y);
+
+        ctx.fillStyle = "rgba(0,0,0,.20)";
+        ctx.fillRect(-22, 16, 44, 7);
+
+        ctx.fillStyle = "#ff7fbd";
+        ctx.fillRect(-18, -18, 36, 38);
+
+        ctx.fillStyle = "#ff9dce";
+        ctx.fillRect(-14, -28, 28, 18);
+
+        ctx.fillStyle = "#ffe066";
+        ctx.fillRect(-3, -40, 6, 14);
+
+        const tombMane = [
+          "#ff4d6d",
+          "#ffa94d",
+          "#ffe066",
+          "#66ff66",
+          "#66d9ff",
+          "#b066ff"
+        ];
+
+        for (let i = 0; i < tombMane.length; i++) {
+          ctx.fillStyle = tombMane[i];
+          ctx.fillRect(-15 + i * 5, -23, 6, 9);
+        }
+
+        ctx.fillStyle = "#ff4da3";
+        ctx.fillRect(-14, 18, 8, 12);
+        ctx.fillRect(6, 18, 8, 12);
+
+        ctx.restore();
+      } else {
+        drawUnicorn(
+          player.x,
+          player.y,
+          player.face,
+          false,
+          player.ray > 0,
+          player.giant > 0
+        );
       }`
       );
       
