@@ -2347,7 +2347,7 @@ return;
   player.y = clamp(player.y, 105, H - 78);
 } else if (window.__uvzuCurrentLevelCode === "RNBW1") {
   player.x = clamp(player.x, 25, W - 25);
-  player.y = clamp(player.y, MIN_Y, H - 55);
+ player.y = clamp(player.y, H * 0.60, H - 20);
 } else {
   player.x = clamp(player.x, 25, W - 25);
   player.y = clamp(player.y, MIN_Y, MAX_Y);
