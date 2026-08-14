@@ -1505,6 +1505,16 @@
       btn.addEventListener("click", () => {
         const selected = btn.dataset.diff;
 
+        try {
+  const stage = document.getElementById("stage") || document.documentElement;
+
+  if (!document.fullscreenElement && stage.requestFullscreen) {
+    stage.requestFullscreen().catch(() => {});
+  }
+} catch (err) {
+  console.warn("Fullscreen failed:", err);
+}
+
         const typedLevelCode =
           singleLevelCodeInput.value.trim().toUpperCase();
 
