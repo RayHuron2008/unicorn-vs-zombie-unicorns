@@ -3835,11 +3835,18 @@ state.family.child.y = GROUND_Y - 12 - rise;
       ctx.fillRect(x, y, 3, 3);
     }
 
-    ctx.fillStyle = "#35c85f";
-    ctx.fillRect(0, GROUND_Y + 8, W, 22);
+ ctx.fillStyle = "#35c85f";
+ctx.fillRect(0, GROUND_Y + 8, W, H - (GROUND_Y + 8));
 
-    ctx.fillStyle = "#8a5a2f";
-    ctx.fillRect(0, GROUND_Y + 25, W, H - GROUND_Y);
+ctx.fillStyle = "rgba(255,255,255,.08)";
+for (let y = GROUND_Y + 18; y < H; y += 22) {
+  ctx.fillRect(0, y, W, 5);
+}
+
+ctx.fillStyle = "rgba(20,150,45,.10)";
+for (let y = GROUND_Y + 28; y < H; y += 28) {
+  ctx.fillRect(0, y, W, 7);
+}
   }`
       );
            
