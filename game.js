@@ -4309,6 +4309,200 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
       const replacementBoot = `  let last = performance.now();
   let gameStarted = false;
   let paused = false;
+  let tombReading = false;
+  let tombCurrentSign = null;
+  let tombAWasDown = false;
+  let tombBWasDown = false;
+  let tombIgnoredSign = null;
+
+  const tombSigns = [
+    {
+      id: "parents",
+      x: 0.50,
+      y: 0.10,
+      title: "Mother & Father",
+      text: "Here They Lie. May Their Union Continue From This World Into the Next and Back Again."
+    },
+    {
+      id: "samMary",
+      x: 0.135,
+      y: 0.49,
+      title: "My Brother and Sister-in-Law, Sam & Mary",
+      text: "You Were Always Thinking of Things. Inventing. Innovating. Truly a Power Couple. What Lies Beyond the Great Divide?"
+    },
+    {
+      id: "emmaJosephine",
+      x: 0.865,
+      y: 0.49,
+      title: "My Sisters, Emma & Josephine",
+      text: "Who Could Tell You Two Apart? The World Saw You as Twins. I Saw Your Uniqueness. I Wish I Had Gotten to Spend More Time With You Two. It's Not Fair That We Cannot Live Forever. I Will Right This Wrong."
+    },
+    {
+      id: "peterAlison",
+      x: 0.50,
+      y: 0.91,
+      title: "My Brother Peter & Sister-in-Law, Alison",
+      text: "I'll Finish It. I'll Finish What Our Family Started. We Will Rise Again and See the Light of Day, or the World Will Be Cursed."
+    }
+  ];
+
+  function removeTombPrompt() {
+    const prompt = document.getElementById("tombReadPrompt");
+    if (prompt) prompt.remove();
+  }
+
+  function removeTombWriting() {
+    const box = document.getElementById("tombWritingBox");
+    if (box) box.remove();
+  }
+
+  function showTombPrompt(sign) {
+    let prompt = document.getElementById("tombReadPrompt");
+
+    if (!prompt) {
+      prompt = document.createElement("div");
+      prompt.id = "tombReadPrompt";
+
+      prompt.style.position = "fixed";
+      prompt.style.left = "50%";
+      prompt.style.bottom = "145px";
+      prompt.style.transform = "translateX(-50%)";
+      prompt.style.zIndex = "9998";
+      prompt.style.padding = "10px 18px";
+      prompt.style.borderRadius = "10px";
+      prompt.style.background = "rgba(0,0,0,.72)";
+      prompt.style.border = "2px solid rgba(255,255,255,.65)";
+      prompt.style.color = "#fff";
+      prompt.style.font = "900 16px monospace";
+      prompt.style.textAlign = "center";
+      prompt.style.pointerEvents = "none";
+
+      document.body.appendChild(prompt);
+    }
+
+    prompt.textContent = "A READ     B IGNORE";
+  }
+
+  function showTombWriting(sign) {
+    removeTombPrompt();
+    removeTombWriting();
+
+    const box = document.createElement("div");
+    box.id = "tombWritingBox";
+
+    box.style.position = "fixed";
+    box.style.left = "50%";
+    box.style.top = "50%";
+    box.style.transform = "translate(-50%, -50%)";
+    box.style.zIndex = "9999";
+    box.style.width = "min(680px, 78vw)";
+    box.style.maxHeight = "70vh";
+    box.style.overflowY = "auto";
+    box.style.boxSizing = "border-box";
+    box.style.padding = "22px 26px";
+    box.style.borderRadius = "14px";
+    box.style.background = "rgba(20,18,16,.94)";
+    box.style.border = "4px solid #a5a477";
+    box.style.boxShadow = "0 8px 30px rgba(0,0,0,.7)";
+    box.style.color = "#eee7c8";
+    box.style.fontFamily = "Georgia, serif";
+    box.style.textAlign = "center";
+    box.style.pointerEvents = "none";
+
+    const title = document.createElement("div");
+    title.textContent = sign.title;
+    title.style.fontSize = "22px";
+    title.style.fontWeight = "900";
+    title.style.marginBottom = "16px";
+    title.style.color = "#d8d19b";
+
+    const writing = document.createElement("div");
+    writing.textContent = sign.text;
+    writing.style.fontSize = "19px";
+    writing.style.lineHeight = "1.5";
+
+    const close = document.createElement("div");
+    close.textContent = "B  CLOSE";
+    close.style.marginTop = "20px";
+    close.style.font = "900 15px monospace";
+    close.style.color = "#ffffff";
+
+    box.appendChild(title);
+    box.appendChild(writing);
+    box.appendChild(close);
+
+    document.body.appendChild(box);
+  }
+
+  function updateTombSigns() {
+    if (window.__uvzuCurrentLevelCode !== "TOMB1") {
+      tombReading = false;
+      tombCurrentSign = null;
+      tombIgnoredSign = null;
+      removeTombPrompt();
+      removeTombWriting();
+      tombAWasDown = !!input.a;
+      tombBWasDown = !!input.b;
+      return;
+    }
+
+    const aPressed = !!input.a && !tombAWasDown;
+    const bPressed = !!input.b && !tombBWasDown;
+
+    tombAWasDown = !!input.a;
+    tombBWasDown = !!input.b;
+
+    if (tombReading) {
+      if (bPressed) {
+        tombReading = false;
+        tombCurrentSign = null;
+        removeTombWriting();
+      }
+      return;
+    }
+
+    let nearest = null;
+    let nearestDistance = Infinity;
+
+    for (const sign of tombSigns) {
+      const sx = W * sign.x;
+      const sy = H * sign.y;
+      const dx = player.x - sx;
+      const dy = player.y - sy;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = sign;
+      }
+    }
+
+    if (!nearest || nearestDistance > 105) {
+      tombIgnoredSign = null;
+      removeTombPrompt();
+      return;
+    }
+
+    if (tombIgnoredSign === nearest.id) {
+      removeTombPrompt();
+      return;
+    }
+
+    showTombPrompt(nearest);
+
+    if (aPressed) {
+      tombReading = true;
+      tombCurrentSign = nearest;
+      showTombWriting(nearest);
+      return;
+    }
+
+    if (bPressed) {
+      tombIgnoredSign = nearest.id;
+      removeTombPrompt();
+    }
+  }
+  
 
   function applyDifficulty(name) {
   window.__uvzuCurrentDifficultyName = name;
@@ -4387,7 +4581,8 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
     }
 
     update(dt);
-    draw();
+updateTombSigns();
+draw();
     requestAnimationFrame(loop);
   }
 
