@@ -2480,6 +2480,12 @@ return;
         "state.spawnTimer = rand(0.75, 1.2);",
         "state.spawnTimer = rand(SPAWN_MIN, SPAWN_MAX);"
       );
+      code = code.replace(
+  "y: rand(MIN_Y + 8, MAX_Y),",
+  `y: window.__uvzuCurrentLevelCode === "RNBW1"
+    ? rand(H * 0.60 + 8, H - 20)
+    : rand(MIN_Y + 8, MAX_Y),`
+);
 
          code = code.replace(
 `        if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES) {`,
@@ -2653,6 +2659,14 @@ if (!(isSecondGroup && window.__uvzuCurrentDifficultyName === "Easy")) {
         "e.y += Math.sign(dy) * 70 * dt;",
         "e.y += Math.sign(dy) * ENEMY_Y_SPEED * dt;\n        }\n      }"
       );
+      code = code.replace(
+  "e.y = clamp(e.y, MIN_Y + 6, MAX_Y);",
+  `if (window.__uvzuCurrentLevelCode === "RNBW1") {
+    e.y = clamp(e.y, H * 0.60 + 6, H - 20);
+  } else {
+    e.y = clamp(e.y, MIN_Y + 6, MAX_Y);
+  }`
+);
                 code = code.replace(
 `    for (const e of state.enemies) {
       drawUnicorn(e.x, e.y, e.face, true, e.type === "ray", false);
