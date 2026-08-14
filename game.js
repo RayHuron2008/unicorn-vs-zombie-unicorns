@@ -1505,11 +1505,12 @@
       btn.addEventListener("click", () => {
         const selected = btn.dataset.diff;
 
-        try {
-  const stage = document.getElementById("stage") || document.documentElement;
-
-  if (!document.fullscreenElement && stage.requestFullscreen) {
-    stage.requestFullscreen().catch(() => {});
+      try {
+  if (
+    !document.fullscreenElement &&
+    document.documentElement.requestFullscreen
+  ) {
+    document.documentElement.requestFullscreen().catch(() => {});
   }
 } catch (err) {
   console.warn("Fullscreen failed:", err);
