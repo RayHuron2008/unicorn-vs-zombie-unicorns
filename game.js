@@ -3301,7 +3301,7 @@ state.mode = "talk";
 if (window.__uvzuCurrentLevelCode === "TOMB1") {
   if (!window.__uvzuTombBg) {
     const img = new Image();
-    img.src = "file_000000009ff8820da47211885b6b0c82.png?v=1";
+  img.src = "03966e71-8a53-4f2a-9a0a-cf3f0f4546b5.png?v=2";
     window.__uvzuTombBg = img;
   }
 
