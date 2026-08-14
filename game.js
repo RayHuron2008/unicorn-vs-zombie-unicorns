@@ -4615,8 +4615,15 @@ draw();
 
       code = code.slice(0, bootStart) + replacementBoot + code.slice(bootEnd);
 
-      const run = new Function(code + "\n//# sourceURL=graphics-v78.js");
-      run();
+code = code.replace(
+  "const MAX_Y = GROUND_Y;",
+  `const MAX_Y =
+    window.__uvzuCurrentLevelCode === "RNBW1"
+      ? H - 20
+      : GROUND_Y;`
+);
+
+const run = new Function(code + "\n//# sourceURL=graphics-v78.js");
 
       createTitleMenu();
     })
