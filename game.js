@@ -3506,21 +3506,35 @@ ctx.restore();
         }
       }
 
-          const stones = [
-        [70,  GROUND_Y - 42, 22, 30, false],
-        [136, GROUND_Y - 24, 18, 24, true],
-        [205, GROUND_Y - 50, 24, 32, false],
-        [286, GROUND_Y - 28, 18, 22, false],
+         const stones = [
+  // original upper cemetery
+  [70,  GROUND_Y - 42, 22, 30, false],
+  [136, GROUND_Y - 24, 18, 24, true],
+  [205, GROUND_Y - 50, 24, 32, false],
+  [286, GROUND_Y - 28, 18, 22, false],
+  [382, GROUND_Y - 58, 26, 36, true],
+  [470, GROUND_Y - 30, 20, 26, false],
+  [578, GROUND_Y - 52, 24, 30, false],
+  [672, GROUND_Y - 26, 18, 22, true],
+  [760, GROUND_Y - 46, 24, 32, false],
+  [846, GROUND_Y - 28, 20, 25, false],
 
-        [382, GROUND_Y - 58, 26, 36, true],
-        [470, GROUND_Y - 30, 20, 26, false],
+  // smaller graves filling the newly expanded lower cemetery
+  [55,  H - 88, 14, 19, false],
+  [122, H - 58, 13, 18, true],
+  [190, H - 92, 15, 20, false],
+  [258, H - 54, 12, 17, false],
+  [330, H - 82, 14, 18, true],
+  [405, H - 48, 12, 16, false],
 
-        // keep center lane more open around the angel
-        [578, GROUND_Y - 52, 24, 30, false],
-        [672, GROUND_Y - 26, 18, 22, true],
-        [760, GROUND_Y - 46, 24, 32, false],
-        [846, GROUND_Y - 28, 20, 25, false]
-      ];
+  // leave the lower center relatively open for the angel
+  [565, H - 78, 14, 19, false],
+  [635, H - 48, 12, 16, true],
+  [705, H - 88, 15, 20, false],
+  [775, H - 54, 13, 17, false],
+  [842, H - 82, 14, 19, true],
+  [910, H - 50, 12, 16, false]
+];
       for (const s of stones) {
         tombstone(s[0], s[1], s[2], s[3], s[4]);
       }
@@ -3552,9 +3566,14 @@ ctx.restore();
       fogCloud(W * 0.82, GROUND_Y + 20, 160, 46, 0.18);
 
       // lower heavier fog near the ground
-      fogCloud(W * 0.22, GROUND_Y + 42, 185, 44, 0.17);
-      fogCloud(W * 0.50, GROUND_Y + 48, 225, 52, 0.20);
-      fogCloud(W * 0.80, GROUND_Y + 44, 190, 44, 0.16);
+     fogCloud(W * 0.18, GROUND_Y + 42, 185, 44, 0.17);
+fogCloud(W * 0.48, GROUND_Y + 48, 225, 52, 0.20);
+fogCloud(W * 0.80, GROUND_Y + 44, 190, 44, 0.16);
+
+fogCloud(W * 0.12, H - 58, 170, 42, 0.14);
+fogCloud(W * 0.38, H - 42, 210, 48, 0.17);
+fogCloud(W * 0.66, H - 54, 205, 45, 0.16);
+fogCloud(W * 0.90, H - 38, 150, 38, 0.13);
 
       // soft base haze so it all blends together
            const baseFog = ctx.createLinearGradient(0, GROUND_Y - 14, 0, GROUND_Y + 64);
@@ -3677,7 +3696,7 @@ state.family.child.y = GROUND_Y - 12 - rise;
       }
            // center angel statue pedestal
       const ax = W / 2;
-      const ay = GROUND_Y + 4;
+   const ay = H - 8;
 
       // faint moonlit glow behind statue
       const angelGlow = ctx.createRadialGradient(ax, ay - 82, 10, ax, ay - 82, 74);
