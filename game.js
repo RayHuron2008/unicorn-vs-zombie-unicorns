@@ -3852,23 +3852,7 @@ state.family.child.y = GROUND_Y - 12 - rise;
       ctx.fillRect(x, y, 3, 3);
     }
 
-const grassTop = GROUND_Y - 6;
 
-ctx.fillStyle = "#63d85f";
-ctx.fillRect(0, grassTop, W, H - grassTop);
-
-ctx.fillStyle = "#79e86e";
-ctx.fillRect(0, grassTop, W, 10);
-
-ctx.fillStyle = "rgba(255,255,255,.08)";
-for (let y = grassTop + 12; y < H; y += 20) {
-  ctx.fillRect(0, y, W, 4);
-}
-
-ctx.fillStyle = "rgba(50,185,65,.12)";
-for (let y = grassTop + 20; y < H; y += 24) {
-  ctx.fillRect(0, y, W, 6);
-}
   }`
       );
            
