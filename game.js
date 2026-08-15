@@ -3852,17 +3852,22 @@ state.family.child.y = GROUND_Y - 12 - rise;
       ctx.fillRect(x, y, 3, 3);
     }
 
- ctx.fillStyle = "#35c85f";
-ctx.fillRect(0, GROUND_Y + 8, W, H - (GROUND_Y + 8));
+const grassTop = GROUND_Y - 6;
+
+ctx.fillStyle = "#63d85f";
+ctx.fillRect(0, grassTop, W, H - grassTop);
+
+ctx.fillStyle = "#79e86e";
+ctx.fillRect(0, grassTop, W, 10);
 
 ctx.fillStyle = "rgba(255,255,255,.08)";
-for (let y = GROUND_Y + 18; y < H; y += 22) {
-  ctx.fillRect(0, y, W, 5);
+for (let y = grassTop + 12; y < H; y += 20) {
+  ctx.fillRect(0, y, W, 4);
 }
 
-ctx.fillStyle = "rgba(20,150,45,.10)";
-for (let y = GROUND_Y + 28; y < H; y += 28) {
-  ctx.fillRect(0, y, W, 7);
+ctx.fillStyle = "rgba(50,185,65,.12)";
+for (let y = grassTop + 20; y < H; y += 24) {
+  ctx.fillRect(0, y, W, 6);
 }
   }`
       );
