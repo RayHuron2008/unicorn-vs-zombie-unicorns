@@ -4624,7 +4624,8 @@ code = code.replace(
 );
 
 const run = new Function(code + "\n//# sourceURL=graphics-v78.js");
-
+run();
+      
       createTitleMenu();
     })
     .catch(showLoadError);
