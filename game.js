@@ -2342,7 +2342,7 @@ return;
       player.y = clamp(player.y, MIN_Y, MAX_Y);
 
       if (dir.dx !== 0 && player.dodgeTimer <= 0) {`,
-`   `     if (window.__uvzuCurrentLevelCode === "TOMB1") {
+`     if (window.__uvzuCurrentLevelCode === "TOMB1") {
   player.x = clamp(player.x, 86, W - 86);
   player.y = clamp(player.y, 105, H - 78);
 } else if (
