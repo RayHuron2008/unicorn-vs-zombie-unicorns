@@ -2434,46 +2434,109 @@ code = code.replace(
         ctx.translate(player.x, player.y);
         const tombDir = player.tombDir || "up";
 
-                      if (tombDir === "right") {
-          ctx.rotate(Math.PI / 4);
-          ctx.scale(1, 0.78);
-        } else if (tombDir === "down") {
-          ctx.scale(1, 0.72);
-          ctx.translate(0, 8);
-        } else if (tombDir === "left") {
-          ctx.rotate(-Math.PI / 4);
-          ctx.scale(1, 0.78);
+                            const sideView =
+          tombDir === "left" || tombDir === "right";
+
+        if (sideView) {
+          if (tombDir === "left") {
+            ctx.scale(-1, 1);
+          }
+
+          // shadow
+          ctx.fillStyle = "rgba(0,0,0,.20)";
+          ctx.fillRect(-24, 17, 48, 6);
+
+          // legs
+          ctx.fillStyle = "#ff4da3";
+          ctx.fillRect(-14, 5, 7, 16);
+          ctx.fillRect(8, 5, 7, 16);
+
+          // body - horizontal side profile
+          ctx.fillStyle = "#ff7fbd";
+          ctx.fillRect(-22, -13, 38, 22);
+
+          // neck
+          ctx.fillStyle = "#ff7fbd";
+          ctx.fillRect(10, -26, 10, 20);
+
+          // head facing right
+          ctx.fillStyle = "#ff9dce";
+          ctx.fillRect(14, -34, 24, 18);
+
+          // muzzle
+          ctx.fillStyle = "#ffc2df";
+          ctx.fillRect(32, -28, 10, 8);
+
+          // eye
+          ctx.fillStyle = "#222";
+          ctx.fillRect(29, -31, 3, 3);
+
+          // horn
+          ctx.fillStyle = "#ffe066";
+          ctx.beginPath();
+          ctx.moveTo(23, -34);
+          ctx.lineTo(30, -48);
+          ctx.lineTo(28, -33);
+          ctx.closePath();
+          ctx.fill();
+
+          const tombMane = [
+            "#ff4d6d",
+            "#ffa94d",
+            "#ffe066",
+            "#66ff66",
+            "#66d9ff",
+            "#b066ff"
+          ];
+
+          // mane down neck
+          for (let i = 0; i < tombMane.length; i++) {
+            ctx.fillStyle = tombMane[i];
+            ctx.fillRect(8 - i * 3, -27 + i * 4, 7, 6);
+          }
+
+          // rainbow tail
+          for (let i = 0; i < tombMane.length; i++) {
+            ctx.fillStyle = tombMane[i];
+            ctx.fillRect(-28 - i * 2, -9 + i * 3, 10, 4);
+          }
+
+        } else {
+          if (tombDir === "down") {
+            ctx.scale(1, 0.72);
+            ctx.translate(0, 8);
+          }
+
+          ctx.fillStyle = "rgba(0,0,0,.20)";
+          ctx.fillRect(-22, 16, 44, 7);
+
+          ctx.fillStyle = "#ff7fbd";
+          ctx.fillRect(-18, -18, 36, 38);
+
+          ctx.fillStyle = "#ff9dce";
+          ctx.fillRect(-14, -28, 28, 18);
+
+          ctx.fillStyle = "#ffe066";
+          ctx.fillRect(-3, -40, 6, 14);
+
+          const tombMane = [
+            "#ff4d6d",
+            "#ffa94d",
+            "#ffe066",
+            "#66ff66",
+            "#66d9ff",
+            "#b066ff"
+          ];
+
+          for (let i = 0; i < tombMane.length; i++) {
+            ctx.fillStyle = tombMane[i];
+            ctx.fillRect(-15 + i * 5, -23, 6, 9);
+          }
+
+          ctx.fillStyle = "#ff4da3";
+          ctx.fillRect(-14, 18, 8, 12);
+          ctx.fillRect(6, 18, 8, 12);
         }
-
-        ctx.fillStyle = "rgba(0,0,0,.20)";
-        ctx.fillRect(-22, 16, 44, 7);
-
-        ctx.fillStyle = "#ff7fbd";
-        ctx.fillRect(-18, -18, 36, 38);
-
-        ctx.fillStyle = "#ff9dce";
-        ctx.fillRect(-14, -28, 28, 18);
-
-        ctx.fillStyle = "#ffe066";
-        ctx.fillRect(-3, -40, 6, 14);
-
-        const tombMane = [
-          "#ff4d6d",
-          "#ffa94d",
-          "#ffe066",
-          "#66ff66",
-          "#66d9ff",
-          "#b066ff"
-        ];
-
-        for (let i = 0; i < tombMane.length; i++) {
-          ctx.fillStyle = tombMane[i];
-          ctx.fillRect(-15 + i * 5, -23, 6, 9);
-        }
-
-        ctx.fillStyle = "#ff4da3";
-        ctx.fillRect(-14, 18, 8, 12);
-        ctx.fillRect(6, 18, 8, 12);
 
         ctx.restore();
       } else {
