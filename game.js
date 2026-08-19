@@ -1496,25 +1496,27 @@
       cleanCodeInput(singleLevelCodeInput, 5, false);
     });
 
-    playBtn.addEventListener("click", () => {
-      difficultyRow.style.display = "flex";
-      playBtn.style.display = "none";
-    });
+   playBtn.addEventListener("click", () => {
+  try {
+    if (
+      !document.fullscreenElement &&
+      document.documentElement.requestFullscreen
+    ) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  } catch (err) {
+    console.warn("Fullscreen failed:", err);
+  }
+
+  difficultyRow.style.display = "flex";
+  playBtn.style.display = "none";
+});
 
     diffButtons.forEach((btn) => {
       btn.addEventListener("click", () => {
         const selected = btn.dataset.diff;
 
-      try {
-  if (
-    !document.fullscreenElement &&
-    document.documentElement.requestFullscreen
-  ) {
-    document.documentElement.requestFullscreen().catch(() => {});
-  }
-} catch (err) {
-  console.warn("Fullscreen failed:", err);
-}
+    
 
         const typedLevelCode =
           singleLevelCodeInput.value.trim().toUpperCase();
