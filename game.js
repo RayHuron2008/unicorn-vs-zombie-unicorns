@@ -2434,13 +2434,15 @@ code = code.replace(
         ctx.translate(player.x, player.y);
         const tombDir = player.tombDir || "up";
 
-               if (tombDir === "right") {
-          ctx.rotate(Math.PI / 2);
+                      if (tombDir === "right") {
+          ctx.rotate(Math.PI / 4);
+          ctx.scale(1, 0.78);
         } else if (tombDir === "down") {
           ctx.scale(1, 0.72);
           ctx.translate(0, 8);
         } else if (tombDir === "left") {
-          ctx.rotate(-Math.PI / 2);
+          ctx.rotate(-Math.PI / 4);
+          ctx.scale(1, 0.78);
         }
 
         ctx.fillStyle = "rgba(0,0,0,.20)";
