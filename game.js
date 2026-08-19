@@ -2426,205 +2426,51 @@ code = code.replace(
   function safeLifeReset() {`
       );
 
-      code = code.replace(
+           code = code.replace(
 `      drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);`,
 `      if (window.__uvzuCurrentLevelCode === "TOMB1") {
-        // Pokemon-style 3/4 view unicorn sprite
+        // Simple top-down unicorn sprite
         ctx.save();
         ctx.translate(player.x, player.y);
+        const tombDir = player.tombDir || "up";
 
-        const tombDir = player.tombDir || "down";
-        const facingSide =
-          tombDir === "left" || tombDir === "right";
-
-        if (tombDir === "left") {
-          ctx.scale(-1, 1);
+        if (tombDir === "right") {
+          ctx.rotate(Math.PI / 2);
+        } else if (tombDir === "down") {
+          ctx.rotate(Math.PI);
+        } else if (tombDir === "left") {
+          ctx.rotate(-Math.PI / 2);
         }
 
-        // ground shadow
-        ctx.fillStyle = "rgba(0,0,0,.22)";
-        ctx.beginPath();
-        ctx.ellipse(0, 15, 20, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.fillStyle = "rgba(0,0,0,.20)";
+        ctx.fillRect(-22, 16, 44, 7);
 
-        if (facingSide) {
-          // SIDE / 3-QUARTER VIEW
+        ctx.fillStyle = "#ff7fbd";
+        ctx.fillRect(-18, -18, 36, 38);
 
-          // rear legs
-          ctx.fillStyle = "#e85a9f";
-          ctx.fillRect(-14, 5, 7, 15);
-          ctx.fillRect(8, 5, 7, 15);
+        ctx.fillStyle = "#ff9dce";
+        ctx.fillRect(-14, -28, 28, 18);
 
-          // body
-          ctx.fillStyle = "#ff7fbd";
-          ctx.beginPath();
-          ctx.ellipse(-2, -3, 22, 15, 0, 0, Math.PI * 2);
-          ctx.fill();
+        ctx.fillStyle = "#ffe066";
+        ctx.fillRect(-3, -40, 6, 14);
 
-          // chest / neck
-          ctx.fillRect(10, -18, 11, 20);
+        const tombMane = [
+          "#ff4d6d",
+          "#ffa94d",
+          "#ffe066",
+          "#66ff66",
+          "#66d9ff",
+          "#b066ff"
+        ];
 
-          // head
-          ctx.fillStyle = "#ff9dce";
-          ctx.beginPath();
-          ctx.ellipse(18, -23, 14, 12, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          // muzzle
-          ctx.fillStyle = "#ffc2df";
-          ctx.fillRect(24, -22, 10, 7);
-
-          // eye
-          ctx.fillStyle = "#222";
-          ctx.fillRect(21, -27, 3, 3);
-
-          // horn
-          ctx.fillStyle = "#ffe066";
-          ctx.beginPath();
-          ctx.moveTo(18, -34);
-          ctx.lineTo(24, -48);
-          ctx.lineTo(23, -32);
-          ctx.closePath();
-          ctx.fill();
-
-          // ear
-          ctx.fillStyle = "#ff7fbd";
-          ctx.beginPath();
-          ctx.moveTo(10, -32);
-          ctx.lineTo(7, -42);
-          ctx.lineTo(16, -34);
-          ctx.closePath();
-          ctx.fill();
-
-          // rainbow mane down back of neck
-          const tombMane = [
-            "#ff4d6d",
-            "#ffa94d",
-            "#ffe066",
-            "#66ff66",
-            "#66d9ff",
-            "#b066ff"
-          ];
-
-          for (let i = 0; i < tombMane.length; i++) {
-            ctx.fillStyle = tombMane[i];
-            ctx.fillRect(
-              5 - i * 3,
-              -29 + i * 5,
-              7,
-              7
-            );
-          }
-
-          // tail
-          for (let i = 0; i < tombMane.length; i++) {
-            ctx.fillStyle = tombMane[i];
-            ctx.fillRect(
-              -27 - i * 2,
-              -8 + i * 3,
-              10,
-              4
-            );
-          }
-
-        } else {
-          // FRONT / BACK 3-QUARTER VIEW
-
-          const lookingUp = tombDir === "up";
-
-          // legs
-          ctx.fillStyle = "#e85a9f";
-          ctx.fillRect(-13, 4, 7, 17);
-          ctx.fillRect(6, 4, 7, 17);
-
-          // body
-          ctx.fillStyle = "#ff7fbd";
-          ctx.beginPath();
-          ctx.ellipse(0, -3, 19, 18, 0, 0, Math.PI * 2);
-          ctx.fill();
-
-          // head sits higher instead of directly overhead
-          ctx.fillStyle = "#ff9dce";
-          ctx.beginPath();
-          ctx.ellipse(
-            0,
-            lookingUp ? -23 : -25,
-            15,
-            13,
-            0,
-            0,
-            Math.PI * 2
-          );
-          ctx.fill();
-
-          // ears
-          ctx.fillStyle = "#ff7fbd";
-
-          ctx.beginPath();
-          ctx.moveTo(-10, -32);
-          ctx.lineTo(-14, -43);
-          ctx.lineTo(-4, -34);
-          ctx.closePath();
-          ctx.fill();
-
-          ctx.beginPath();
-          ctx.moveTo(10, -32);
-          ctx.lineTo(14, -43);
-          ctx.lineTo(4, -34);
-          ctx.closePath();
-          ctx.fill();
-
-          // horn
-          ctx.fillStyle = "#ffe066";
-          ctx.beginPath();
-          ctx.moveTo(-3, -36);
-          ctx.lineTo(0, -51);
-          ctx.lineTo(4, -36);
-          ctx.closePath();
-          ctx.fill();
-
-          const tombMane = [
-            "#ff4d6d",
-            "#ffa94d",
-            "#ffe066",
-            "#66ff66",
-            "#66d9ff",
-            "#b066ff"
-          ];
-
-          if (lookingUp) {
-            // mane visible down the back
-            for (let i = 0; i < tombMane.length; i++) {
-              ctx.fillStyle = tombMane[i];
-              ctx.fillRect(
-                -15 + i * 5,
-                -21,
-                6,
-                9
-              );
-            }
-          } else {
-            // face
-            ctx.fillStyle = "#222";
-            ctx.fillRect(-8, -27, 3, 3);
-            ctx.fillRect(5, -27, 3, 3);
-
-            // muzzle
-            ctx.fillStyle = "#ffc2df";
-            ctx.fillRect(-8, -20, 16, 6);
-
-            // mane visible behind head
-            for (let i = 0; i < tombMane.length; i++) {
-              ctx.fillStyle = tombMane[i];
-              ctx.fillRect(
-                -17 + i * 6,
-                -35,
-                7,
-                7
-              );
-            }
-          }
+        for (let i = 0; i < tombMane.length; i++) {
+          ctx.fillStyle = tombMane[i];
+          ctx.fillRect(-15 + i * 5, -23, 6, 9);
         }
+
+        ctx.fillStyle = "#ff4da3";
+        ctx.fillRect(-14, 18, 8, 12);
+        ctx.fillRect(6, 18, 8, 12);
 
         ctx.restore();
       } else {
