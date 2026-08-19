@@ -3402,14 +3402,14 @@ if (window.__uvzuCurrentLevelCode === "TOMB1") {
       ctx.closePath();
       ctx.fill();
 
-      // big playable cemetery ground, same height feel as Level 1
-      const graveGround = ctx.createLinearGradient(0, H * 0.56, 0, H);
-      graveGround.addColorStop(0, "#304d35");
-      graveGround.addColorStop(0.35, "#263d2f");
-      graveGround.addColorStop(0.72, "#202923");
-      graveGround.addColorStop(1, "#17191d");
-      ctx.fillStyle = graveGround;
-      ctx.fillRect(0, H * 0.56, W, H * 0.44);
+      // continuous cemetery ground all the way to the bottom
+const graveGround = ctx.createLinearGradient(0, H * 0.56, 0, H);
+graveGround.addColorStop(0, "#304d35");
+graveGround.addColorStop(0.45, "#2c4632");
+graveGround.addColorStop(0.75, "#29422f");
+graveGround.addColorStop(1, "#263d2f");
+ctx.fillStyle = graveGround;
+ctx.fillRect(0, H * 0.56, W, H - H * 0.56);
 
       // darker rolling cemetery grass lines
       for (let i = 0; i < 8; i++) {
