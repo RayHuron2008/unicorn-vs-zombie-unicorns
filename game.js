@@ -2342,17 +2342,19 @@ return;
       player.y = clamp(player.y, MIN_Y, MAX_Y);
 
       if (dir.dx !== 0 && player.dodgeTimer <= 0) {`,
-`     if (window.__uvzuCurrentLevelCode === "TOMB1") {
+`   `     if (window.__uvzuCurrentLevelCode === "TOMB1") {
   player.x = clamp(player.x, 86, W - 86);
   player.y = clamp(player.y, 105, H - 78);
-} else if (window.__uvzuCurrentLevelCode === "RNBW1") {
+} else if (
+  window.__uvzuCurrentLevelCode === "RNBW1" ||
+  window.__uvzuCurrentLevelCode === "GRV2"
+) {
   player.x = clamp(player.x, 25, W - 25);
- player.y = clamp(player.y, H * 0.60, H - 20);
+  player.y = clamp(player.y, H * 0.60, H - 20);
 } else {
   player.x = clamp(player.x, 25, W - 25);
   player.y = clamp(player.y, MIN_Y, MAX_Y);
 }
-
       if (dir.dx !== 0 && player.dodgeTimer <= 0) {`
       );
 
@@ -2482,7 +2484,10 @@ return;
       );
       code = code.replace(
   "y: rand(MIN_Y + 8, MAX_Y),",
-  `y: window.__uvzuCurrentLevelCode === "RNBW1"
+ `y: (
+    window.__uvzuCurrentLevelCode === "RNBW1" ||
+    window.__uvzuCurrentLevelCode === "GRV2"
+  )
     ? rand(H * 0.60 + 8, H - 20)
     : rand(MIN_Y + 8, MAX_Y),`
 );
@@ -2661,7 +2666,10 @@ if (!(isSecondGroup && window.__uvzuCurrentDifficultyName === "Easy")) {
       );
       code = code.replace(
   "e.y = clamp(e.y, MIN_Y + 6, MAX_Y);",
-  `if (window.__uvzuCurrentLevelCode === "RNBW1") {
+  `if (
+    window.__uvzuCurrentLevelCode === "RNBW1" ||
+    window.__uvzuCurrentLevelCode === "GRV2"
+  ) {
     e.y = clamp(e.y, H * 0.60 + 6, H - 20);
   } else {
     e.y = clamp(e.y, MIN_Y + 6, MAX_Y);
