@@ -2428,7 +2428,7 @@ code = code.replace(
 
       code = code.replace(
 `      drawUnicorn(player.x, player.y, player.face, false, player.ray > 0, player.giant > 0);`,
-`    `      if (window.__uvzuCurrentLevelCode === "TOMB1") {
+`      if (window.__uvzuCurrentLevelCode === "TOMB1") {
         // Pokemon-style 3/4 view unicorn sprite
         ctx.save();
         ctx.translate(player.x, player.y);
