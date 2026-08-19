@@ -3768,26 +3768,7 @@ state.family.child.y = GROUND_Y - 12 - rise;
       ctx.fillRect(ax - 18, ay - 34, 36, 6);
 
      
-      // solid ground
-      const dirt = ctx.createLinearGradient(0, GROUND_Y + 12, 0, H);
-      dirt.addColorStop(0, "#2f5d3f");
-      dirt.addColorStop(0.18, "#264232");
-      dirt.addColorStop(0.55, "#1f2523");
-      dirt.addColorStop(1, "#17191d");
-      ctx.fillStyle = dirt;
-      ctx.fillRect(0, GROUND_Y + 8, W, H - (GROUND_Y + 8));
 
-      // top grass lip
-      ctx.fillStyle = "#447c4e";
-      ctx.fillRect(0, GROUND_Y + 6, W, 10);
-
-      ctx.strokeStyle = "rgba(20,35,22,.35)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(0, GROUND_Y + 18);
-      ctx.quadraticCurveTo(W * 0.24, GROUND_Y + 26, W * 0.5, GROUND_Y + 16);
-      ctx.quadraticCurveTo(W * 0.74, GROUND_Y + 8, W, GROUND_Y + 20);
-      ctx.stroke();
 
            return;
     }
