@@ -2291,7 +2291,46 @@ return;
         player.y += dir.dy * speed * 0.72 * dt;
       }`
       );
+      
+// Expand dash target into the full Rainbow / Graveyard playfield
+code = code.replace(
+`    targetX = clamp(targetX, 25, W - 25);
+    targetY = clamp(targetY, MIN_Y, MAX_Y);
 
+    return { x: targetX, y: targetY };`,
+`    targetX = clamp(targetX, 25, W - 25);
+
+    if (
+      window.__uvzuCurrentLevelCode === "RNBW1" ||
+      window.__uvzuCurrentLevelCode === "GRV2"
+    ) {
+      targetY = clamp(targetY, H * 0.60, H - 20);
+    } else {
+      targetY = clamp(targetY, MIN_Y, MAX_Y);
+    }
+
+    return { x: targetX, y: targetY };`
+);
+
+// Expand movement while the dash animation is happening
+code = code.replace(
+`    player.x = clamp(player.x, 25, W - 25);
+    player.y = clamp(player.y, MIN_Y, MAX_Y);
+
+    player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);`,
+`    player.x = clamp(player.x, 25, W - 25);
+
+    if (
+      window.__uvzuCurrentLevelCode === "RNBW1" ||
+      window.__uvzuCurrentLevelCode === "GRV2"
+    ) {
+      player.y = clamp(player.y, H * 0.60, H - 20);
+    } else {
+      player.y = clamp(player.y, MIN_Y, MAX_Y);
+    }
+
+    player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);`
+);
             // TOMB1: top-down walking test level
       code = code.replace(
 `if (player.webbedTimer > 0) {
