@@ -2523,7 +2523,6 @@ code = code.replace(
       4
     );
   }
-}
 
         } else {
           if (tombDir === "down") {
