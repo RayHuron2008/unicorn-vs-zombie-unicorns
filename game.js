@@ -2470,59 +2470,63 @@ code = code.replace(
          if (tombDir === "down") {
   // DOWN-FACING VIEW
 
-  // back legs
+  // rear legs
   ctx.fillStyle = "#e74392";
-  ctx.fillRect(-16, -4, 7, 15);
-  ctx.fillRect(9, -4, 7, 15);
+  ctx.fillRect(-15, -2, 7, 14);
+  ctx.fillRect(8, -2, 7, 14);
 
-  // body sits behind the head
+  // body
   ctx.fillStyle = "#ff75b9";
-  ctx.fillRect(-18, -13, 36, 27);
+  ctx.fillRect(-18, -12, 36, 24);
 
   // body highlight
   ctx.fillStyle = "#ff96c9";
-  ctx.fillRect(-11, 1, 22, 8);
+  ctx.fillRect(-11, 0, 22, 8);
 
   // front legs
   ctx.fillStyle = "#ff5aaa";
-  ctx.fillRect(-14, 9, 8, 16);
-  ctx.fillRect(6, 9, 8, 16);
+  ctx.fillRect(-13, 10, 8, 15);
+  ctx.fillRect(5, 10, 8, 15);
 
-  // head is LOWER, showing direction
+  // head lower than body so it clearly reads "down"
   ctx.fillStyle = "#ff8fc7";
-  ctx.fillRect(-16, 10, 32, 20);
+  ctx.fillRect(-15, 9, 30, 19);
 
   // ears
   ctx.fillStyle = "#ff75b9";
-  ctx.fillRect(-18, 12, 6, 8);
-  ctx.fillRect(12, 12, 6, 8);
+  ctx.fillRect(-16, 10, 5, 8);
+  ctx.fillRect(11, 10, 5, 8);
 
   // eyes
   ctx.fillStyle = "#281b27";
-  ctx.fillRect(-9, 19, 3, 3);
-  ctx.fillRect(6, 19, 3, 3);
+  ctx.fillRect(-8, 17, 3, 3);
+  ctx.fillRect(5, 17, 3, 3);
 
-  // muzzle projects downward
+  // muzzle
   ctx.fillStyle = "#ffb1d7";
-  ctx.fillRect(-9, 25, 18, 9);
+  ctx.fillRect(-8, 23, 16, 8);
 
-  // horn points DOWN
+  // little tongue for goofy charm
+  ctx.fillStyle = "#ff5a8a";
+  ctx.fillRect(4, 29, 5, 3);
+
+  // horn pointing downward
   ctx.fillStyle = "#ffe36b";
   ctx.beginPath();
-  ctx.moveTo(-3, 30);
-  ctx.lineTo(0, 44);
-  ctx.lineTo(4, 30);
+  ctx.moveTo(-3, 28);
+  ctx.lineTo(0, 41);
+  ctx.lineTo(4, 28);
   ctx.closePath();
   ctx.fill();
 
-  // rainbow mane visible behind the head
+  // mane sits behind the head
   for (let i = 0; i < tombMane.length; i++) {
     ctx.fillStyle = tombMane[i];
     ctx.fillRect(
-      -18 + i * 6,
+      -17 + i * 6,
+      5,
       6,
-      6,
-      6
+      5
     );
   }
 
@@ -2557,16 +2561,16 @@ code = code.replace(
             ctx.fill();
 
             // rainbow mane down the back
-            for (let i = 0; i < tombMane.length; i++) {
-              ctx.fillStyle = tombMane[i];
-              ctx.fillRect(-12 + i * 4, -17 + i * 3, 7, 6);
-            }
+           for (let i = 0; i < tombMane.length; i++) {
+  ctx.fillStyle = tombMane[i];
+  ctx.fillRect(-4, -18 + i * 5, 8, 5);
+}
 
             // tail
-            for (let i = 0; i < tombMane.length; i++) {
-              ctx.fillStyle = tombMane[i];
-              ctx.fillRect(-10 + i * 3, 8 + i * 2, 8, 5);
-            }
+           for (let i = 0; i < tombMane.length; i++) {
+  ctx.fillStyle = tombMane[i];
+  ctx.fillRect(-4, 8 + i * 3, 8, 4);
+}
           }
         }
 
