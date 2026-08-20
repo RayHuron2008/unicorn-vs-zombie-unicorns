@@ -2437,93 +2437,22 @@ code = code.replace(
                             const sideView =
           tombDir === "left" || tombDir === "right";
 
-         if (sideView) {
-  if (tombDir === "left") {
-    ctx.scale(-1, 1);
-  }
+       if (sideView) {
+  const tombFace = tombDir === "left" ? -1 : 1;
 
-  // Shadow
-  ctx.fillStyle = "rgba(0,0,0,.20)";
-  ctx.fillRect(-28, 18, 58, 6);
+  ctx.restore();
 
-  // Far legs
-  ctx.fillStyle = "#e74392";
-  ctx.fillRect(-19, 5, 7, 16);
-  ctx.fillRect(6, 5, 7, 16);
+  drawUnicorn(
+    player.x,
+    player.y,
+    tombFace,
+    false,
+    player.ray > 0,
+    player.giant > 0
+  );
 
-  // Long horizontal body
-  ctx.fillStyle = "#ff75b9";
-  ctx.fillRect(-24, -11, 43, 19);
-
-  // Belly highlight
-  ctx.fillStyle = "#ff96c9";
-  ctx.fillRect(-13, 3, 24, 5);
-
-  // Near legs
-  ctx.fillStyle = "#ff5aaa";
-  ctx.fillRect(-10, 6, 7, 17);
-  ctx.fillRect(14, 5, 7, 18);
-
-  // Short upright neck
-  ctx.fillStyle = "#ff75b9";
-  ctx.fillRect(12, -23, 10, 17);
-
-  // Side-facing head
-  ctx.fillStyle = "#ff8fc7";
-  ctx.fillRect(15, -29, 23, 15);
-
-  // Muzzle
-  ctx.fillStyle = "#ffb1d7";
-  ctx.fillRect(33, -24, 10, 8);
-
-  // Ear
-  ctx.fillStyle = "#ff75b9";
-  ctx.fillRect(18, -34, 6, 7);
-
-  // Eye
-  ctx.fillStyle = "#281b27";
-  ctx.fillRect(31, -26, 3, 3);
-
-  // Horn
-  ctx.fillStyle = "#ffe36b";
-  ctx.beginPath();
-  ctx.moveTo(22, -32);
-  ctx.lineTo(27, -45);
-  ctx.lineTo(27, -31);
-  ctx.closePath();
-  ctx.fill();
-
-  const tombMane = [
-    "#ff4d6d",
-    "#ffa94d",
-    "#ffe066",
-    "#66ff66",
-    "#66d9ff",
-    "#b066ff"
-  ];
-
-  // Rainbow mane running down the neck
-  for (let i = 0; i < tombMane.length; i++) {
-    ctx.fillStyle = tombMane[i];
-    ctx.fillRect(
-      11 - i * 2,
-      -25 + i * 3,
-      7,
-      5
-    );
-  }
-
-  // Rainbow tail trailing behind
-  for (let i = 0; i < tombMane.length; i++) {
-    ctx.fillStyle = tombMane[i];
-    ctx.fillRect(
-      -31 - i * 3,
-      -8 + i * 3,
-      11,
-      4
-    );
-  }
-
+  ctx.save();
+  ctx.translate(player.x, player.y);
         } else {
           if (tombDir === "down") {
             ctx.scale(1, 0.72);
