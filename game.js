@@ -2483,6 +2483,12 @@ code = code.replace(
   ctx.fillStyle = "#ff96c9";
   ctx.fillRect(-11, 0, 22, 8);
 
+    // rainbow tail visible behind the body
+for (let i = 0; i < tombMane.length; i++) {
+  ctx.fillStyle = tombMane[i];
+  ctx.fillRect(-4, -18 - i * 3, 8, 4);
+}
+
   // front legs
   ctx.fillStyle = "#ff5aaa";
   ctx.fillRect(-13, 10, 8, 15);
