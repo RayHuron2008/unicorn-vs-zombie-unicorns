@@ -2514,7 +2514,7 @@ for (let i = 0; i < tombMane.length; i++) {
 
   // little tongue for goofy charm
 ctx.fillStyle = "#ff5a8a";
-ctx.fillRect(-1, 30, 4, 6);
+ctx.fillRect(7, 28, 4, 7);
 
 // horn on top of forehead, clearly pointing upward
 ctx.fillStyle = "#ffe36b";
