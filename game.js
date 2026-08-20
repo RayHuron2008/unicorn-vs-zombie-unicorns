@@ -2437,7 +2437,6 @@ code = code.replace(
                             const sideView =
           tombDir === "left" || tombDir === "right";
 
-        if (sideView) {
          if (sideView) {
   if (tombDir === "left") {
     ctx.scale(-1, 1);
