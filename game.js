@@ -2510,12 +2510,12 @@ code = code.replace(
   ctx.fillStyle = "#ff5a8a";
   ctx.fillRect(4, 29, 5, 3);
 
- // horn on top of forehead
+// horn on top of forehead, clearly pointing upward
 ctx.fillStyle = "#ffe36b";
 ctx.beginPath();
-ctx.moveTo(-3, 10);
-ctx.lineTo(0, -3);
-ctx.lineTo(4, 10);
+ctx.moveTo(-5, 12);
+ctx.lineTo(0, -10);
+ctx.lineTo(5, 12);
 ctx.closePath();
 ctx.fill();
 
