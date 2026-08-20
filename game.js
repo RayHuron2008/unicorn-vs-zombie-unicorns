@@ -2510,14 +2510,14 @@ code = code.replace(
   ctx.fillStyle = "#ff5a8a";
   ctx.fillRect(4, 29, 5, 3);
 
-  // horn pointing downward
-  ctx.fillStyle = "#ffe36b";
-  ctx.beginPath();
-  ctx.moveTo(-3, 28);
-  ctx.lineTo(0, 41);
-  ctx.lineTo(4, 28);
-  ctx.closePath();
-  ctx.fill();
+ // horn on top of forehead
+ctx.fillStyle = "#ffe36b";
+ctx.beginPath();
+ctx.moveTo(-3, 10);
+ctx.lineTo(0, -3);
+ctx.lineTo(4, 10);
+ctx.closePath();
+ctx.fill();
 
   // mane sits behind the head
   for (let i = 0; i < tombMane.length; i++) {
