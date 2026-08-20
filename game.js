@@ -2453,24 +2453,7 @@ code = code.replace(
 
   ctx.save();
   ctx.translate(player.x, player.y);
-        } else {
-          if (tombDir === "down") {
-            ctx.scale(1, 0.72);
-            ctx.translate(0, 8);
-          }
-
-          ctx.fillStyle = "rgba(0,0,0,.20)";
-          ctx.fillRect(-22, 16, 44, 7);
-
-          ctx.fillStyle = "#ff7fbd";
-          ctx.fillRect(-18, -18, 36, 38);
-
-          ctx.fillStyle = "#ff9dce";
-          ctx.fillRect(-14, -28, 28, 18);
-
-          ctx.fillStyle = "#ffe066";
-          ctx.fillRect(-3, -40, 6, 14);
-
+              } else {
           const tombMane = [
             "#ff4d6d",
             "#ffa94d",
@@ -2480,14 +2463,101 @@ code = code.replace(
             "#b066ff"
           ];
 
-          for (let i = 0; i < tombMane.length; i++) {
-            ctx.fillStyle = tombMane[i];
-            ctx.fillRect(-15 + i * 5, -23, 6, 9);
-          }
+          // Shadow
+          ctx.fillStyle = "rgba(0,0,0,.20)";
+          ctx.fillRect(-20, 18, 40, 6);
 
-          ctx.fillStyle = "#ff4da3";
-          ctx.fillRect(-14, 18, 8, 12);
-          ctx.fillRect(6, 18, 8, 12);
+          if (tombDir === "down") {
+            // FRONT VIEW
+
+            // legs
+            ctx.fillStyle = "#ff5aaa";
+            ctx.fillRect(-13, 7, 8, 16);
+            ctx.fillRect(5, 7, 8, 16);
+
+            // body
+            ctx.fillStyle = "#ff75b9";
+            ctx.fillRect(-17, -10, 34, 23);
+
+            // chest highlight
+            ctx.fillStyle = "#ff9dce";
+            ctx.fillRect(-11, -4, 22, 12);
+
+            // head
+            ctx.fillStyle = "#ff8fc7";
+            ctx.fillRect(-15, -29, 30, 20);
+
+            // ears
+            ctx.fillStyle = "#ff75b9";
+            ctx.fillRect(-17, -27, 6, 9);
+            ctx.fillRect(11, -27, 6, 9);
+
+            // eyes
+            ctx.fillStyle = "#281b27";
+            ctx.fillRect(-9, -22, 3, 3);
+            ctx.fillRect(6, -22, 3, 3);
+
+            // muzzle
+            ctx.fillStyle = "#ffb1d7";
+            ctx.fillRect(-8, -15, 16, 7);
+
+            // horn
+            ctx.fillStyle = "#ffe36b";
+            ctx.beginPath();
+            ctx.moveTo(-3, -29);
+            ctx.lineTo(0, -43);
+            ctx.lineTo(4, -29);
+            ctx.closePath();
+            ctx.fill();
+
+            // rainbow mane peeking around head
+            for (let i = 0; i < tombMane.length; i++) {
+              ctx.fillStyle = tombMane[i];
+              ctx.fillRect(-18 + i * 6, -12, 6, 6);
+            }
+
+          } else {
+            // BACK VIEW
+
+            // legs
+            ctx.fillStyle = "#e74392";
+            ctx.fillRect(-13, 6, 8, 17);
+            ctx.fillRect(5, 6, 8, 17);
+
+            // body
+            ctx.fillStyle = "#ff75b9";
+            ctx.fillRect(-17, -12, 34, 25);
+
+            // back of head
+            ctx.fillStyle = "#ff8fc7";
+            ctx.fillRect(-14, -29, 28, 19);
+
+            // ears
+            ctx.fillStyle = "#ff75b9";
+            ctx.fillRect(-16, -28, 6, 9);
+            ctx.fillRect(10, -28, 6, 9);
+
+            // horn visible from behind
+            ctx.fillStyle = "#ffe36b";
+            ctx.beginPath();
+            ctx.moveTo(-3, -29);
+            ctx.lineTo(0, -42);
+            ctx.lineTo(4, -29);
+            ctx.closePath();
+            ctx.fill();
+
+            // rainbow mane down the back
+            for (let i = 0; i < tombMane.length; i++) {
+              ctx.fillStyle = tombMane[i];
+              ctx.fillRect(-12 + i * 4, -17 + i * 3, 7, 6);
+            }
+
+            // tail
+            for (let i = 0; i < tombMane.length; i++) {
+              ctx.fillStyle = tombMane[i];
+              ctx.fillRect(-10 + i * 3, 8 + i * 2, 8, 5);
+            }
+          }
         }
 
         ctx.restore();
