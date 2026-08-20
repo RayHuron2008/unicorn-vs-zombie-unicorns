@@ -2467,54 +2467,64 @@ code = code.replace(
           ctx.fillStyle = "rgba(0,0,0,.20)";
           ctx.fillRect(-20, 18, 40, 6);
 
-          if (tombDir === "down") {
-            // FRONT VIEW
+         if (tombDir === "down") {
+  // DOWN-FACING VIEW
 
-            // legs
-            ctx.fillStyle = "#ff5aaa";
-            ctx.fillRect(-13, 7, 8, 16);
-            ctx.fillRect(5, 7, 8, 16);
+  // back legs
+  ctx.fillStyle = "#e74392";
+  ctx.fillRect(-16, -4, 7, 15);
+  ctx.fillRect(9, -4, 7, 15);
 
-            // body
-            ctx.fillStyle = "#ff75b9";
-            ctx.fillRect(-17, -10, 34, 23);
+  // body sits behind the head
+  ctx.fillStyle = "#ff75b9";
+  ctx.fillRect(-18, -13, 36, 27);
 
-            // chest highlight
-            ctx.fillStyle = "#ff9dce";
-            ctx.fillRect(-11, -4, 22, 12);
+  // body highlight
+  ctx.fillStyle = "#ff96c9";
+  ctx.fillRect(-11, 1, 22, 8);
 
-            // head
-            ctx.fillStyle = "#ff8fc7";
-            ctx.fillRect(-15, -29, 30, 20);
+  // front legs
+  ctx.fillStyle = "#ff5aaa";
+  ctx.fillRect(-14, 9, 8, 16);
+  ctx.fillRect(6, 9, 8, 16);
 
-            // ears
-            ctx.fillStyle = "#ff75b9";
-            ctx.fillRect(-17, -27, 6, 9);
-            ctx.fillRect(11, -27, 6, 9);
+  // head is LOWER, showing direction
+  ctx.fillStyle = "#ff8fc7";
+  ctx.fillRect(-16, 10, 32, 20);
 
-            // eyes
-            ctx.fillStyle = "#281b27";
-            ctx.fillRect(-9, -22, 3, 3);
-            ctx.fillRect(6, -22, 3, 3);
+  // ears
+  ctx.fillStyle = "#ff75b9";
+  ctx.fillRect(-18, 12, 6, 8);
+  ctx.fillRect(12, 12, 6, 8);
 
-            // muzzle
-            ctx.fillStyle = "#ffb1d7";
-            ctx.fillRect(-8, -15, 16, 7);
+  // eyes
+  ctx.fillStyle = "#281b27";
+  ctx.fillRect(-9, 19, 3, 3);
+  ctx.fillRect(6, 19, 3, 3);
 
-            // horn
-            ctx.fillStyle = "#ffe36b";
-            ctx.beginPath();
-            ctx.moveTo(-3, -29);
-            ctx.lineTo(0, -43);
-            ctx.lineTo(4, -29);
-            ctx.closePath();
-            ctx.fill();
+  // muzzle projects downward
+  ctx.fillStyle = "#ffb1d7";
+  ctx.fillRect(-9, 25, 18, 9);
 
-            // rainbow mane peeking around head
-            for (let i = 0; i < tombMane.length; i++) {
-              ctx.fillStyle = tombMane[i];
-              ctx.fillRect(-18 + i * 6, -12, 6, 6);
-            }
+  // horn points DOWN
+  ctx.fillStyle = "#ffe36b";
+  ctx.beginPath();
+  ctx.moveTo(-3, 30);
+  ctx.lineTo(0, 44);
+  ctx.lineTo(4, 30);
+  ctx.closePath();
+  ctx.fill();
+
+  // rainbow mane visible behind the head
+  for (let i = 0; i < tombMane.length; i++) {
+    ctx.fillStyle = tombMane[i];
+    ctx.fillRect(
+      -18 + i * 6,
+      6,
+      6,
+      6
+    );
+  }
 
           } else {
             // BACK VIEW
