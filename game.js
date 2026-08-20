@@ -2507,8 +2507,8 @@ code = code.replace(
   ctx.fillRect(-8, 23, 16, 8);
 
   // little tongue for goofy charm
-  ctx.fillStyle = "#ff5a8a";
-  ctx.fillRect(4, 29, 5, 3);
+ctx.fillStyle = "#ff5a8a";
+ctx.fillRect(-1, 30, 4, 6);
 
 // horn on top of forehead, clearly pointing upward
 ctx.fillStyle = "#ffe36b";
@@ -2566,6 +2566,8 @@ ctx.fill();
   ctx.fillRect(-4, -18 + i * 5, 8, 5);
 }
 
+ctx.fillStyle = "#ff96c9";
+ctx.fillRect(-11, 0, 22, 8);
             // tail
            for (let i = 0; i < tombMane.length; i++) {
   ctx.fillStyle = tombMane[i];
