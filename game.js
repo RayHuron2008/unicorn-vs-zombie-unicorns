@@ -5236,6 +5236,9 @@ tombFirstSkeletonX = W * 0.30;
 tombFirstSkeletonY = H * 0.13 + 20;
 tombFirstSkeletonFireTimer = 1.2;
 tombFirstSkeletonFireballs.length = 0;
+tombFirstSkeletonSwordTimer = 0.8;
+tombFirstSkeletonSwordSwing = 0;
+tombFirstSkeletonSwordDidHit = false;
   }
 }
 
