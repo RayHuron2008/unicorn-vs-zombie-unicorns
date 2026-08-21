@@ -4486,6 +4486,8 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
   let tombAWasDown = false;
   let tombBWasDown = false;
   let tombIgnoredSign = null;
+  let tombEncounterStarted = false;
+let tombAwakenDelay = 0;
 
   const tombSigns = [
     {
@@ -4635,14 +4637,23 @@ prompt.innerHTML =
     tombAWasDown = !!input.a;
     tombBWasDown = !!input.b;
 
-    if (tombReading) {
-      if (bPressed) {
-        tombReading = false;
-        tombCurrentSign = null;
-        removeTombWriting();
-      }
-      return;
+  if (tombReading) {
+  if (bPressed) {
+    if (
+      tombCurrentSign &&
+      tombCurrentSign.id === "forbiddenSpell" &&
+      !tombEncounterStarted
+    ) {
+      tombEncounterStarted = true;
+      tombAwakenDelay = 1.5;
     }
+
+    tombReading = false;
+    tombCurrentSign = null;
+    removeTombWriting();
+  }
+  return;
+}
 
     let nearest = null;
     let nearestDistance = Infinity;
