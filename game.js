@@ -4488,6 +4488,7 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
   let tombIgnoredSign = null;
   let tombEncounterStarted = false;
 let tombAwakenDelay = 0;
+let tombFirstGraveRattle = 0;
 
   const tombSigns = [
     {
@@ -4696,6 +4697,53 @@ prompt.innerHTML =
       removeTombPrompt();
     }
   }
+  function drawTombFirstGraveRattle() {
+  if (
+    window.__uvzuCurrentLevelCode !== "TOMB1" ||
+    tombFirstGraveRattle <= 0
+  ) {
+    return;
+  }
+
+  const gx = W * 0.30;
+  const gy = H * 0.13;
+
+  const shake = Math.sin(tombFirstGraveRattle * 45) * 5;
+
+  ctx.save();
+  ctx.translate(shake, 0);
+
+  ctx.strokeStyle = "rgba(255,235,170,.95)";
+  ctx.lineWidth = 3;
+
+  // vibration marks around the upper-left grave
+  ctx.beginPath();
+
+  ctx.moveTo(gx - 52, gy - 20);
+  ctx.lineTo(gx - 66, gy - 30);
+
+  ctx.moveTo(gx - 55, gy);
+  ctx.lineTo(gx - 72, gy);
+
+  ctx.moveTo(gx + 52, gy - 20);
+  ctx.lineTo(gx + 66, gy - 30);
+
+  ctx.moveTo(gx + 55, gy);
+  ctx.lineTo(gx + 72, gy);
+
+  ctx.stroke();
+
+  // dust near the base
+  ctx.fillStyle = "rgba(210,200,160,.65)";
+
+  ctx.beginPath();
+  ctx.arc(gx - 26, gy + 45, 7, 0, Math.PI * 2);
+  ctx.arc(gx, gy + 49, 9, 0, Math.PI * 2);
+  ctx.arc(gx + 25, gy + 44, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
   
 
   function applyDifficulty(name) {
@@ -4774,9 +4822,28 @@ prompt.innerHTML =
       return;
     }
 
-    update(dt);
+  update(dt);
 updateTombSigns();
+
+if (
+  window.__uvzuCurrentLevelCode === "TOMB1" &&
+  tombEncounterStarted &&
+  tombAwakenDelay > 0
+) {
+  tombAwakenDelay -= dt;
+
+  if (tombAwakenDelay <= 0) {
+    tombAwakenDelay = 0;
+    tombFirstGraveRattle = 1.5;
+  }
+}
+
+if (tombFirstGraveRattle > 0) {
+  tombFirstGraveRattle = Math.max(0, tombFirstGraveRattle - dt);
+}
+
 draw();
+drawTombFirstGraveRattle();
     requestAnimationFrame(loop);
   }
 
