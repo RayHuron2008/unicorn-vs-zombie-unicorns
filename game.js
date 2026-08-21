@@ -2315,15 +2315,6 @@ code = code.replace(
     }
 
     return { x: targetX, y: targetY };`
-      window.__uvzuCurrentLevelCode === "RNBW1" ||
-      window.__uvzuCurrentLevelCode === "GRV2"
-    ) {
-      targetY = clamp(targetY, H * 0.60, H - 20);
-    } else {
-      targetY = clamp(targetY, MIN_Y, MAX_Y);
-    }
-
-    return { x: targetX, y: targetY };`
 );
 
 // Expand movement while the dash animation is happening
@@ -2346,13 +2337,6 @@ code = code.replace(
       } else {
         player.y = clamp(player.y, MIN_Y, MAX_Y);
       }
-    }
-
-    player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);`
-    ) {
-      player.y = clamp(player.y, H * 0.60, H - 20);
-    } else {
-      player.y = clamp(player.y, MIN_Y, MAX_Y);
     }
 
     player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);`
@@ -2703,13 +2687,13 @@ ctx.fillRect(-11, 0, 22, 8);
 
          code = code.replace(
 `        if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES) {`,
-`       `        if (
+`        if (
           state.spawnTimer <= 0 &&
           state.enemies.length < MAX_ENEMIES &&
           window.__uvzuCurrentLevelCode !== "TOMB1" &&
           !(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
         ) {`
-      );
+);
 
                      code = code.replace(
 `        spawnEnemy("ray");
