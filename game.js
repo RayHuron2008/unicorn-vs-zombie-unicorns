@@ -4509,13 +4509,20 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
       title: "My Sisters, Emma & Josephine",
       text: "Who Could Tell You Two Apart? The World Saw You as Twins. I Saw Your Uniqueness. I Wish I Had Gotten to Spend More Time With You Two. It's Not Fair That We Cannot Live Forever. I Will Right This Wrong."
     },
-    {
-      id: "peterAlison",
-      x: 0.50,
-      y: 0.91,
-      title: "My Brother Peter & Sister-in-Law, Alison",
-      text: "I'll Finish It. I'll Finish What Our Family Started. We Will Rise Again and See the Light of Day, or the World Will Be Cursed."
-    }
+   {
+  id: "peterAlison",
+  x: 0.50,
+  y: 0.91,
+  title: "My Brother Peter & Sister-in-Law, Alison",
+  text: "I'll Finish It. I'll Finish What Our Family Started. We Will Rise Again and See the Light of Day, or the World Will Be Cursed."
+},
+{
+  id: "forbiddenSpell",
+  x: 0.865,
+  y: 0.91,
+  title: "Do Not Read",
+  text: "Svyrie Loïs Kree Va Sakoyee"
+}
   ];
 
   function removeTombPrompt() {
@@ -4552,7 +4559,10 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
       document.body.appendChild(prompt);
     }
 
-    prompt.textContent = "A READ     B IGNORE";
+ prompt.textContent =
+  sign.id === "forbiddenSpell"
+    ? "DO NOT READ     A READ     B IGNORE"
+    : "A READ     B IGNORE";
   }
 
   function showTombWriting(sign) {
