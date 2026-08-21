@@ -4934,6 +4934,48 @@ ctx.fillRect(
   42 * (tombFirstSkeletonHP / 4),
   4
 );
+// Sword
+ctx.save();
+
+ctx.translate(14, 0);
+
+const swordAngle =
+  tombFirstSkeletonSwordSwing > 0
+    ? 0.65
+    : -0.55;
+
+ctx.rotate(swordAngle);
+
+// blade
+ctx.strokeStyle = "#d9d9d9";
+ctx.lineWidth = 4;
+ctx.beginPath();
+ctx.moveTo(0, 0);
+ctx.lineTo(0, 27);
+ctx.stroke();
+
+// point
+ctx.fillStyle = "#d9d9d9";
+ctx.beginPath();
+ctx.moveTo(-4, 26);
+ctx.lineTo(0, 34);
+ctx.lineTo(4, 26);
+ctx.closePath();
+ctx.fill();
+
+// handle
+ctx.fillStyle = "#5b3a22";
+ctx.fillRect(-2, -7, 4, 9);
+
+// guard
+ctx.strokeStyle = "#caa85c";
+ctx.lineWidth = 3;
+ctx.beginPath();
+ctx.moveTo(-7, 1);
+ctx.lineTo(7, 1);
+ctx.stroke();
+
+ctx.restore();
   ctx.restore();
 }
 
