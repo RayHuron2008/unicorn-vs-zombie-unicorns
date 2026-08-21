@@ -4540,6 +4540,9 @@ let tombFirstSkeletonX = null;
 let tombFirstSkeletonY = null;
 let tombFirstSkeletonFireTimer = 1.2;
 let tombFirstSkeletonFireballs = [];
+let tombFirstSkeletonSwordTimer = 0.8;
+let tombFirstSkeletonSwordSwing = 0;
+let tombFirstSkeletonSwordDidHit = false;
 
   const tombSigns = [
     {
