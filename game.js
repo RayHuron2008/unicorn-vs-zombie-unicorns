@@ -4489,6 +4489,8 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
   let tombEncounterStarted = false;
 let tombAwakenDelay = 0;
 let tombFirstGraveRattle = 0;
+let tombFirstSkeletonActive = false;
+let tombFirstSkeletonRise = 0;
 
   const tombSigns = [
     {
@@ -4744,6 +4746,112 @@ prompt.innerHTML =
 
   ctx.restore();
 }
+
+function drawTombFirstSkeleton() {
+  if (
+    window.__uvzuCurrentLevelCode !== "TOMB1" ||
+    !tombFirstSkeletonActive
+  ) {
+    return;
+  }
+
+  const gx = W * 0.30;
+  const graveY = H * 0.13;
+
+  const riseLength = 1.2;
+  const riseProgress =
+    1 - Math.max(0, Math.min(1, tombFirstSkeletonRise / riseLength));
+
+  const x = gx;
+  const y = graveY + 78 - riseProgress * 58;
+
+  ctx.save();
+  ctx.translate(x, y);
+
+  // shadow beneath skeleton
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.beginPath();
+  ctx.ellipse(0, 34, 22, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const bone = "#e7dfb5";
+  const boneDark = "#b8ad7d";
+
+  // skull
+  ctx.fillStyle = bone;
+  ctx.beginPath();
+  ctx.arc(0, -29, 13, 0, Math.PI * 2);
+  ctx.fill();
+
+  // jaw
+  ctx.fillStyle = boneDark;
+  ctx.fillRect(-8, -21, 16, 7);
+
+  // eye sockets
+  ctx.fillStyle = "#181612";
+  ctx.fillRect(-8, -33, 5, 5);
+  ctx.fillRect(3, -33, 5, 5);
+
+  // nose hole
+  ctx.fillRect(-2, -27, 4, 4);
+
+  // spine
+  ctx.fillStyle = bone;
+  ctx.fillRect(-3, -14, 6, 25);
+
+  // ribs
+  ctx.strokeStyle = bone;
+  ctx.lineWidth = 4;
+
+  ctx.beginPath();
+  ctx.moveTo(0, -12);
+  ctx.lineTo(-12, -8);
+  ctx.lineTo(-8, -1);
+
+  ctx.moveTo(0, -12);
+  ctx.lineTo(12, -8);
+  ctx.lineTo(8, -1);
+
+  ctx.moveTo(0, -4);
+  ctx.lineTo(-11, 0);
+  ctx.lineTo(-7, 7);
+
+  ctx.moveTo(0, -4);
+  ctx.lineTo(11, 0);
+  ctx.lineTo(7, 7);
+  ctx.stroke();
+
+  // arms
+  ctx.beginPath();
+  ctx.moveTo(-10, -8);
+  ctx.lineTo(-19, 6);
+  ctx.lineTo(-16, 18);
+
+  ctx.moveTo(10, -8);
+  ctx.lineTo(19, 6);
+  ctx.lineTo(16, 18);
+  ctx.stroke();
+
+  // pelvis
+  ctx.fillStyle = boneDark;
+  ctx.fillRect(-9, 9, 18, 7);
+
+  // legs
+  ctx.strokeStyle = bone;
+  ctx.lineWidth = 5;
+
+  ctx.beginPath();
+  ctx.moveTo(-5, 15);
+  ctx.lineTo(-8, 30);
+  ctx.lineTo(-12, 37);
+
+  ctx.moveTo(5, 15);
+  ctx.lineTo(8, 30);
+  ctx.lineTo(12, 37);
+  ctx.stroke();
+
+  ctx.restore();
+}
   
 
   function applyDifficulty(name) {
@@ -4840,10 +4948,24 @@ if (
 
 if (tombFirstGraveRattle > 0) {
   tombFirstGraveRattle = Math.max(0, tombFirstGraveRattle - dt);
+
+  if (
+    tombFirstGraveRattle === 0 &&
+    !tombFirstSkeletonActive
+  ) {
+    tombFirstSkeletonActive = true;
+    tombFirstSkeletonRise = 1.2;
+  }
+}
+
+if (tombFirstSkeletonRise > 0) {
+  tombFirstSkeletonRise =
+    Math.max(0, tombFirstSkeletonRise - dt);
 }
 
 draw();
 drawTombFirstGraveRattle();
+drawTombFirstSkeleton();
     requestAnimationFrame(loop);
   }
 
