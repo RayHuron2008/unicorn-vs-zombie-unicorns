@@ -4682,6 +4682,17 @@ prompt.innerHTML =
       tombBWasDown = !!input.b;
       return;
     }
+    
+    if (tombEncounterStarted) {
+  tombReading = false;
+  tombCurrentSign = null;
+  tombIgnoredSign = null;
+  removeTombPrompt();
+  removeTombWriting();
+  tombAWasDown = !!input.a;
+  tombBWasDown = !!input.b;
+  return;
+}
 
     const aPressed = !!input.a && !tombAWasDown;
     const bPressed = !!input.b && !tombBWasDown;
