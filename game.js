@@ -4939,9 +4939,14 @@ ctx.save();
 
 ctx.translate(14, 0);
 
+const swordSwingProgress =
+  tombFirstSkeletonSwordSwing > 0
+    ? 1 - tombFirstSkeletonSwordSwing / 0.35
+    : 0;
+
 const swordAngle =
   tombFirstSkeletonSwordSwing > 0
-    ? 0.65
+    ? -0.9 + swordSwingProgress * 2.45
     : -0.55;
 
 ctx.rotate(swordAngle);
@@ -4951,21 +4956,21 @@ ctx.strokeStyle = "#d9d9d9";
 ctx.lineWidth = 4;
 ctx.beginPath();
 ctx.moveTo(0, 0);
-ctx.lineTo(0, 27);
+ctx.lineTo(0, -27);
 ctx.stroke();
 
 // point
 ctx.fillStyle = "#d9d9d9";
 ctx.beginPath();
-ctx.moveTo(-4, 26);
-ctx.lineTo(0, 34);
-ctx.lineTo(4, 26);
+ctx.moveTo(-4, -26);
+ctx.lineTo(0, -34);
+ctx.lineTo(4, -26);
 ctx.closePath();
 ctx.fill();
 
 // handle
 ctx.fillStyle = "#5b3a22";
-ctx.fillRect(-2, -7, 4, 9);
+ctx.fillRect(-2, 0, 4, 9);
 
 // guard
 ctx.strokeStyle = "#caa85c";
@@ -5278,6 +5283,14 @@ function drawTombFirstSkeletonFireballs() {
     }
 
   update(dt);
+  
+  if (
+  window.__uvzuCurrentLevelCode === "TOMB1" &&
+  state.enemies.length > 0
+) {
+  state.enemies.length = 0;
+}
+
 updateTombSigns();
 
 if (
