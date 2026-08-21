@@ -4491,6 +4491,8 @@ let tombAwakenDelay = 0;
 let tombFirstGraveRattle = 0;
 let tombFirstSkeletonActive = false;
 let tombFirstSkeletonRise = 0;
+let tombFirstSkeletonHP = 4;
+let tombFirstSkeletonHitLock = 0;
 
   const tombSigns = [
     {
@@ -4850,10 +4852,71 @@ function drawTombFirstSkeleton() {
   ctx.lineTo(12, 37);
   ctx.stroke();
 
+// HP bar
+ctx.fillStyle = "rgba(0,0,0,.65)";
+ctx.fillRect(-22, -53, 44, 6);
+
+ctx.fillStyle = "#d94b3d";
+ctx.fillRect(
+  -21,
+  -52,
+  42 * (tombFirstSkeletonHP / 4),
+  4
+);
   ctx.restore();
 }
-  
 
+function updateTombFirstSkeletonCombat(dt) {
+  if (
+    window.__uvzuCurrentLevelCode !== "TOMB1" ||
+    !tombFirstSkeletonActive ||
+    tombFirstSkeletonRise > 0
+  ) {
+    return;
+  }
+
+  tombFirstSkeletonHitLock =
+    Math.max(0, tombFirstSkeletonHitLock - dt);
+
+  const sx = W * 0.30;
+  const sy = H * 0.13 + 20;
+
+  // Player projectiles
+  for (let i = state.playerShots.length - 1; i >= 0; i--) {
+    const shot = state.playerShots[i];
+
+    if (
+      Math.abs(shot.x - sx) < 30 &&
+      Math.abs(shot.y - sy) < 45
+    ) {
+      state.playerShots.splice(i, 1);
+      tombFirstSkeletonHP -= 1;
+
+      if (tombFirstSkeletonHP <= 0) {
+        tombFirstSkeletonHP = 0;
+        tombFirstSkeletonActive = false;
+        return;
+      }
+    }
+  }
+
+  // Headbutt
+  if (
+    player.headTimer > 0 &&
+    tombFirstSkeletonHitLock <= 0 &&
+    Math.abs(player.x - sx) < 48 &&
+    Math.abs(player.y - sy) < 55
+  ) {
+    tombFirstSkeletonHP -= 1;
+    tombFirstSkeletonHitLock = 0.4;
+
+    if (tombFirstSkeletonHP <= 0) {
+      tombFirstSkeletonHP = 0;
+      tombFirstSkeletonActive = false;
+    }
+  }
+}
+  
   function applyDifficulty(name) {
   window.__uvzuCurrentDifficultyName = name;
   
@@ -4962,6 +5025,8 @@ if (tombFirstSkeletonRise > 0) {
   tombFirstSkeletonRise =
     Math.max(0, tombFirstSkeletonRise - dt);
 }
+
+updateTombFirstSkeletonCombat(dt);
 
 draw();
 drawTombFirstGraveRattle();
