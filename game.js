@@ -4978,6 +4978,24 @@ function updateTombFirstSkeletonCombat(dt) {
     tombFirstSkeletonY = sy;
   }
 
+  // Sword attack at close range
+tombFirstSkeletonSwordTimer -= dt;
+
+if (
+  distance <= 85 &&
+  tombFirstSkeletonSwordTimer <= 0 &&
+  tombFirstSkeletonSwordSwing <= 0
+) {
+  tombFirstSkeletonSwordSwing = 0.35;
+  tombFirstSkeletonSwordTimer = 1.0;
+  tombFirstSkeletonSwordDidHit = false;
+}
+
+if (tombFirstSkeletonSwordSwing > 0) {
+  tombFirstSkeletonSwordSwing =
+    Math.max(0, tombFirstSkeletonSwordSwing - dt);
+}
+
 // Cast fire only while the player is at range.
 tombFirstSkeletonFireTimer -= dt;
 
