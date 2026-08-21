@@ -4493,6 +4493,8 @@ let tombFirstSkeletonActive = false;
 let tombFirstSkeletonRise = 0;
 let tombFirstSkeletonHP = 4;
 let tombFirstSkeletonHitLock = 0;
+let tombFirstSkeletonX = null;
+let tombFirstSkeletonY = null;
 
   const tombSigns = [
     {
@@ -4764,9 +4766,19 @@ function drawTombFirstSkeleton() {
   const riseProgress =
     1 - Math.max(0, Math.min(1, tombFirstSkeletonRise / riseLength));
 
-  const x = gx;
-  const y = graveY + 78 - riseProgress * 58;
+ const x =
+  tombFirstSkeletonX == null
+    ? gx
+    : tombFirstSkeletonX;
 
+const y =
+  tombFirstSkeletonRise > 0
+    ? graveY + 78 - riseProgress * 58
+    : (
+        tombFirstSkeletonY == null
+          ? graveY + 20
+          : tombFirstSkeletonY
+      );
   ctx.save();
   ctx.translate(x, y);
 
@@ -4878,8 +4890,34 @@ function updateTombFirstSkeletonCombat(dt) {
   tombFirstSkeletonHitLock =
     Math.max(0, tombFirstSkeletonHitLock - dt);
 
-  const sx = W * 0.30;
-  const sy = H * 0.13 + 20;
+  if (tombFirstSkeletonX == null) {
+    tombFirstSkeletonX = W * 0.30;
+  }
+
+  if (tombFirstSkeletonY == null) {
+    tombFirstSkeletonY = H * 0.13 + 20;
+  }
+
+  let sx = tombFirstSkeletonX;
+  let sy = tombFirstSkeletonY;
+
+  // Slowly approach the player, but stop at fighting distance.
+  let dx = player.x - sx;
+  let dy = player.y - sy;
+  let distance = Math.sqrt(dx * dx + dy * dy);
+
+  if (distance > 150) {
+    const speed = 38;
+
+    sx += (dx / distance) * speed * dt;
+    sy += (dy / distance) * speed * dt;
+
+    sx = clamp(sx, 86, W - 86);
+    sy = clamp(sy, 105, H - 78);
+
+    tombFirstSkeletonX = sx;
+    tombFirstSkeletonY = sy;
+  }
 
   // Player projectiles
   for (let i = state.playerShots.length - 1; i >= 0; i--) {
@@ -4901,11 +4939,14 @@ function updateTombFirstSkeletonCombat(dt) {
   }
 
   // Headbutt
+  dx = player.x - sx;
+  dy = player.y - sy;
+  distance = Math.sqrt(dx * dx + dy * dy);
+
   if (
     player.headTimer > 0 &&
     tombFirstSkeletonHitLock <= 0 &&
-    Math.abs(player.x - sx) < 48 &&
-    Math.abs(player.y - sy) < 55
+    distance < 60
   ) {
     tombFirstSkeletonHP -= 1;
     tombFirstSkeletonHitLock = 0.4;
@@ -4913,10 +4954,33 @@ function updateTombFirstSkeletonCombat(dt) {
     if (tombFirstSkeletonHP <= 0) {
       tombFirstSkeletonHP = 0;
       tombFirstSkeletonActive = false;
+      return;
     }
   }
+
+  // Solid body collision — player cannot walk through skeleton.
+  dx = player.x - sx;
+  dy = player.y - sy;
+  distance = Math.sqrt(dx * dx + dy * dy);
+
+  const minimumDistance = 52;
+
+  if (distance < minimumDistance) {
+    let nx = 1;
+    let ny = 0;
+
+    if (distance > 0.001) {
+      nx = dx / distance;
+      ny = dy / distance;
+    }
+
+    player.x = sx + nx * minimumDistance;
+    player.y = sy + ny * minimumDistance;
+
+    player.x = clamp(player.x, 86, W - 86);
+    player.y = clamp(player.y, 105, H - 78);
+  }
 }
-  
   function applyDifficulty(name) {
   window.__uvzuCurrentDifficultyName = name;
   
@@ -5016,8 +5080,11 @@ if (tombFirstGraveRattle > 0) {
     tombFirstGraveRattle === 0 &&
     !tombFirstSkeletonActive
   ) {
-    tombFirstSkeletonActive = true;
-    tombFirstSkeletonRise = 1.2;
+   tombFirstSkeletonActive = true;
+tombFirstSkeletonRise = 1.2;
+tombFirstSkeletonHP = 4;
+tombFirstSkeletonX = W * 0.30;
+tombFirstSkeletonY = H * 0.13 + 20;
   }
 }
 
