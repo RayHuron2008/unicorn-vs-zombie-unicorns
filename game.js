@@ -4996,6 +4996,17 @@ if (tombFirstSkeletonSwordSwing > 0) {
     Math.max(0, tombFirstSkeletonSwordSwing - dt);
 }
 
+// Sword damage window
+if (
+  tombFirstSkeletonSwordSwing > 0.12 &&
+  tombFirstSkeletonSwordSwing < 0.24 &&
+  !tombFirstSkeletonSwordDidHit &&
+  distance < 72
+) {
+  tombFirstSkeletonSwordDidHit = true;
+  damagePlayerByLaser();
+}
+
 // Cast fire only while the player is at range.
 tombFirstSkeletonFireTimer -= dt;
 
