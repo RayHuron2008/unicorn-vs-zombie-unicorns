@@ -4554,14 +4554,15 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
       prompt.style.color = "#fff";
       prompt.style.font = "900 16px monospace";
       prompt.style.textAlign = "center";
+      prompt.style.whiteSpace = "pre-line";
       prompt.style.pointerEvents = "none";
 
       document.body.appendChild(prompt);
     }
 
- prompt.textContent =
+prompt.innerHTML =
   sign.id === "forbiddenSpell"
-    ? "DO NOT READ     A READ     B IGNORE"
+    ? "DO NOT READ<br>A READ     B IGNORE"
     : "A READ     B IGNORE";
   }
 
