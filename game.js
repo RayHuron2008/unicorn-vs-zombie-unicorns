@@ -2298,9 +2298,23 @@ code = code.replace(
     targetY = clamp(targetY, MIN_Y, MAX_Y);
 
     return { x: targetX, y: targetY };`,
-`    targetX = clamp(targetX, 25, W - 25);
+`    if (window.__uvzuCurrentLevelCode === "TOMB1") {
+      targetX = clamp(targetX, 86, W - 86);
+      targetY = clamp(targetY, 105, H - 78);
+    } else {
+      targetX = clamp(targetX, 25, W - 25);
 
-    if (
+      if (
+        window.__uvzuCurrentLevelCode === "RNBW1" ||
+        window.__uvzuCurrentLevelCode === "GRV2"
+      ) {
+        targetY = clamp(targetY, H * 0.60, H - 20);
+      } else {
+        targetY = clamp(targetY, MIN_Y, MAX_Y);
+      }
+    }
+
+    return { x: targetX, y: targetY };`
       window.__uvzuCurrentLevelCode === "RNBW1" ||
       window.__uvzuCurrentLevelCode === "GRV2"
     ) {
@@ -2318,11 +2332,23 @@ code = code.replace(
     player.y = clamp(player.y, MIN_Y, MAX_Y);
 
     player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);`,
-`    player.x = clamp(player.x, 25, W - 25);
+`    if (window.__uvzuCurrentLevelCode === "TOMB1") {
+      player.x = clamp(player.x, 86, W - 86);
+      player.y = clamp(player.y, 105, H - 78);
+    } else {
+      player.x = clamp(player.x, 25, W - 25);
 
-    if (
-      window.__uvzuCurrentLevelCode === "RNBW1" ||
-      window.__uvzuCurrentLevelCode === "GRV2"
+      if (
+        window.__uvzuCurrentLevelCode === "RNBW1" ||
+        window.__uvzuCurrentLevelCode === "GRV2"
+      ) {
+        player.y = clamp(player.y, H * 0.60, H - 20);
+      } else {
+        player.y = clamp(player.y, MIN_Y, MAX_Y);
+      }
+    }
+
+    player.dodgeTimer = Math.max(0, player.dodgeTimer - dt);`
     ) {
       player.y = clamp(player.y, H * 0.60, H - 20);
     } else {
@@ -2350,8 +2376,10 @@ code = code.replace(
         player.y += dir.dy * speed * 0.72 * dt;
       }`,
 `if (window.__uvzuCurrentLevelCode === "TOMB1") {
-        player.x += dir.dx * 180 * dt;
-        player.y += dir.dy * 180 * dt;
+        if (!updateDodgeMovement(dt)) {
+          player.x += dir.dx * 180 * dt;
+          player.y += dir.dy * 180 * dt;
+        }
 
         if (dir.dx !== 0 || dir.dy !== 0) {
           if (Math.abs(dir.dx) > Math.abs(dir.dy)) {
@@ -2398,6 +2426,36 @@ code = code.replace(
 }
       if (dir.dx !== 0 && player.dodgeTimer <= 0) {`
       );
+
+      code = code.replace(
+`    if (comboHappened) {
+      dodge(input.lastDirX, input.lastDirY);
+      return;
+    }
+
+    headbutt();`,
+`    if (
+      window.__uvzuCurrentLevelCode === "TOMB1" &&
+      typeof tombFirstSkeletonActive !== "undefined" &&
+      tombFirstSkeletonActive &&
+      typeof tombFirstSkeletonX === "number" &&
+      typeof tombFirstSkeletonY === "number" &&
+      Math.hypot(
+        player.x - tombFirstSkeletonX,
+        player.y - tombFirstSkeletonY
+      ) < 90
+    ) {
+      headbutt();
+      return;
+    }
+
+    if (comboHappened) {
+      dodge(input.lastDirX, input.lastDirY);
+      return;
+    }
+
+    headbutt();`
+);
 
       code = code.replace(
 `    if (state.mode === "play") {
@@ -2645,9 +2703,10 @@ ctx.fillRect(-11, 0, 22, 8);
 
          code = code.replace(
 `        if (state.spawnTimer <= 0 && state.enemies.length < MAX_ENEMIES) {`,
-`        if (
+`       `        if (
           state.spawnTimer <= 0 &&
           state.enemies.length < MAX_ENEMIES &&
+          window.__uvzuCurrentLevelCode !== "TOMB1" &&
           !(window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
         ) {`
       );
@@ -4972,7 +5031,7 @@ if (
   if (
     player.headTimer > 0 &&
     tombFirstSkeletonHitLock <= 0 &&
-    distance < 60
+    distance < 80
   ) {
     tombFirstSkeletonHP -= 1;
     tombFirstSkeletonHitLock = 0.4;
