@@ -5571,6 +5571,16 @@ tombFirstSkeletonFireballs.length = 0;
 tombFirstSkeletonSwordTimer = 0.8;
 tombFirstSkeletonSwordSwing = 0;
 tombFirstSkeletonSwordDidHit = false;
+tombFirstSkeletonThrowTimer = 10.0;
+tombFirstSkeletonSwordState = "held";
+tombFirstSkeletonThrownSwordX = null;
+tombFirstSkeletonThrownSwordY = null;
+tombFirstSkeletonSwordTargetX = null;
+tombFirstSkeletonSwordTargetY = null;
+tombFirstSkeletonSwordVx = 0;
+tombFirstSkeletonSwordVy = 0;
+tombFirstSkeletonSwordSpin = 0;
+tombFirstSkeletonSwordLanded = false;
   }
 }
 
@@ -5605,6 +5615,16 @@ if (
   tombFirstSkeletonSwordTimer = 0.8;
   tombFirstSkeletonSwordSwing = 0;
   tombFirstSkeletonSwordDidHit = false;
+  tombFirstSkeletonThrowTimer = 10.0;
+tombFirstSkeletonSwordState = "held";
+tombFirstSkeletonThrownSwordX = null;
+tombFirstSkeletonThrownSwordY = null;
+tombFirstSkeletonSwordTargetX = null;
+tombFirstSkeletonSwordTargetY = null;
+tombFirstSkeletonSwordVx = 0;
+tombFirstSkeletonSwordVy = 0;
+tombFirstSkeletonSwordSpin = 0;
+tombFirstSkeletonSwordLanded = false;
 
   tombReading = false;
   tombCurrentSign = null;
