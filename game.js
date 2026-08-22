@@ -4939,18 +4939,19 @@ ctx.fillRect(
 ctx.save();
 
 ctx.translate(14, 0);
-
 const swordSwingProgress =
   tombFirstSkeletonSwordSwing > 0
     ? 1 - tombFirstSkeletonSwordSwing / 0.35
     : 0;
 
-const swordAngle =
+// Keep the sword vertical instead of angled.
+// During the swing, move it up and down.
+const swordOffsetY =
   tombFirstSkeletonSwordSwing > 0
-    ? -0.9 + swordSwingProgress * 2.45
-    : -0.55;
+    ? -10 + swordSwingProgress * 20
+    : 0;
 
-ctx.rotate(swordAngle);
+ctx.translate(14, swordOffsetY);
 
 // blade
 ctx.strokeStyle = "#d9d9d9";
