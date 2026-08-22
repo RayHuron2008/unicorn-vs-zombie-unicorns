@@ -5334,6 +5334,37 @@ if (tombFirstSkeletonRise > 0) {
 
 updateTombFirstSkeletonCombat(dt);
 updateTombFirstSkeletonFireballs(dt);
+if (
+  window.__uvzuCurrentLevelCode === "TOMB1" &&
+  state.resetQueued
+) {
+  tombNeedsFullRestart = true;
+
+  tombEncounterStarted = false;
+  tombAwakenDelay = 0;
+  tombFirstGraveRattle = 0;
+
+  tombFirstSkeletonActive = false;
+  tombFirstSkeletonRise = 0;
+  tombFirstSkeletonHP = 4;
+  tombFirstSkeletonHitLock = 0;
+  tombFirstSkeletonX = null;
+  tombFirstSkeletonY = null;
+
+  tombFirstSkeletonFireTimer = 1.2;
+  tombFirstSkeletonFireballs.length = 0;
+
+  tombFirstSkeletonSwordTimer = 0.8;
+  tombFirstSkeletonSwordSwing = 0;
+  tombFirstSkeletonSwordDidHit = false;
+
+  tombReading = false;
+  tombCurrentSign = null;
+  tombIgnoredSign = null;
+
+  removeTombPrompt();
+  removeTombWriting();
+}
 
 draw();
 drawTombFirstGraveRattle();
