@@ -4807,8 +4807,13 @@ prompt.innerHTML =
     return;
   }
 
-  const gx = W * 0.30;
-  const gy = H * 0.13;
+const grave =
+  tombGraveSequence[
+    Math.min(tombSkeletonNumber, tombGraveSequence.length - 1)
+  ];
+
+const gx = W * grave.x;
+const gy = H * grave.y;
 
   const shake = Math.sin(tombFirstGraveRattle * 45) * 5;
 
