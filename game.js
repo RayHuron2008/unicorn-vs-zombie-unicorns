@@ -4996,6 +4996,8 @@ if (tombFirstSkeletonSwordState === "held") {
 
   ctx.restore();
 }
+
+ctx.restore();
 }
 
 function updateTombFirstSkeletonCombat(dt) {
