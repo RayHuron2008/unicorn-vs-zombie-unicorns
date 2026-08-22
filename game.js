@@ -4543,6 +4543,7 @@ let tombFirstSkeletonFireballs = [];
 let tombFirstSkeletonSwordTimer = 0.8;
 let tombFirstSkeletonSwordSwing = 0;
 let tombFirstSkeletonSwordDidHit = false;
+let tombNeedsFullRestart = false;
 
   const tombSigns = [
     {
