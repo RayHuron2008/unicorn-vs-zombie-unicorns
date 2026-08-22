@@ -4544,6 +4544,16 @@ let tombFirstSkeletonSwordTimer = 0.8;
 let tombFirstSkeletonSwordSwing = 0;
 let tombFirstSkeletonSwordDidHit = false;
 let tombNeedsFullRestart = false;
+let tombFirstSkeletonThrowTimer = 10.0;
+let tombFirstSkeletonSwordState = "held";
+let tombFirstSkeletonThrownSwordX = null;
+let tombFirstSkeletonThrownSwordY = null;
+let tombFirstSkeletonSwordTargetX = null;
+let tombFirstSkeletonSwordTargetY = null;
+let tombFirstSkeletonSwordVx = 0;
+let tombFirstSkeletonSwordVy = 0;
+let tombFirstSkeletonSwordSpin = 0;
+let tombFirstSkeletonSwordLanded = false;
 
   const tombSigns = [
     {
