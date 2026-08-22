@@ -4945,55 +4945,57 @@ ctx.fillRect(
   42 * (tombFirstSkeletonHP / 4),
   4
 );
-// Sword
-ctx.save();
+// Sword — only visible in the skeleton's hand while held.
+if (tombFirstSkeletonSwordState === "held") {
+  ctx.save();
 
-ctx.translate(14, 0);
-const swordSwingProgress =
-  tombFirstSkeletonSwordSwing > 0
-    ? 1 - tombFirstSkeletonSwordSwing / 0.35
-    : 0;
+  ctx.translate(14, 0);
 
-// Keep the sword vertical instead of angled.
-// During the swing, move it up and down.
-const swordOffsetY =
-  tombFirstSkeletonSwordSwing > 0
-    ? -10 + swordSwingProgress * 20
-    : 0;
+  const swordSwingProgress =
+    tombFirstSkeletonSwordSwing > 0
+      ? 1 - tombFirstSkeletonSwordSwing / 0.35
+      : 0;
 
-ctx.translate(0, swordOffsetY);
+  // Keep the sword vertical instead of angled.
+  // During the swing, move it up and down.
+  const swordOffsetY =
+    tombFirstSkeletonSwordSwing > 0
+      ? -10 + swordSwingProgress * 20
+      : 0;
 
-// blade
-ctx.strokeStyle = "#d9d9d9";
-ctx.lineWidth = 4;
-ctx.beginPath();
-ctx.moveTo(0, 0);
-ctx.lineTo(0, -27);
-ctx.stroke();
+  ctx.translate(0, swordOffsetY);
 
-// point
-ctx.fillStyle = "#d9d9d9";
-ctx.beginPath();
-ctx.moveTo(-4, -26);
-ctx.lineTo(0, -34);
-ctx.lineTo(4, -26);
-ctx.closePath();
-ctx.fill();
+  // blade
+  ctx.strokeStyle = "#d9d9d9";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, -27);
+  ctx.stroke();
 
-// handle
-ctx.fillStyle = "#5b3a22";
-ctx.fillRect(-2, 0, 4, 9);
+  // point
+  ctx.fillStyle = "#d9d9d9";
+  ctx.beginPath();
+  ctx.moveTo(-4, -26);
+  ctx.lineTo(0, -34);
+  ctx.lineTo(4, -26);
+  ctx.closePath();
+  ctx.fill();
 
-// guard
-ctx.strokeStyle = "#caa85c";
-ctx.lineWidth = 3;
-ctx.beginPath();
-ctx.moveTo(-7, 1);
-ctx.lineTo(7, 1);
-ctx.stroke();
+  // handle
+  ctx.fillStyle = "#5b3a22";
+  ctx.fillRect(-2, 0, 4, 9);
 
-ctx.restore();
+  // guard
+  ctx.strokeStyle = "#caa85c";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-7, 1);
+  ctx.lineTo(7, 1);
+  ctx.stroke();
+
   ctx.restore();
+}
 }
 
 function updateTombFirstSkeletonCombat(dt) {
