@@ -5599,8 +5599,13 @@ if (tombFirstGraveRattle > 0) {
    tombFirstSkeletonActive = true;
 tombFirstSkeletonRise = 1.2;
 tombFirstSkeletonHP = 4;
-tombFirstSkeletonX = W * 0.30;
-tombFirstSkeletonY = H * 0.13 + 20;
+const grave =
+  tombGraveSequence[
+    Math.min(tombSkeletonNumber, tombGraveSequence.length - 1)
+  ];
+
+const gx = W * grave.x;
+const gy = H * grave.y;
 tombFirstSkeletonFireTimer = 1.2;
 tombFirstSkeletonFireballs.length = 0;
 tombFirstSkeletonSwordTimer = 0.8;
