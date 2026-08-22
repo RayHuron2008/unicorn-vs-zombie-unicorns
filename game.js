@@ -5037,10 +5037,54 @@ function updateTombFirstSkeletonCombat(dt) {
     tombFirstSkeletonY = sy;
   }
 
+// Recurring sword throw phase
+if (tombFirstSkeletonSwordState === "held") {
+  tombFirstSkeletonThrowTimer -= dt;
+
+  if (tombFirstSkeletonThrowTimer <= 0) {
+    tombFirstSkeletonThrowTimer = 0;
+    tombFirstSkeletonSwordState = "flying";
+
+    // Lock onto where the player is NOW.
+    tombFirstSkeletonSwordTargetX = player.x;
+    tombFirstSkeletonSwordTargetY = player.y;
+
+    // Sword starts at the skeleton.
+    tombFirstSkeletonThrownSwordX = sx + 14;
+    tombFirstSkeletonThrownSwordY = sy - 10;
+
+    const throwDx =
+      tombFirstSkeletonSwordTargetX -
+      tombFirstSkeletonThrownSwordX;
+
+    const throwDy =
+      tombFirstSkeletonSwordTargetY -
+      tombFirstSkeletonThrownSwordY;
+
+    const throwDistance =
+      Math.sqrt(throwDx * throwDx + throwDy * throwDy) || 1;
+
+    const throwSpeed = 260;
+
+    tombFirstSkeletonSwordVx =
+      (throwDx / throwDistance) * throwSpeed;
+
+    tombFirstSkeletonSwordVy =
+      (throwDy / throwDistance) * throwSpeed;
+
+    tombFirstSkeletonSwordSpin = 0;
+    tombFirstSkeletonSwordLanded = false;
+
+    // Cancel any close-range swing in progress.
+    tombFirstSkeletonSwordSwing = 0;
+    tombFirstSkeletonSwordDidHit = false;
+  }
+}
   // Sword attack at close range
 tombFirstSkeletonSwordTimer -= dt;
 
 if (
+  tombFirstSkeletonSwordState === "held" &&
   distance <= 85 &&
   tombFirstSkeletonSwordTimer <= 0 &&
   tombFirstSkeletonSwordSwing <= 0
@@ -5070,6 +5114,7 @@ if (
 tombFirstSkeletonFireTimer -= dt;
 
 if (
+  tombFirstSkeletonSwordState === "held" &&
   tombFirstSkeletonFireTimer <= 0 &&
   distance > 85
 ) {
