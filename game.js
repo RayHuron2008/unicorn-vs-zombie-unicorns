@@ -5559,6 +5559,7 @@ if (
 draw();
 drawTombFirstGraveRattle();
 drawTombFirstSkeleton();
+drawTombFirstSkeletonThrownSword();
 drawTombFirstSkeletonFireballs();
     requestAnimationFrame(loop);
   }
