@@ -5284,6 +5284,15 @@ function drawTombFirstSkeletonFireballs() {
     }
 
   update(dt);
+  if (
+  window.__uvzuCurrentLevelCode === "TOMB1" &&
+  tombNeedsFullRestart &&
+  !state.resetQueued
+) {
+  player.x = W / 2;
+  player.y = H * 0.72;
+  tombNeedsFullRestart = false;
+}
   
   if (
   window.__uvzuCurrentLevelCode === "TOMB1" &&
