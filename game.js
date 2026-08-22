@@ -5198,6 +5198,74 @@ if (
   }
 }
 
+function updateTombFirstSkeletonThrownSword(dt) {
+  if (
+    window.__uvzuCurrentLevelCode !== "TOMB1" ||
+    !tombFirstSkeletonActive
+  ) {
+    return;
+  }
+
+  if (tombFirstSkeletonSwordState !== "flying") {
+    return;
+  }
+
+  tombFirstSkeletonThrownSwordX +=
+    tombFirstSkeletonSwordVx * dt;
+
+  tombFirstSkeletonThrownSwordY +=
+    tombFirstSkeletonSwordVy * dt;
+
+  tombFirstSkeletonSwordSpin += dt * 12;
+
+  const targetDx =
+    tombFirstSkeletonSwordTargetX -
+    tombFirstSkeletonThrownSwordX;
+
+  const targetDy =
+    tombFirstSkeletonSwordTargetY -
+    tombFirstSkeletonThrownSwordY;
+
+  const distanceToTarget =
+    Math.sqrt(targetDx * targetDx + targetDy * targetDy);
+
+  // If the flying sword hits the player, lose a life.
+  const playerDx =
+    player.x - tombFirstSkeletonThrownSwordX;
+
+  const playerDy =
+    player.y - tombFirstSkeletonThrownSwordY;
+
+  if (
+    Math.sqrt(playerDx * playerDx + playerDy * playerDy) < 30
+  ) {
+    damagePlayerByLaser();
+
+    tombFirstSkeletonSwordState = "landed";
+    tombFirstSkeletonSwordLanded = true;
+
+    tombFirstSkeletonThrownSwordX =
+      tombFirstSkeletonSwordTargetX;
+
+    tombFirstSkeletonThrownSwordY =
+      tombFirstSkeletonSwordTargetY;
+
+    return;
+  }
+
+  // Once it reaches the locked target position,
+  // leave the sword on the ground there.
+  if (distanceToTarget < 15) {
+    tombFirstSkeletonThrownSwordX =
+      tombFirstSkeletonSwordTargetX;
+
+    tombFirstSkeletonThrownSwordY =
+      tombFirstSkeletonSwordTargetY;
+
+    tombFirstSkeletonSwordState = "landed";
+    tombFirstSkeletonSwordLanded = true;
+  }
+}
 function updateTombFirstSkeletonFireballs(dt) {
   if (window.__uvzuCurrentLevelCode !== "TOMB1") {
     tombFirstSkeletonFireballs.length = 0;
