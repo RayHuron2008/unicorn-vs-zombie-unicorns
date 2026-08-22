@@ -5122,7 +5122,7 @@ if (tombFirstSkeletonSwordState === "held") {
     const throwDistance =
       Math.sqrt(throwDx * throwDx + throwDy * throwDy) || 1;
 
-    const throwSpeed = 260;
+    const throwSpeed = 320;
 
     tombFirstSkeletonSwordVx =
       (throwDx / throwDistance) * throwSpeed;
@@ -5297,9 +5297,11 @@ function updateTombFirstSkeletonThrownSword(dt) {
     player.y - tombFirstSkeletonThrownSwordY;
 
   if (
-    Math.sqrt(playerDx * playerDx + playerDy * playerDy) < 30
+    Math.sqrt(playerDx * playerDx + playerDy * playerDy) < 36
   ) {
-    damagePlayerByLaser();
+   player.hp = 1;
+player.invuln = 0;
+damagePlayerByLaser();
 
     tombFirstSkeletonSwordState = "landed";
     tombFirstSkeletonSwordLanded = true;
