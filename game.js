@@ -5604,8 +5604,8 @@ const grave =
     Math.min(tombSkeletonNumber, tombGraveSequence.length - 1)
   ];
 
-const gx = W * grave.x;
-const gy = H * grave.y;
+tombFirstSkeletonX = W * grave.x;
+tombFirstSkeletonY = H * grave.y + 20;
 tombFirstSkeletonFireTimer = 1.2;
 tombFirstSkeletonFireballs.length = 0;
 tombFirstSkeletonSwordTimer = 0.8;
