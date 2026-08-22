@@ -4951,7 +4951,7 @@ const swordOffsetY =
     ? -10 + swordSwingProgress * 20
     : 0;
 
-ctx.translate(14, swordOffsetY);
+ctx.translate(0, swordOffsetY);
 
 // blade
 ctx.strokeStyle = "#d9d9d9";
