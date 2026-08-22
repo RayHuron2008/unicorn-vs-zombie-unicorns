@@ -4554,6 +4554,32 @@ let tombFirstSkeletonSwordVx = 0;
 let tombFirstSkeletonSwordVy = 0;
 let tombFirstSkeletonSwordSpin = 0;
 let tombFirstSkeletonSwordLanded = false;
+let tombSkeletonNumber = 0;
+let tombNextSkeletonDelay = 0;
+
+const tombGraveSequence = [
+  // Sam and Mary
+  { name: "Sam", x: 0.135, y: 0.34, fireballCount: 1 },
+  { name: "Mary", x: 0.135, y: 0.64, fireballCount: 1 },
+
+  // Emma and Josephine
+  { name: "Emma", x: 0.865, y: 0.34, fireballCount: 2 },
+  { name: "Josephine", x: 0.865, y: 0.64, fireballCount: 2 },
+
+  // Peter and Alison
+  { name: "Peter", x: 0.30, y: 0.86, fireballCount: 3 },
+  { name: "Alison", x: 0.70, y: 0.86, fireballCount: 3 },
+
+  // Mother and Father are last
+  { name: "Mother", x: 0.70, y: 0.13, fireballCount: 4 },
+  {
+    name: "Father",
+    x: 0.30,
+    y: 0.13,
+    fireballCount: 4,
+    usesMouthFire: true
+  }
+];
 
   const tombSigns = [
     {
