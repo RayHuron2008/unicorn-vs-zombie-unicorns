@@ -5019,24 +5019,78 @@ function updateTombFirstSkeletonCombat(dt) {
   let sx = tombFirstSkeletonX;
   let sy = tombFirstSkeletonY;
 
-  // Slowly approach the player, but stop at fighting distance.
-  let dx = player.x - sx;
-  let dy = player.y - sy;
-  let distance = Math.sqrt(dx * dx + dy * dy);
+let dx = player.x - sx;
+let dy = player.y - sy;
+let distance = Math.sqrt(dx * dx + dy * dy);
 
-  if (distance > 150) {
-    const speed = 38;
+// If the sword has landed, walk over and retrieve it.
+if (
+  tombFirstSkeletonSwordState === "landed" &&
+  tombFirstSkeletonThrownSwordX != null &&
+  tombFirstSkeletonThrownSwordY != null
+) {
+  const retrieveDx =
+    tombFirstSkeletonThrownSwordX - sx;
 
-    sx += (dx / distance) * speed * dt;
-    sy += (dy / distance) * speed * dt;
+  const retrieveDy =
+    tombFirstSkeletonThrownSwordY - sy;
+
+  const retrieveDistance =
+    Math.sqrt(
+      retrieveDx * retrieveDx +
+      retrieveDy * retrieveDy
+    ) || 1;
+
+  if (retrieveDistance > 25) {
+    const retrieveSpeed = 50;
+
+    sx +=
+      (retrieveDx / retrieveDistance) *
+      retrieveSpeed *
+      dt;
+
+    sy +=
+      (retrieveDy / retrieveDistance) *
+      retrieveSpeed *
+      dt;
 
     sx = clamp(sx, 86, W - 86);
     sy = clamp(sy, 105, H - 78);
 
     tombFirstSkeletonX = sx;
     tombFirstSkeletonY = sy;
-  }
+  } else {
+    // Sword retrieved. Guard goes back up.
+    tombFirstSkeletonSwordState = "held";
+    tombFirstSkeletonSwordLanded = false;
+    tombFirstSkeletonThrowTimer = 10.0;
 
+    tombFirstSkeletonThrownSwordX = null;
+    tombFirstSkeletonThrownSwordY = null;
+    tombFirstSkeletonSwordTargetX = null;
+    tombFirstSkeletonSwordTargetY = null;
+
+    tombFirstSkeletonSwordTimer = 0.8;
+    tombFirstSkeletonFireTimer = 1.2;
+  }
+}
+
+// Normal pursuit only while holding the sword.
+if (
+  tombFirstSkeletonSwordState === "held" &&
+  distance > 150
+) {
+  const speed = 38;
+
+  sx += (dx / distance) * speed * dt;
+  sy += (dy / distance) * speed * dt;
+
+  sx = clamp(sx, 86, W - 86);
+  sy = clamp(sy, 105, H - 78);
+
+  tombFirstSkeletonX = sx;
+  tombFirstSkeletonY = sy;
+}
 // Recurring sword throw phase
 if (tombFirstSkeletonSwordState === "held") {
   tombFirstSkeletonThrowTimer -= dt;
@@ -5139,10 +5193,11 @@ if (
   for (let i = state.playerShots.length - 1; i >= 0; i--) {
     const shot = state.playerShots[i];
 
-    if (
-      Math.abs(shot.x - sx) < 30 &&
-      Math.abs(shot.y - sy) < 45
-    ) {
+   if (
+  tombFirstSkeletonSwordState !== "held" &&
+  Math.abs(shot.x - sx) < 30 &&
+  Math.abs(shot.y - sy) < 45
+) {
       state.playerShots.splice(i, 1);
       tombFirstSkeletonHP -= 1;
 
@@ -5159,11 +5214,12 @@ if (
   dy = player.y - sy;
   distance = Math.sqrt(dx * dx + dy * dy);
 
-  if (
-    player.headTimer > 0 &&
-    tombFirstSkeletonHitLock <= 0 &&
-    distance < 80
-  ) {
+if (
+  tombFirstSkeletonSwordState !== "held" &&
+  player.headTimer > 0 &&
+  tombFirstSkeletonHitLock <= 0 &&
+  distance < 80
+) {
     tombFirstSkeletonHP -= 1;
     tombFirstSkeletonHitLock = 0.4;
 
