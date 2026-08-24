@@ -5229,6 +5229,7 @@ if (
     Math.sqrt(fireDx * fireDx + fireDy * fireDy) || 1;
 
   const fireSpeed = 150;
+  const fireballCount = currentSkeleton.fireballCount || 1;
 
   tombFirstSkeletonFireballs.push({
     x: sx + (fireDx / fireDistance) * 18,
