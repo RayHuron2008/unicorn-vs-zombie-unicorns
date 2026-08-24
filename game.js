@@ -4539,6 +4539,7 @@ let tombFirstSkeletonHitLock = 0;
 let tombFirstSkeletonX = null;
 let tombFirstSkeletonY = null;
 let tombFirstSkeletonFireTimer = 1.2;
+let tombFatherMouthFireTimer = 1.5;
 let tombFirstSkeletonFireballs = [];
 let tombFirstSkeletonSwordTimer = 0.8;
 let tombFirstSkeletonSwordSwing = 0;
