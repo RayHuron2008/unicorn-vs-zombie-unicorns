@@ -5673,6 +5673,8 @@ if (
   tombEncounterStarted = false;
   tombAwakenDelay = 0;
   tombFirstGraveRattle = 0;
+  tombSkeletonNumber = 0;
+tombNextSkeletonDelay = 0;
 
   tombFirstSkeletonActive = false;
   tombFirstSkeletonRise = 0;
