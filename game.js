@@ -5252,6 +5252,10 @@ for (let i = 0; i < fireballCount; i++) {
 
   tombFirstSkeletonFireTimer = 2.0;
 }
+
+if (currentSkeleton.usesMouthFire) {
+  tombFatherMouthFireTimer -= dt;
+}
   // Player projectiles
   for (let i = state.playerShots.length - 1; i >= 0; i--) {
     const shot = state.playerShots[i];
