@@ -5062,7 +5062,7 @@ function updateTombFirstSkeletonCombat(dt) {
     Math.min(tombSkeletonNumber, tombGraveSequence.length - 1)
   ];
 
-const usesSword = currentSkeleton.name === "Mother";
+const usesSword = currentSkeleton.name !== "Father";
 
 let dx = player.x - sx;
 let dy = player.y - sy;
