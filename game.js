@@ -5707,8 +5707,9 @@ tombNextSkeletonDelay = 0;
   tombFirstSkeletonX = null;
   tombFirstSkeletonY = null;
 
-  tombFirstSkeletonFireTimer = 1.2;
-  tombFirstSkeletonFireballs.length = 0;
+ tombFirstSkeletonFireTimer = 1.2;
+tombFatherMouthFireTimer = 1.5;
+tombFirstSkeletonFireballs.length = 0;
 
   tombFirstSkeletonSwordTimer = 0.8;
   tombFirstSkeletonSwordSwing = 0;
