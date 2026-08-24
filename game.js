@@ -5070,6 +5070,7 @@ let distance = Math.sqrt(dx * dx + dy * dy);
 
 // If the sword has landed, walk over and retrieve it.
 if (
+  usesSword &&
   tombFirstSkeletonSwordState === "landed" &&
   tombFirstSkeletonThrownSwordX != null &&
   tombFirstSkeletonThrownSwordY != null
