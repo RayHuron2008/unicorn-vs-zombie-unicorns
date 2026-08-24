@@ -4982,7 +4982,10 @@ ctx.fillRect(
   4
 );
 // Sword — only visible in the skeleton's hand while held.
-if (tombFirstSkeletonSwordState === "held") {
+if (
+  grave.name !== "Father" &&
+  tombFirstSkeletonSwordState === "held"
+) {
   ctx.save();
 
   ctx.translate(14, 0);
