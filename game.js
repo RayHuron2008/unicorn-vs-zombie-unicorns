@@ -5240,11 +5240,18 @@ if (
       state.playerShots.splice(i, 1);
       tombFirstSkeletonHP -= 1;
 
-      if (tombFirstSkeletonHP <= 0) {
-        tombFirstSkeletonHP = 0;
-        tombFirstSkeletonActive = false;
-        return;
-      }
+     if (tombFirstSkeletonHP <= 0) {
+  tombFirstSkeletonHP = 0;
+  tombFirstSkeletonActive = false;
+
+  tombSkeletonNumber += 1;
+
+  if (tombSkeletonNumber < tombGraveSequence.length) {
+    tombNextSkeletonDelay = 2.0;
+  }
+
+  return;
+}
     }
   }
 
