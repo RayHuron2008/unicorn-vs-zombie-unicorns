@@ -5205,6 +5205,7 @@ if (tombFirstSkeletonSwordSwing > 0) {
 
 // Sword damage window
 if (
+  usesSword &&
   tombFirstSkeletonSwordSwing > 0.12 &&
   tombFirstSkeletonSwordSwing < 0.24 &&
   !tombFirstSkeletonSwordDidHit &&
