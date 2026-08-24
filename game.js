@@ -5255,6 +5255,25 @@ for (let i = 0; i < fireballCount; i++) {
 
 if (currentSkeleton.usesMouthFire) {
   tombFatherMouthFireTimer -= dt;
+
+  if (tombFatherMouthFireTimer <= 0) {
+    const mouthDx = player.x - sx;
+    const mouthDy = player.y - sy;
+    const mouthDistance =
+      Math.sqrt(mouthDx * mouthDx + mouthDy * mouthDy) || 1;
+
+    const mouthSpeed = 220;
+
+    tombFirstSkeletonFireballs.push({
+      x: sx,
+      y: sy - 24,
+      vx: (mouthDx / mouthDistance) * mouthSpeed,
+      vy: (mouthDy / mouthDistance) * mouthSpeed,
+      life: 3
+    });
+
+    tombFatherMouthFireTimer = 0.55;
+  }
 }
   // Player projectiles
   for (let i = state.playerShots.length - 1; i >= 0; i--) {
