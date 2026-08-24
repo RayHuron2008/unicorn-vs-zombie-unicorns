@@ -5269,11 +5269,18 @@ if (
     tombFirstSkeletonHP -= 1;
     tombFirstSkeletonHitLock = 0.4;
 
-    if (tombFirstSkeletonHP <= 0) {
-      tombFirstSkeletonHP = 0;
-      tombFirstSkeletonActive = false;
-      return;
-    }
+   if (tombFirstSkeletonHP <= 0) {
+  tombFirstSkeletonHP = 0;
+  tombFirstSkeletonActive = false;
+
+  tombSkeletonNumber += 1;
+
+  if (tombSkeletonNumber < tombGraveSequence.length) {
+    tombNextSkeletonDelay = 2.0;
+  }
+
+  return;
+}
   }
 
   // Solid body collision — player cannot walk through skeleton.
