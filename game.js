@@ -5124,7 +5124,7 @@ if (
 
 // Normal pursuit only while holding the sword.
 if (
-  tombFirstSkeletonSwordState === "held" &&
+  (!usesSword || tombFirstSkeletonSwordState === "held") &&
   distance > 150
 ) {
   const speed = 38;
