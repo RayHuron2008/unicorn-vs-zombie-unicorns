@@ -4860,9 +4860,13 @@ function drawTombFirstSkeleton() {
     return;
   }
 
-  const gx = W * 0.30;
-  const graveY = H * 0.13;
+ const grave =
+  tombGraveSequence[
+    Math.min(tombSkeletonNumber, tombGraveSequence.length - 1)
+  ];
 
+const gx = W * grave.x;
+const graveY = H * grave.y;
   const riseLength = 1.2;
   const riseProgress =
     1 - Math.max(0, Math.min(1, tombFirstSkeletonRise / riseLength));
