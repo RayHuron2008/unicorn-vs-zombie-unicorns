@@ -5284,7 +5284,7 @@ for (let i = 0; i < fireballCount; i++) {
   distance = Math.sqrt(dx * dx + dy * dy);
 
 if (
-  tombFirstSkeletonSwordState !== "held" &&
+  (!usesSword || tombFirstSkeletonSwordState !== "held") &&
   player.headTimer > 0 &&
   tombFirstSkeletonHitLock <= 0 &&
   distance < 80
