@@ -5231,13 +5231,23 @@ if (
   const fireSpeed = 150;
   const fireballCount = currentSkeleton.fireballCount || 1;
 
+for (let i = 0; i < fireballCount; i++) {
+  const spread =
+    fireballCount === 1
+      ? 0
+      : (i - (fireballCount - 1) / 2) * 0.18;
+
+  const baseAngle = Math.atan2(fireDy, fireDx);
+  const angle = baseAngle + spread;
+
   tombFirstSkeletonFireballs.push({
-    x: sx + (fireDx / fireDistance) * 18,
+    x: sx + Math.cos(angle) * 18,
     y: sy - 8,
-    vx: (fireDx / fireDistance) * fireSpeed,
-    vy: (fireDy / fireDistance) * fireSpeed,
+    vx: Math.cos(angle) * fireSpeed,
+    vy: Math.sin(angle) * fireSpeed,
     life: 3
   });
+}
 
   tombFirstSkeletonFireTimer = 2.0;
 }
