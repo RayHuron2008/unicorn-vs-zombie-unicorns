@@ -5138,7 +5138,10 @@ if (
   tombFirstSkeletonY = sy;
 }
 // Recurring sword throw phase
-if (tombFirstSkeletonSwordState === "held") {
+if (
+  usesSword &&
+  tombFirstSkeletonSwordState === "held"
+) {
   tombFirstSkeletonThrowTimer -= dt;
 
   if (tombFirstSkeletonThrowTimer <= 0) {
