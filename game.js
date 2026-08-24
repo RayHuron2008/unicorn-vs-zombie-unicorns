@@ -5220,7 +5220,7 @@ if (
 tombFirstSkeletonFireTimer -= dt;
 
 if (
-  tombFirstSkeletonSwordState === "held" &&
+  (!usesSword || tombFirstSkeletonSwordState === "held") &&
   tombFirstSkeletonFireTimer <= 0 &&
   distance > 85
 ) {
