@@ -5642,6 +5642,20 @@ tombFirstSkeletonSwordLanded = false;
   }
 }
 
+if (
+  window.__uvzuCurrentLevelCode === "TOMB1" &&
+  tombNextSkeletonDelay > 0 &&
+  !tombFirstSkeletonActive
+) {
+  tombNextSkeletonDelay = Math.max(0, tombNextSkeletonDelay - dt);
+
+  if (
+    tombNextSkeletonDelay === 0 &&
+    tombSkeletonNumber < tombGraveSequence.length
+  ) {
+    tombFirstGraveRattle = 1.5;
+  }
+}
 if (tombFirstSkeletonRise > 0) {
   tombFirstSkeletonRise =
     Math.max(0, tombFirstSkeletonRise - dt);
