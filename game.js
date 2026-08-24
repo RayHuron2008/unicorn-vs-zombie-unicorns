@@ -5241,8 +5241,12 @@ for (let i = 0; i < fireballCount; i++) {
       ? 0
       : (i - (fireballCount - 1) / 2) * 0.18;
 
-  const baseAngle = Math.atan2(fireDy, fireDx);
-  const angle = baseAngle + spread;
+ const baseAngle = Math.atan2(fireDy, fireDx);
+
+const angle =
+  fireballCount === 4
+    ? i * (Math.PI / 2)
+    : baseAngle + spread;
 
   tombFirstSkeletonFireballs.push({
     x: sx + Math.cos(angle) * 18,
