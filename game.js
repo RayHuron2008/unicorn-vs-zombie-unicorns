@@ -5120,6 +5120,22 @@ function updateTombFirstSkeletonCombat(dt) {
   tombGraveSequence[
     Math.min(tombSkeletonNumber, tombGraveSequence.length - 1)
   ];
+if (tombFatherBurning) {
+  tombFatherBurnTimer = Math.max(0, tombFatherBurnTimer - dt);
+
+  // Stop Father attacking while he burns.
+  tombFirstSkeletonFireballs.length = 0;
+
+  if (tombFatherBurnTimer === 0) {
+    tombFatherBurning = false;
+    tombFirstSkeletonActive = false;
+    tombSkeletonNumber += 1;
+
+    player.lives = 99;
+  }
+
+  return;
+}
 
 const usesSword = currentSkeleton.name !== "Father";
 
