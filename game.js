@@ -4756,6 +4756,15 @@ prompt.innerHTML =
   }
 
   function updateTombSigns() {
+  if (window.__uvzuDisableTombSigns) {
+  tombReading = false;
+  tombCurrentSign = null;
+  tombIgnoredSign = null;
+  removeTombPrompt();
+  removeTombWriting();
+  return;
+}
+    
     if (window.__uvzuCurrentLevelCode !== "TOMB1") {
       tombReading = false;
       tombCurrentSign = null;
