@@ -4557,6 +4557,9 @@ let tombFirstSkeletonSwordSpin = 0;
 let tombFirstSkeletonSwordLanded = false;
 let tombSkeletonNumber = 0;
 let tombNextSkeletonDelay = 0;
+let tombFatherBurning = false;
+let tombFatherBurnTimer = 0;
+
 window.__uvzuJumpToFather = function() {
   if (window.__uvzuCurrentLevelCode !== "TOMB1") return;
 
