@@ -4558,6 +4558,28 @@ let tombFirstSkeletonSwordLanded = false;
 let tombSkeletonNumber = 0;
 let tombNextSkeletonDelay = 0;
 window.__uvzuJumpToFather = function() {
+window.__uvzuShowFatherTestButton = function() {
+  if (document.getElementById("fatherTestButton")) return;
+
+  const button = document.createElement("button");
+  button.id = "fatherTestButton";
+  button.textContent = "TEST FATHER";
+
+  button.style.position = "fixed";
+  button.style.right = "12px";
+  button.style.top = "70px";
+  button.style.zIndex = "99999";
+  button.style.padding = "12px 16px";
+  button.style.fontSize = "16px";
+
+  button.onclick = function() {
+    window.__uvzuJumpToFather();
+  };
+
+  document.body.appendChild(button);
+};
+
+window.__uvzuShowFatherTestButton();
   if (window.__uvzuCurrentLevelCode !== "TOMB1") return;
 
   tombSkeletonNumber = 7;
