@@ -4560,7 +4560,9 @@ let tombNextSkeletonDelay = 0;
 window.__uvzuJumpToFather = function() {
   if (window.__uvzuCurrentLevelCode !== "TOMB1") return;
 
-  tombSkeletonNumber = 7;
+  window.__uvzuDisableTombSigns = true;
+
+ tombSkeletonNumber = 7;
   tombNextSkeletonDelay = 0;
   tombFirstGraveRattle = 1.5;
 
