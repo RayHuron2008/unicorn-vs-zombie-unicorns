@@ -5193,13 +5193,41 @@ if (tombFatherBurning) {
   // Stop Father attacking while he burns.
   tombFirstSkeletonFireballs.length = 0;
 
-  if (tombFatherBurnTimer === 0) {
-    tombFatherBurning = false;
-    tombFirstSkeletonActive = false;
-    tombSkeletonNumber += 1;
+if (tombFatherBurnTimer === 0) {
+  tombFatherBurning = false;
+  tombFirstSkeletonActive = false;
+  tombSkeletonNumber += 1;
 
-    player.lives = 99;
-  }
+  player.lives = 99;
+
+  const message = document.createElement("div");
+  message.id = "tombFatherVictoryMessage";
+  message.innerHTML =
+    "CONGRATULATIONS, MORTAL<br><br>" +
+    "HERE LIES THE GIFT OF THE GODS<br>" +
+    "FOR CLOSING DOORS THAT SHOULD NEVER HAVE BEEN OPENED";
+
+  message.style.position = "fixed";
+  message.style.left = "50%";
+  message.style.top = "50%";
+  message.style.transform = "translate(-50%, -50%)";
+  message.style.zIndex = "100000";
+  message.style.width = "80vw";
+  message.style.maxWidth = "700px";
+  message.style.padding = "24px";
+  message.style.textAlign = "center";
+  message.style.fontFamily = "Georgia, serif";
+  message.style.fontSize = "24px";
+  message.style.fontWeight = "900";
+  message.style.lineHeight = "1.5";
+  message.style.color = "#ffd86b";
+  message.style.background = "rgba(0,0,0,0.88)";
+  message.style.border = "3px solid #ffd86b";
+  message.style.borderRadius = "14px";
+  message.style.boxShadow = "0 0 30px rgba(255,160,0,0.8)";
+
+  document.body.appendChild(message);
+}
 
   return;
 }
