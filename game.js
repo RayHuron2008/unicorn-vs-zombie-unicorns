@@ -4558,6 +4558,24 @@ let tombFirstSkeletonSwordLanded = false;
 let tombSkeletonNumber = 0;
 let tombNextSkeletonDelay = 0;
 window.__uvzuJumpToFather = function() {
+  if (window.__uvzuCurrentLevelCode !== "TOMB1") return;
+
+  tombSkeletonNumber = 7;
+  tombNextSkeletonDelay = 0;
+  tombFirstGraveRattle = 1.5;
+
+  tombFirstSkeletonActive = false;
+  tombFirstSkeletonRise = 0;
+  tombFirstSkeletonHP = 4;
+
+  tombFirstSkeletonFireballs.length = 0;
+  tombFirstSkeletonSwordState = "held";
+  tombFirstSkeletonThrowTimer = 10.0;
+
+  tombFirstSkeletonFireTimer = 1.2;
+  tombFatherMouthFireTimer = 1.5;
+};
+
 window.__uvzuShowFatherTestButton = function() {
   if (document.getElementById("fatherTestButton")) return;
 
@@ -4580,23 +4598,6 @@ window.__uvzuShowFatherTestButton = function() {
 };
 
 window.__uvzuShowFatherTestButton();
-  if (window.__uvzuCurrentLevelCode !== "TOMB1") return;
-
-  tombSkeletonNumber = 7;
-  tombNextSkeletonDelay = 0;
-  tombFirstGraveRattle = 1.5;
-
-  tombFirstSkeletonActive = false;
-  tombFirstSkeletonRise = 0;
-  tombFirstSkeletonHP = 4;
-
-  tombFirstSkeletonFireballs.length = 0;
-  tombFirstSkeletonSwordState = "held";
-  tombFirstSkeletonThrowTimer = 10.0;
-
-  tombFirstSkeletonFireTimer = 1.2;
-  tombFatherMouthFireTimer = 1.5;
-};
 
 const tombGraveSequence = [
   // Sam and Mary
