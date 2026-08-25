@@ -5384,10 +5384,16 @@ if (
     tombFirstSkeletonHP -= 1;
     tombFirstSkeletonHitLock = 0.4;
 
-   if (tombFirstSkeletonHP <= 0) {
+ if (tombFirstSkeletonHP <= 0) {
   tombFirstSkeletonHP = 0;
-  tombFirstSkeletonActive = false;
 
+  if (currentSkeleton.name === "Father") {
+    tombFatherBurning = true;
+    tombFatherBurnTimer = 5.0;
+    return;
+  }
+
+  tombFirstSkeletonActive = false;
   tombSkeletonNumber += 1;
 
   if (tombSkeletonNumber < tombGraveSequence.length) {
