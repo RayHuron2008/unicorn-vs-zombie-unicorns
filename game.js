@@ -5349,10 +5349,16 @@ if (currentSkeleton.usesMouthFire) {
       state.playerShots.splice(i, 1);
       tombFirstSkeletonHP -= 1;
 
-     if (tombFirstSkeletonHP <= 0) {
+    if (tombFirstSkeletonHP <= 0) {
   tombFirstSkeletonHP = 0;
-  tombFirstSkeletonActive = false;
 
+  if (currentSkeleton.name === "Father") {
+    tombFatherBurning = true;
+    tombFatherBurnTimer = 5.0;
+    return;
+  }
+
+  tombFirstSkeletonActive = false;
   tombSkeletonNumber += 1;
 
   if (tombSkeletonNumber < tombGraveSequence.length) {
