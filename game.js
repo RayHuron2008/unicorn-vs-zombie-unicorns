@@ -4942,6 +4942,37 @@ const y =
       );
   ctx.save();
   ctx.translate(x, y);
+  
+  if (tombFatherBurning && grave.name === "Father") {
+  const flicker = Math.sin(performance.now() * 0.02) * 4;
+
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+
+  ctx.fillStyle = "#ff5a00";
+  ctx.beginPath();
+  ctx.moveTo(-22, 28);
+  ctx.lineTo(-14, -18 - flicker);
+  ctx.lineTo(-5, 20);
+  ctx.lineTo(0, -35 + flicker);
+  ctx.lineTo(7, 18);
+  ctx.lineTo(16, -22 - flicker);
+  ctx.lineTo(23, 28);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = "#ffd21f";
+  ctx.beginPath();
+  ctx.moveTo(-13, 27);
+  ctx.lineTo(-7, -7 + flicker);
+  ctx.lineTo(0, 18);
+  ctx.lineTo(7, -15 - flicker);
+  ctx.lineTo(14, 27);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
 
   // shadow beneath skeleton
   ctx.fillStyle = "rgba(0,0,0,.28)";
