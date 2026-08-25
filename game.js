@@ -4943,32 +4943,68 @@ const y =
   ctx.save();
   ctx.translate(x, y);
   
-  if (tombFatherBurning && grave.name === "Father") {
-  const flicker = Math.sin(performance.now() * 0.02) * 4;
+ if (tombFatherBurning && grave.name === "Father") {
+  const flicker = Math.sin(performance.now() * 0.03) * 8;
+  const flicker2 = Math.cos(performance.now() * 0.024) * 6;
 
   ctx.save();
-  ctx.globalAlpha = 0.9;
+  ctx.globalAlpha = 0.95;
 
-  ctx.fillStyle = "#ff5a00";
+  // outer red glow
+  ctx.fillStyle = "rgba(255,50,0,0.35)";
   ctx.beginPath();
-  ctx.moveTo(-22, 28);
-  ctx.lineTo(-14, -18 - flicker);
-  ctx.lineTo(-5, 20);
-  ctx.lineTo(0, -35 + flicker);
-  ctx.lineTo(7, 18);
-  ctx.lineTo(16, -22 - flicker);
-  ctx.lineTo(23, 28);
+  ctx.ellipse(0, -2, 40 + flicker2, 58 + flicker, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // large outer orange flames
+  ctx.fillStyle = "#ff4a00";
+  ctx.beginPath();
+  ctx.moveTo(-34, 34);
+  ctx.lineTo(-28, 8);
+  ctx.lineTo(-24, -24 - flicker);
+  ctx.lineTo(-14, 2);
+  ctx.lineTo(-8, -42 + flicker2);
+  ctx.lineTo(0, -62 - flicker);
+  ctx.lineTo(10, -30 + flicker2);
+  ctx.lineTo(18, -48 - flicker);
+  ctx.lineTo(26, 0);
+  ctx.lineTo(33, -18 + flicker2);
+  ctx.lineTo(38, 34);
   ctx.closePath();
   ctx.fill();
 
+  // mid orange/yellow flames
+  ctx.fillStyle = "#ff9a00";
+  ctx.beginPath();
+  ctx.moveTo(-26, 32);
+  ctx.lineTo(-20, 4);
+  ctx.lineTo(-12, -16 + flicker2);
+  ctx.lineTo(-4, 10);
+  ctx.lineTo(0, -40 - flicker);
+  ctx.lineTo(8, 4);
+  ctx.lineTo(16, -20 + flicker2);
+  ctx.lineTo(24, 32);
+  ctx.closePath();
+  ctx.fill();
+
+  // inner bright core
+  ctx.fillStyle = "#ffe45c";
+  ctx.beginPath();
+  ctx.moveTo(-14, 28);
+  ctx.lineTo(-9, 0);
+  ctx.lineTo(-2, -14 + flicker2);
+  ctx.lineTo(4, 6);
+  ctx.lineTo(10, -10 - flicker);
+  ctx.lineTo(15, 28);
+  ctx.closePath();
+  ctx.fill();
+
+  // small sparks
   ctx.fillStyle = "#ffd21f";
   ctx.beginPath();
-  ctx.moveTo(-13, 27);
-  ctx.lineTo(-7, -7 + flicker);
-  ctx.lineTo(0, 18);
-  ctx.lineTo(7, -15 - flicker);
-  ctx.lineTo(14, 27);
-  ctx.closePath();
+  ctx.arc(-18, -48 + flicker2, 3, 0, Math.PI * 2);
+  ctx.arc(16, -54 - flicker, 3, 0, Math.PI * 2);
+  ctx.arc(2, -68 + flicker2, 4, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.restore();
