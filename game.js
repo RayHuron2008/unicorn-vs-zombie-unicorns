@@ -4559,6 +4559,7 @@ let tombSkeletonNumber = 0;
 let tombNextSkeletonDelay = 0;
 let tombFatherBurning = false;
 let tombFatherBurnTimer = 0;
+let graveyardSecretReturnState = null;
 
 window.__uvzuJumpToFather = function() {
   if (window.__uvzuCurrentLevelCode !== "TOMB1") return;
