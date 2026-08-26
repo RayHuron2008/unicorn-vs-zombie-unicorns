@@ -2385,10 +2385,11 @@ code = code.replace(
           dir.dy = 0;
         }
       } else if (!updateDodgeMovement(dt)) {
-        player.x += dir.dx * speed * dt;
-        player.y += dir.dy * speed * 0.72 * dt;
-      }`
-              if (
+     player.x += dir.dx * speed * dt;
+player.y += dir.dy * speed * 0.72 * dt;
+      }
+
+      if (
         window.__uvzuCurrentLevelCode === "GRV2" &&
         Math.abs(player.x - W / 2) < 70 &&
         player.y > H - 115 &&
@@ -2397,8 +2398,8 @@ code = code.replace(
         graveyardAngelHoldTimer += dt;
       } else {
         graveyardAngelHoldTimer = 0;
-      }
-      );
+      }`
+);
 
       code = code.replace(
 `      player.x = clamp(player.x, 25, W - 25);
