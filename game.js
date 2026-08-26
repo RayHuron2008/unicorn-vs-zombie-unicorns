@@ -5232,9 +5232,30 @@ if (tombFatherBurnTimer === 0) {
   message.style.transition = "opacity 1.5s";
   message.style.opacity = "0";
 
-  setTimeout(() => {
-    message.remove();
-  }, 1500);
+ setTimeout(() => {
+  message.remove();
+
+  const returnButton = document.createElement("button");
+  returnButton.id = "tombReturnToOverworld";
+  returnButton.textContent = "RETURN TO THE OVERWORLD";
+
+  returnButton.style.position = "fixed";
+  returnButton.style.left = "50%";
+  returnButton.style.top = "50%";
+  returnButton.style.transform = "translate(-50%, -50%)";
+  returnButton.style.zIndex = "100000";
+  returnButton.style.padding = "18px 28px";
+  returnButton.style.fontSize = "22px";
+  returnButton.style.fontWeight = "900";
+  returnButton.style.fontFamily = "Georgia, serif";
+  returnButton.style.color = "#ffd86b";
+  returnButton.style.background = "rgba(0,0,0,0.9)";
+  returnButton.style.border = "3px solid #ffd86b";
+  returnButton.style.borderRadius = "14px";
+  returnButton.style.boxShadow = "0 0 30px rgba(255,160,0,0.8)";
+
+  document.body.appendChild(returnButton);
+}, 1500);
 }, 5000);
 }
 
