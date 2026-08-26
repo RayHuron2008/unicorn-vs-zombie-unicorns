@@ -2388,6 +2388,16 @@ code = code.replace(
         player.x += dir.dx * speed * dt;
         player.y += dir.dy * speed * 0.72 * dt;
       }`
+              if (
+        window.__uvzuCurrentLevelCode === "GRV2" &&
+        Math.abs(player.x - W / 2) < 70 &&
+        player.y > H - 115 &&
+        dir.dy > 0
+      ) {
+        graveyardAngelHoldTimer += dt;
+      } else {
+        graveyardAngelHoldTimer = 0;
+      }
       );
 
       code = code.replace(
