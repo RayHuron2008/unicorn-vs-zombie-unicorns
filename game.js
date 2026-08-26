@@ -5298,8 +5298,36 @@ if (tombFatherBurnTimer === 0) {
   returnButton.style.borderRadius = "14px";
   returnButton.style.boxShadow = "0 0 30px rgba(255,160,0,0.8)";
 
+returnButton.onclick = function() {
+  if (!graveyardSecretReturnState) return;
+
+  window.__uvzuCurrentLevelCode = "GRV2";
+  window.__uvzuLevelTheme = "graveyard";
+
+  state.time = graveyardSecretReturnState.time;
+  state.enemies = graveyardSecretReturnState.enemies.map((e) => ({ ...e }));
+  state.enemyShots = graveyardSecretReturnState.enemyShots.map((b) => ({ ...b }));
+  state.playerShots = graveyardSecretReturnState.playerShots.map((b) => ({ ...b }));
+  state.spawnTimer = graveyardSecretReturnState.spawnTimer;
+  state.finalSpawned = graveyardSecretReturnState.finalSpawned;
+  state.finalSpawnTimer = graveyardSecretReturnState.finalSpawnTimer;
+  state.grv2TarantulasKilled =
+    graveyardSecretReturnState.grv2TarantulasKilled;
+
+  player.x = graveyardSecretReturnState.playerX;
+  player.y = graveyardSecretReturnState.playerY;
+  player.face = graveyardSecretReturnState.playerFace;
+
+  graveyardSecretReturnState = null;
+
+  if (window.__uvzuUpdateLevelMusic) {
+    window.__uvzuUpdateLevelMusic();
+  }
+
+  returnButton.remove();
+};
   document.body.appendChild(returnButton);
-}, 1500);
+  }, 1500);
 }, 5000);
 }
 
