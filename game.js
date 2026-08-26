@@ -2427,9 +2427,9 @@ player.y += dir.dy * speed * 0.72 * dt;
           player.x = W / 2;
           player.y = H * 0.72;
         }
-      } else {
+            } else {
         graveyardAngelHoldTimer = 0;
-      }
+      }`
 );
 
       code = code.replace(
