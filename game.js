@@ -2394,11 +2394,42 @@ player.y += dir.dy * speed * 0.72 * dt;
         Math.abs(player.x - W / 2) < 70 &&
         player.y > H - 115 &&
         dir.dy > 0
-      ) {
+            ) {
         graveyardAngelHoldTimer += dt;
+
+        if (
+          graveyardAngelHoldTimer >= 5 &&
+          !graveyardSecretReturnState
+        ) {
+          graveyardSecretReturnState = {
+            time: state.time,
+            enemies: state.enemies.map((e) => ({ ...e })),
+            enemyShots: state.enemyShots.map((b) => ({ ...b })),
+            playerShots: state.playerShots.map((b) => ({ ...b })),
+            spawnTimer: state.spawnTimer,
+            finalSpawned: state.finalSpawned,
+            finalSpawnTimer: state.finalSpawnTimer,
+            grv2TarantulasKilled: state.grv2TarantulasKilled,
+            playerX: player.x,
+            playerY: player.y,
+            playerFace: player.face
+          };
+
+          graveyardAngelHoldTimer = 0;
+
+          window.__uvzuCurrentLevelCode = "TOMB1";
+          window.__uvzuLevelTheme = "tomb";
+
+          if (window.__uvzuUpdateLevelMusic) {
+            window.__uvzuUpdateLevelMusic();
+          }
+
+          player.x = W / 2;
+          player.y = H * 0.72;
+        }
       } else {
         graveyardAngelHoldTimer = 0;
-      }`
+      }
 );
 
       code = code.replace(
