@@ -5227,6 +5227,15 @@ if (tombFatherBurnTimer === 0) {
   message.style.boxShadow = "0 0 30px rgba(255,160,0,0.8)";
 
   document.body.appendChild(message);
+  
+  setTimeout(() => {
+  message.style.transition = "opacity 1.5s";
+  message.style.opacity = "0";
+
+  setTimeout(() => {
+    message.remove();
+  }, 1500);
+}, 5000);
 }
 
   return;
