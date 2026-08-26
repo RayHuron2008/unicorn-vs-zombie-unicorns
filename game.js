@@ -4560,6 +4560,7 @@ let tombNextSkeletonDelay = 0;
 let tombFatherBurning = false;
 let tombFatherBurnTimer = 0;
 let graveyardSecretReturnState = null;
+let graveyardAngelHoldTimer = 0;
 
 window.__uvzuJumpToFather = function() {
   if (window.__uvzuCurrentLevelCode !== "TOMB1") return;
