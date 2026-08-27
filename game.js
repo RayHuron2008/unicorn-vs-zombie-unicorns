@@ -5587,10 +5587,11 @@ if (currentSkeleton.usesMouthFire) {
   tombFirstSkeletonHP = 0;
 
   if (currentSkeleton.name === "Father") {
-    tombFatherBurning = true;
-    tombFatherBurnTimer = 5.0;
-    return;
-  }
+  stopTombMusic();
+  tombFatherBurning = true;
+  tombFatherBurnTimer = 5.0;
+  return;
+}
 
   tombFirstSkeletonActive = false;
   tombSkeletonNumber += 1;
@@ -5622,10 +5623,11 @@ if (
   tombFirstSkeletonHP = 0;
 
   if (currentSkeleton.name === "Father") {
-    tombFatherBurning = true;
-    tombFatherBurnTimer = 5.0;
-    return;
-  }
+  stopTombMusic();
+  tombFatherBurning = true;
+  tombFatherBurnTimer = 5.0;
+  return;
+}
 
   tombFirstSkeletonActive = false;
   tombSkeletonNumber += 1;
