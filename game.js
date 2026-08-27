@@ -5960,6 +5960,7 @@ if (
     tombAwakenDelay = 0;
     tombFirstGraveRattle = 1.5;
   }
+  startTombMusic();
 }
 
 if (tombFirstGraveRattle > 0) {
