@@ -44,6 +44,27 @@
     window.__uvzuGuestShotFlashes = [];
     const GRAVEYARD_MUSIC_URL = "Graveyard%20Shuffle.mp3";
   let graveyardMusic = null;
+  const TOMB_MUSIC_URL = "The%20March%20of%20Madness.m4a.mp3";
+let tombMusic = null;
+
+function startTombMusic() {
+  if (!tombMusic) {
+    tombMusic = new Audio(TOMB_MUSIC_URL);
+    tombMusic.loop = true;
+    tombMusic.volume = 0.45;
+  }
+
+  tombMusic.play().catch((err) => {
+    console.warn("Tomb music play blocked:", err);
+  });
+}
+
+function stopTombMusic() {
+  if (!tombMusic) return;
+
+  tombMusic.pause();
+  tombMusic.currentTime = 0;
+}
 
   function startGraveyardMusic() {
     if (!graveyardMusic) {
