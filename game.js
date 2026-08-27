@@ -5957,10 +5957,10 @@ if (
   tombAwakenDelay -= dt;
 
   if (tombAwakenDelay <= 0) {
-    tombAwakenDelay = 0;
-    tombFirstGraveRattle = 1.5;
-  }
+  tombAwakenDelay = 0;
+  tombFirstGraveRattle = 1.5;
   startTombMusic();
+}
 }
 
 if (tombFirstGraveRattle > 0) {
