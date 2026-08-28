@@ -47,7 +47,7 @@
   const TOMB_MUSIC_URL = "The%20March%20of%20Madness.m4a.mp3";
 let tombMusic = null;
 
-function startTombMusic() {
+window.startTombMusic = function startTombMusic() {
   if (!tombMusic) {
     tombMusic = new Audio(TOMB_MUSIC_URL);
     tombMusic.loop = true;
@@ -57,14 +57,14 @@ function startTombMusic() {
   tombMusic.play().catch((err) => {
     console.warn("Tomb music play blocked:", err);
   });
-}
+};
 
-function stopTombMusic() {
+window.stopTombMusic = function stopTombMusic() {
   if (!tombMusic) return;
 
   tombMusic.pause();
   tombMusic.currentTime = 0;
-}
+};
 
   function startGraveyardMusic() {
     if (!graveyardMusic) {
