@@ -5587,7 +5587,7 @@ if (currentSkeleton.usesMouthFire) {
   tombFirstSkeletonHP = 0;
 
   if (currentSkeleton.name === "Father") {
-  stopTombMusic();
+  window.stopTombMusic();
   tombFatherBurning = true;
   tombFatherBurnTimer = 5.0;
   return;
@@ -5623,7 +5623,7 @@ if (
   tombFirstSkeletonHP = 0;
 
   if (currentSkeleton.name === "Father") {
-  stopTombMusic();
+  window.stopTombMusic();
   tombFatherBurning = true;
   tombFatherBurnTimer = 5.0;
   return;
@@ -5961,7 +5961,7 @@ if (
   if (tombAwakenDelay <= 0) {
   tombAwakenDelay = 0;
   tombFirstGraveRattle = 1.5;
-  startTombMusic();
+  window.startTombMusic();
 }
 }
 
