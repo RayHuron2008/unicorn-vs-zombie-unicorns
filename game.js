@@ -1640,6 +1640,18 @@ window.stopTombMusic = function stopTombMusic() {
       createControlsPopup();
     });
 
+    overlay.querySelector("#restartBtn").addEventListener("click", () => {
+  overlay.remove();
+
+  if (typeof window.__uvzuStartGame === "function") {
+    window.__uvzuStartGame(
+      window.__uvzuCurrentDifficultyName || "Easy"
+    );
+  }
+
+  if (controls) controls.style.display = "";
+});
+
         overlay.querySelector("#exitBtn").addEventListener("pointerup", (e) => {
       e.preventDefault();
       e.stopPropagation();
