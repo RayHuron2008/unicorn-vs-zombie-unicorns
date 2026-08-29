@@ -752,18 +752,20 @@ window.stopTombMusic = function stopTombMusic() {
         background: rgba(0,0,0,.38);
       }
 
-      #pausePanel {
-        width: min(82vw, 360px);
-        padding: 20px;
-        border-radius: 24px;
-        background: rgba(255,255,255,.94);
-        border: 4px solid rgba(76, 38, 112, .95);
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-        text-align: center;
-        box-shadow: 0 10px 24px rgba(0,0,0,.35);
-      }
+#pausePanel {
+  width: min(82vw, 360px);
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 20px;
+  border-radius: 24px;
+  background: rgba(255,255,255,.94);
+  border: 4px solid rgba(76, 38, 112, .95);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  text-align: center;
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+}
 
       #pauseTitle {
         font: 900 30px system-ui, sans-serif;
