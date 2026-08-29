@@ -1643,6 +1643,10 @@ window.stopTombMusic = function stopTombMusic() {
     overlay.querySelector("#restartBtn").addEventListener("click", () => {
   overlay.remove();
 
+  if (window.stopTombMusic) {
+    window.stopTombMusic();
+  }
+
   if (typeof window.__uvzuStartGame === "function") {
     window.__uvzuStartGame(
       window.__uvzuCurrentDifficultyName || "Easy"
@@ -1651,7 +1655,6 @@ window.stopTombMusic = function stopTombMusic() {
 
   if (controls) controls.style.display = "";
 });
-
         overlay.querySelector("#exitBtn").addEventListener("pointerup", (e) => {
       e.preventDefault();
       e.stopPropagation();
