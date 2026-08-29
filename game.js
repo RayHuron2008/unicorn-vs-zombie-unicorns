@@ -1612,8 +1612,9 @@ window.stopTombMusic = function stopTombMusic() {
           Level Code: RNBW1
         </div>
         <button id="resumeBtn" class="pauseBtn">RESUME</button>
-        <button id="pauseControlsBtn" class="pauseBtn">CONTROLS</button>
-        <button id="exitBtn" class="pauseBtn exit">EXIT TO MENU</button>
+<button id="pauseControlsBtn" class="pauseBtn">CONTROLS</button>
+<button id="restartBtn" class="pauseBtn">RESTART</button>
+<button id="exitBtn" class="pauseBtn exit">EXIT TO MENU</button>
       </div>
     `;
     document.body.appendChild(overlay);
