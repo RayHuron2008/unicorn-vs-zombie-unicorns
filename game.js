@@ -5910,11 +5910,50 @@ function drawTombFirstSkeletonFireballs() {
   };
 
   window.__uvzuStartGame = function(name) {
-    applyDifficulty(name || "Easy");
+  applyDifficulty(name || "Easy");
 
-       try {
-      fullRestart();
+  if (window.__uvzuCurrentLevelCode === "TOMB1") {
+    tombEncounterStarted = false;
+    tombAwakenDelay = 0;
+    tombFirstGraveRattle = 0;
+    tombSkeletonNumber = 0;
+    tombNextSkeletonDelay = 0;
 
+    tombFirstSkeletonActive = false;
+    tombFirstSkeletonRise = 0;
+    tombFirstSkeletonHP = 4;
+    tombFirstSkeletonHitLock = 0;
+    tombFirstSkeletonX = null;
+    tombFirstSkeletonY = null;
+
+    tombFirstSkeletonFireTimer = 1.2;
+    tombFatherMouthFireTimer = 1.5;
+    tombFirstSkeletonFireballs.length = 0;
+
+    tombFirstSkeletonSwordTimer = 0.8;
+    tombFirstSkeletonSwordSwing = 0;
+    tombFirstSkeletonSwordDidHit = false;
+    tombFirstSkeletonThrowTimer = 10.0;
+    tombFirstSkeletonSwordState = "held";
+    tombFirstSkeletonThrownSwordX = null;
+    tombFirstSkeletonThrownSwordY = null;
+    tombFirstSkeletonSwordTargetX = null;
+    tombFirstSkeletonSwordTargetY = null;
+    tombFirstSkeletonSwordVx = 0;
+    tombFirstSkeletonSwordVy = 0;
+    tombFirstSkeletonSwordSpin = 0;
+    tombFirstSkeletonSwordLanded = false;
+
+    tombReading = false;
+    tombCurrentSign = null;
+    tombIgnoredSign = null;
+
+    removeTombPrompt();
+    removeTombWriting();
+  }
+
+  try {
+    fullRestart();
       if (
         (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
         (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
