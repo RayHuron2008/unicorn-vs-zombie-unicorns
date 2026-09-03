@@ -6049,6 +6049,9 @@ function drawTombFirstSkeletonFireballs() {
   };
 
   window.__uvzuStartGame = function(name) {
+  const selectedLevelCode = window.__uvzuCurrentLevelCode;
+  const selectedLevelTheme = window.__uvzuLevelTheme;
+
   applyDifficulty(name || "Easy");
 
   if (window.__uvzuCurrentLevelCode === "TOMB1") {
@@ -6091,8 +6094,11 @@ function drawTombFirstSkeletonFireballs() {
     removeTombWriting();
   }
 
-  try {
+    try {
     fullRestart();
+
+    window.__uvzuCurrentLevelCode = selectedLevelCode;
+    window.__uvzuLevelTheme = selectedLevelTheme;
       if (
         (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
         (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
