@@ -1543,30 +1543,34 @@ window.stopTombMusic = function stopTombMusic() {
 
         const typedLevelCode =
           singleLevelCodeInput.value.trim().toUpperCase();
+if (
+  typedLevelCode &&
+  typedLevelCode !== "RNBW1" &&
+  typedLevelCode !== "GRV2" &&
+  typedLevelCode !== "TOMB1" &&
+  typedLevelCode !== "VHS3"
+) {
+  alert("Unknown level code.");
+  return;
+}
 
-               if (
-          typedLevelCode &&
-          typedLevelCode !== "RNBW1" &&
-          typedLevelCode !== "GRV2" &&
-          typedLevelCode !== "TOMB1"
-        ) {
-          alert("Unknown level code.");
-          return;
-        }
+window.__uvzuCurrentLevelCode =
+  typedLevelCode === "GRV2"
+    ? "GRV2"
+    : typedLevelCode === "TOMB1"
+      ? "TOMB1"
+      : typedLevelCode === "VHS3"
+        ? "VHS3"
+        : "RNBW1";
 
-        window.__uvzuCurrentLevelCode =
-          typedLevelCode === "GRV2"
-            ? "GRV2"
-            : typedLevelCode === "TOMB1"
-              ? "TOMB1"
-              : "RNBW1";
-
-        window.__uvzuLevelTheme =
-          typedLevelCode === "GRV2"
-            ? "graveyard"
-            : typedLevelCode === "TOMB1"
-              ? "tomb"
-              : "rainbow";
+window.__uvzuLevelTheme =
+  typedLevelCode === "GRV2"
+    ? "graveyard"
+    : typedLevelCode === "TOMB1"
+      ? "tomb"
+      : typedLevelCode === "VHS3"
+        ? "videoStore"
+        : "rainbow";
         if (window.__uvzuUpdateLevelMusic) {
           window.__uvzuUpdateLevelMusic();
         }
