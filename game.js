@@ -3745,9 +3745,139 @@ state.mode = "talk";
   }`
       );
            code = replaceFunction(
-        code,
-        "drawBackground",
+  code,
+  "drawBackground",
 `  function drawBackground() {
+
+if (window.__uvzuCurrentLevelCode === "VHS3") {
+  ctx.fillStyle = "#d8cfb5";
+  ctx.fillRect(0, 0, W, H);
+
+  const tile = 48;
+
+  for (let y = 0; y < H; y += tile) {
+    for (let x = 0; x < W; x += tile) {
+      if (((x / tile) + (y / tile)) % 2 === 0) {
+        ctx.fillStyle = "#cfc5aa";
+        ctx.fillRect(x, y, tile, tile);
+      }
+    }
+  }
+
+  // Outer walls
+  ctx.fillStyle = "#274c70";
+  ctx.fillRect(0, 0, W, 54);
+  ctx.fillRect(0, H - 38, W, 38);
+  ctx.fillRect(0, 0, 44, H);
+  ctx.fillRect(W - 44, 0, 44, H);
+
+  // Daylight windows
+  ctx.fillStyle = "#bfe8ff";
+  ctx.fillRect(70, 8, 120, 30);
+  ctx.fillRect(W - 190, 8, 120, 30);
+
+  ctx.fillStyle = "rgba(255,244,184,.32)";
+  ctx.fillRect(70, 54, 120, 125);
+  ctx.fillRect(W - 190, 54, 120, 125);
+
+  // Checkout counter
+  ctx.fillStyle = "#e5b82e";
+  ctx.fillRect(W / 2 - 85, 68, 170, 40);
+
+  ctx.fillStyle = "#355b87";
+  ctx.fillRect(W / 2 - 78, 75, 156, 26);
+
+  ctx.fillStyle = "#343434";
+  ctx.fillRect(W / 2 - 18, 74, 36, 20);
+
+  const shelves = [
+    { x: 92, y: 160, w: 52, h: 180 },
+    { x: 92, y: 405, w: 52, h: 155 },
+
+    { x: 205, y: 125, w: 52, h: 145 },
+    { x: 205, y: 335, w: 52, h: 215 },
+
+    { x: W / 2 - 26, y: 185, w: 52, h: 260 },
+
+    { x: W - 257, y: 125, w: 52, h: 145 },
+    { x: W - 257, y: 335, w: 52, h: 215 },
+
+    { x: W - 144, y: 160, w: 52, h: 180 },
+    { x: W - 144, y: 405, w: 52, h: 155 }
+  ];
+
+  for (const s of shelves) {
+    ctx.fillStyle = "rgba(0,0,0,.18)";
+    ctx.fillRect(s.x + 5, s.y + 5, s.w, s.h);
+
+    ctx.fillStyle = "#294f77";
+    ctx.fillRect(s.x, s.y, s.w, s.h);
+
+    ctx.fillStyle = "#e4b62f";
+    ctx.fillRect(s.x, s.y, s.w, 8);
+    ctx.fillRect(s.x, s.y + s.h - 8, s.w, 8);
+
+    for (let yy = s.y + 18; yy < s.y + s.h - 15; yy += 22) {
+      ctx.fillStyle = "#ece2c8";
+      ctx.fillRect(s.x + 8, yy, 9, 15);
+
+      ctx.fillStyle = "#c95b4d";
+      ctx.fillRect(s.x + 20, yy, 9, 15);
+
+      ctx.fillStyle = "#6d8f5d";
+      ctx.fillRect(s.x + 32, yy, 9, 15);
+    }
+  }
+
+  ctx.font = "bold 12px system-ui";
+  ctx.textAlign = "center";
+
+  ctx.fillStyle = "#f2c94c";
+  ctx.fillRect(76, 132, 84, 22);
+  ctx.fillStyle = "#1d3557";
+  ctx.fillText("ACTION", 118, 148);
+
+  ctx.fillStyle = "#f2c94c";
+  ctx.fillRect(W - 160, 132, 84, 22);
+  ctx.fillStyle = "#1d3557";
+  ctx.fillText("HORROR", W - 118, 148);
+
+  ctx.fillStyle = "#f2c94c";
+  ctx.fillRect(W / 2 - 52, 150, 104, 22);
+  ctx.fillStyle = "#1d3557";
+  ctx.fillText("NEW RELEASES", W / 2, 166);
+
+  // Fallen CRT
+  ctx.fillStyle = "#2e2e2e";
+  ctx.fillRect(54, H - 120, 55, 38);
+
+  ctx.fillStyle = "#6f7f85";
+  ctx.fillRect(60, H - 114, 43, 26);
+
+  ctx.fillStyle = "#18252b";
+  ctx.fillRect(66, H - 109, 31, 16);
+
+  // Scattered VHS cases
+  ctx.fillStyle = "#c95b4d";
+  ctx.fillRect(W / 2 + 70, H - 105, 25, 8);
+
+  ctx.fillStyle = "#5576a5";
+  ctx.fillRect(W / 2 + 105, H - 82, 25, 8);
+
+  ctx.fillStyle = "#d7b13f";
+  ctx.fillRect(W / 2 - 130, H - 92, 25, 8);
+
+  // Employees door
+  ctx.fillStyle = "#4b3b31";
+  ctx.fillRect(W / 2 - 45, H - 78, 90, 40);
+
+  ctx.fillStyle = "#eee2b8";
+  ctx.font = "bold 11px system-ui";
+  ctx.fillText("EMPLOYEES", W / 2, H - 54);
+
+  return;
+}
+
 if (window.__uvzuCurrentLevelCode === "TOMB1") {
   if (!window.__uvzuTombBg) {
     const img = new Image();
