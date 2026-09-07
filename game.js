@@ -4628,5 +4628,2365 @@ if (state.mode === "approach" || state.mode === "talk" || state.mode === "cheer"
         ctx.lineTo(player.x + 32, player.y - 26);
 
         ctx.moveTo(player.x - 30, player.y - 10);
-        ctx.lineTo(pla
-Preview truncated for large file
+        ctx.lineTo(player.x + 30, player.y - 10);
+
+        ctx.moveTo(player.x - 24, player.y + 6);
+        ctx.lineTo(player.x + 24, player.y + 6);
+        ctx.stroke();
+
+        // vertical + diagonal strands
+        ctx.beginPath();
+        ctx.moveTo(player.x, player.y - 58);
+        ctx.lineTo(player.x, player.y + 14);
+
+        ctx.moveTo(player.x - 22, player.y - 50);
+        ctx.lineTo(player.x + 22, player.y + 2);
+
+        ctx.moveTo(player.x + 22, player.y - 50);
+        ctx.lineTo(player.x - 22, player.y + 2);
+
+        ctx.moveTo(player.x - 30, player.y - 30);
+        ctx.lineTo(player.x + 30, player.y - 18);
+
+        ctx.moveTo(player.x + 30, player.y - 30);
+        ctx.lineTo(player.x - 30, player.y - 18);
+        ctx.stroke();
+
+        // top knot / extra webbing
+        ctx.beginPath();
+        ctx.arc(player.x, player.y - 60, 8, 0, Math.PI * 2);
+        ctx.stroke();
+
+       
+
+        ctx.restore();
+      }
+          
+      if (state.endingKind === "graveyardFamily" && state.mode === "talk") {
+        const boxX = W / 2 - 290;
+        const boxY = 70;
+        const boxW = 580;
+        const boxH = 105;
+
+        ctx.save();
+
+        ctx.fillStyle = "rgba(255,255,255,.96)";
+        ctx.strokeStyle = "#4b2670";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 16);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = "#4b2670";
+        ctx.font = "900 18px system-ui, sans-serif";
+        ctx.fillText("Mom", boxX + 20, boxY + 28);
+
+        ctx.fillStyle = "#1e1530";
+        ctx.font = "800 17px system-ui, sans-serif";
+        ctx.fillText("You saved us! I thought all of the unicorns", boxX + 20, boxY + 58);
+        ctx.fillText("in the world had turned into those creepy eaters.", boxX + 20, boxY + 82);
+
+        ctx.restore();
+
+        return;
+      }
+      if (window.__uvzuLevelTheme === "graveyard") {
+        ctx.save();
+
+        function frontFog(cx, cy, rx, ry, alpha) {
+          const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, rx);
+          g.addColorStop(0, "rgba(230,235,245," + alpha + ")");
+          g.addColorStop(0.55, "rgba(230,235,245," + (alpha * 0.55) + ")");
+          g.addColorStop(1, "rgba(230,235,245,0)");
+          ctx.fillStyle = g;
+
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        frontFog(W * 0.22, GROUND_Y + 22, 180, 42, 0.10);
+        frontFog(W * 0.52, GROUND_Y + 28, 220, 50, 0.12);
+        frontFog(W * 0.82, GROUND_Y + 24, 170, 40, 0.09);
+
+        ctx.restore();
+      }`
+      );
+            code = code.replace(
+`  function drawShots() {
+    for (const b of state.playerShots) {`,
+`  function drawShots() {
+    if (window.__uvzuGuestShotFlashes) {
+      const now = Date.now();
+      window.__uvzuGuestShotFlashes = window.__uvzuGuestShotFlashes.filter((flash) => flash.until > now);
+
+      for (const flash of window.__uvzuGuestShotFlashes) {
+        ctx.save();
+        ctx.globalAlpha = Math.max(0.15, (flash.until - now) / 180);
+        ctx.strokeStyle = "#66d9ff";
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(flash.x1, flash.y1);
+        ctx.lineTo(flash.x2, flash.y2);
+        ctx.stroke();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(flash.x1, flash.y1);
+        ctx.lineTo(flash.x2, flash.y2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    for (const b of state.playerShots) {`
+      );
+      code = replaceFunction(
+        code,
+        "drawUnicorn",
+`  function drawUnicorn(x, y, face, zombie = false, ray = false, giant = false) {
+    const s = giant ? 1.28 : 1;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(face * s, s);
+
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = "#154220";
+    ctx.beginPath();
+    ctx.ellipse(0, 9, 36, 9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    const body = zombie ? "#62d978" : "#ff8cc7";
+    const bodyDark = zombie ? "#299c55" : "#f04f9d";
+    const bodyLight = zombie ? "#a6ffbf" : "#ffc5e1";
+    const hoof = zombie ? "#235f35" : "#6a3c61";
+
+    ctx.fillStyle = bodyDark;
+    ctx.fillRect(-28, -25, 52, 23);
+
+    ctx.fillStyle = body;
+    ctx.fillRect(-30, -30, 56, 25);
+
+    ctx.fillStyle = bodyLight;
+    ctx.fillRect(-18, -25, 27, 7);
+
+    ctx.fillStyle = body;
+    ctx.fillRect(-24, -8, 8, 18);
+    ctx.fillRect(-8, -8, 8, 18);
+    ctx.fillRect(6, -8, 8, 18);
+    ctx.fillRect(20, -8, 8, 18);
+
+    ctx.fillStyle = hoof;
+    ctx.fillRect(-24, 8, 8, 5);
+    ctx.fillRect(-8, 8, 8, 5);
+    ctx.fillRect(6, 8, 8, 5);
+    ctx.fillRect(20, 8, 8, 5);
+
+    ctx.fillStyle = body;
+    ctx.fillRect(14, -40, 12, 15);
+
+    ctx.fillStyle = body;
+    ctx.fillRect(22, -50, 30, 22);
+
+    ctx.fillStyle = zombie ? "#bff7cc" : "#ffd0e6";
+    ctx.fillRect(42, -40, 14, 10);
+
+    ctx.fillStyle = bodyDark;
+    ctx.fillRect(24, -60, 7, 11);
+    ctx.fillStyle = body;
+    ctx.fillRect(31, -62, 8, 13);
+
+    ctx.fillStyle = "#ffe56e";
+    ctx.beginPath();
+    ctx.moveTo(37, -52);
+    ctx.lineTo(48, -74);
+    ctx.lineTo(30, -56);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "#c29a1b";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(35, -58);
+    ctx.lineTo(42, -64);
+    ctx.stroke();
+
+    const mane = zombie
+      ? ["#18482d", "#27663d", "#44bf67"]
+      : ["#ff4f72", "#ff9b43", "#ffe661", "#62eb66", "#62d7ff", "#aa6fff"];
+
+    for (let i = 0; i < mane.length; i++) {
+      ctx.fillStyle = mane[i];
+      ctx.fillRect(12 - i * 6, -42 + (i % 2) * 2, 8, 15);
+    }
+
+    for (let i = 0; i < mane.length; i++) {
+      ctx.fillStyle = mane[i];
+      ctx.fillRect(-38 - i * 2, -27 + i * 4, 16, 5);
+    }
+
+    if (ray) {
+      ctx.fillStyle = zombie ? "#6a1c1c" : "#3a3a46";
+      ctx.fillRect(-8, -45, 20, 9);
+
+      ctx.fillStyle = zombie ? "#ff4040" : "#6de8ff";
+      ctx.fillRect(7, -42, 13, 4);
+
+      ctx.fillStyle = "#262626";
+      ctx.fillRect(-2, -36, 4, 8);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(19, -42, 2, 4);
+    }
+
+    if (zombie) {
+      ctx.fillStyle = "#ff2626";
+      ctx.fillRect(38, -44, 4, 4);
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(46, -36, 3, 3);
+      ctx.fillRect(50, -36, 3, 3);
+    } else {
+      ctx.fillStyle = "#111";
+      ctx.fillRect(38, -44, 4, 4);
+
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(45, -35, 6, 0.15, Math.PI * 0.9);
+      ctx.stroke();
+
+      ctx.fillStyle = "#ff4d8d";
+      ctx.fillRect(49, -31, 7, 6);
+    }
+
+    ctx.restore();
+  }`
+      );
+
+      const bootStart = code.indexOf("  let last = performance.now();");
+      const bootEnd = code.lastIndexOf("\n})();");
+
+      if (bootStart === -1 || bootEnd === -1 || bootEnd <= bootStart) {
+        throw new Error("Could not replace game boot loop");
+      }
+
+      const replacementBoot = `  let last = performance.now();
+  let gameStarted = false;
+  let paused = false;
+  let tombReading = false;
+  let tombCurrentSign = null;
+  let tombAWasDown = false;
+  let tombBWasDown = false;
+  let tombIgnoredSign = null;
+  let tombEncounterStarted = false;
+let tombAwakenDelay = 0;
+let tombFirstGraveRattle = 0;
+let tombFirstSkeletonActive = false;
+let tombFirstSkeletonRise = 0;
+let tombFirstSkeletonHP = 4;
+let tombFirstSkeletonHitLock = 0;
+let tombFirstSkeletonX = null;
+let tombFirstSkeletonY = null;
+let tombFirstSkeletonFireTimer = 1.2;
+let tombFatherMouthFireTimer = 1.5;
+let tombFirstSkeletonFireballs = [];
+let tombFirstSkeletonSwordTimer = 0.8;
+let tombFirstSkeletonSwordSwing = 0;
+let tombFirstSkeletonSwordDidHit = false;
+let tombNeedsFullRestart = false;
+let tombFirstSkeletonThrowTimer = 10.0;
+let tombFirstSkeletonSwordState = "held";
+let tombFirstSkeletonThrownSwordX = null;
+let tombFirstSkeletonThrownSwordY = null;
+let tombFirstSkeletonSwordTargetX = null;
+let tombFirstSkeletonSwordTargetY = null;
+let tombFirstSkeletonSwordVx = 0;
+let tombFirstSkeletonSwordVy = 0;
+let tombFirstSkeletonSwordSpin = 0;
+let tombFirstSkeletonSwordLanded = false;
+let tombSkeletonNumber = 0;
+let tombNextSkeletonDelay = 0;
+let tombFatherBurning = false;
+let tombFatherBurnTimer = 0;
+let graveyardSecretReturnState = null;
+let graveyardAngelHoldTimer = 0;
+
+window.__uvzuJumpToFather = function() {
+  if (window.__uvzuCurrentLevelCode !== "TOMB1") return;
+
+  window.__uvzuDisableTombSigns = true;
+
+ tombSkeletonNumber = 7;
+  tombNextSkeletonDelay = 0;
+  tombFirstGraveRattle = 1.5;
+
+  tombFirstSkeletonActive = false;
+  tombFirstSkeletonRise = 0;
+  tombFirstSkeletonHP = 4;
+
+  tombFirstSkeletonFireballs.length = 0;
+  tombFirstSkeletonSwordState = "held";
+  tombFirstSkeletonThrowTimer = 10.0;
+
+  tombFirstSkeletonFireTimer = 1.2;
+  tombFatherMouthFireTimer = 1.5;
+};
+
+
+const tombGraveSequence = [
+  // Sam and Mary
+  { name: "Sam", x: 0.135, y: 0.34, fireballCount: 1 },
+  { name: "Mary", x: 0.135, y: 0.64, fireballCount: 1 },
+
+  // Emma and Josephine
+  { name: "Emma", x: 0.865, y: 0.34, fireballCount: 2 },
+  { name: "Josephine", x: 0.865, y: 0.64, fireballCount: 2 },
+
+  // Peter and Alison
+  { name: "Peter", x: 0.30, y: 0.86, fireballCount: 3 },
+  { name: "Alison", x: 0.70, y: 0.86, fireballCount: 3 },
+
+  // Mother and Father are last
+  { name: "Mother", x: 0.70, y: 0.13, fireballCount: 4 },
+  {
+    name: "Father",
+    x: 0.30,
+    y: 0.13,
+    fireballCount: 4,
+    usesMouthFire: true
+  }
+];
+
+  const tombSigns = [
+    {
+      id: "parents",
+      x: 0.50,
+      y: 0.10,
+      title: "Mother & Father",
+      text: "Here They Lie. May Their Union Continue From This World Into the Next and Back Again."
+    },
+    {
+      id: "samMary",
+      x: 0.135,
+      y: 0.49,
+      title: "My Brother and Sister-in-Law, Sam & Mary",
+      text: "You Were Always Thinking of Things. Inventing. Innovating. Truly a Power Couple. What Lies Beyond the Great Divide?"
+    },
+    {
+      id: "emmaJosephine",
+      x: 0.865,
+      y: 0.49,
+      title: "My Sisters, Emma & Josephine",
+      text: "Who Could Tell You Two Apart? The World Saw You as Twins. I Saw Your Uniqueness. I Wish I Had Gotten to Spend More Time With You Two. It's Not Fair That We Cannot Live Forever. I Will Right This Wrong."
+    },
+   {
+  id: "peterAlison",
+  x: 0.50,
+  y: 0.91,
+  title: "My Brother Peter & Sister-in-Law, Alison",
+  text: "I'll Finish It. I'll Finish What Our Family Started. We Will Rise Again and See the Light of Day!"
+},
+{
+  id: "forbiddenSpell",
+  x: 0.865,
+  y: 0.91,
+  title: "Do Not Read",
+  text: "Svyrie Loïs Kree Va Sakoyee"
+}
+  ];
+
+  function removeTombPrompt() {
+    const prompt = document.getElementById("tombReadPrompt");
+    if (prompt) prompt.remove();
+  }
+
+  function removeTombWriting() {
+    const box = document.getElementById("tombWritingBox");
+    if (box) box.remove();
+  }
+
+  function showTombPrompt(sign) {
+    let prompt = document.getElementById("tombReadPrompt");
+
+    if (!prompt) {
+      prompt = document.createElement("div");
+      prompt.id = "tombReadPrompt";
+
+      prompt.style.position = "fixed";
+      prompt.style.left = "50%";
+      prompt.style.bottom = "145px";
+      prompt.style.transform = "translateX(-50%)";
+      prompt.style.zIndex = "9998";
+      prompt.style.padding = "10px 18px";
+      prompt.style.borderRadius = "10px";
+      prompt.style.background = "rgba(0,0,0,.72)";
+      prompt.style.border = "2px solid rgba(255,255,255,.65)";
+      prompt.style.color = "#fff";
+      prompt.style.font = "900 16px monospace";
+      prompt.style.textAlign = "center";
+      prompt.style.whiteSpace = "pre-line";
+      prompt.style.pointerEvents = "none";
+
+      document.body.appendChild(prompt);
+    }
+
+prompt.innerHTML =
+  sign.id === "forbiddenSpell"
+    ? "DO NOT READ<br>A READ     B IGNORE"
+    : "A READ     B IGNORE";
+  }
+
+  function showTombWriting(sign) {
+    removeTombPrompt();
+    removeTombWriting();
+
+    const box = document.createElement("div");
+    box.id = "tombWritingBox";
+
+    box.style.position = "fixed";
+    box.style.left = "50%";
+    box.style.top = "50%";
+    box.style.transform = "translate(-50%, -50%)";
+    box.style.zIndex = "9999";
+    box.style.width = "min(680px, 78vw)";
+    box.style.maxHeight = "70vh";
+    box.style.overflowY = "auto";
+    box.style.boxSizing = "border-box";
+    box.style.padding = "22px 26px";
+    box.style.borderRadius = "14px";
+    box.style.background = "rgba(20,18,16,.94)";
+    box.style.border = "4px solid #a5a477";
+    box.style.boxShadow = "0 8px 30px rgba(0,0,0,.7)";
+    box.style.color = "#eee7c8";
+    box.style.fontFamily = "Georgia, serif";
+    box.style.textAlign = "center";
+    box.style.pointerEvents = "none";
+
+    const title = document.createElement("div");
+    title.textContent = sign.title;
+    title.style.fontSize = "22px";
+    title.style.fontWeight = "900";
+    title.style.marginBottom = "16px";
+    title.style.color = "#d8d19b";
+
+    const writing = document.createElement("div");
+    writing.textContent = sign.text;
+    writing.style.fontSize = "19px";
+    writing.style.lineHeight = "1.5";
+
+    const close = document.createElement("div");
+    close.textContent = "B  CLOSE";
+    close.style.marginTop = "20px";
+    close.style.font = "900 15px monospace";
+    close.style.color = "#ffffff";
+
+    box.appendChild(title);
+    box.appendChild(writing);
+    box.appendChild(close);
+
+    document.body.appendChild(box);
+  }
+
+  function updateTombSigns() {
+  if (window.__uvzuDisableTombSigns) {
+  tombReading = false;
+  tombCurrentSign = null;
+  tombIgnoredSign = null;
+  removeTombPrompt();
+  removeTombWriting();
+  return;
+}
+    
+    if (window.__uvzuCurrentLevelCode !== "TOMB1") {
+      tombReading = false;
+      tombCurrentSign = null;
+      tombIgnoredSign = null;
+      removeTombPrompt();
+      removeTombWriting();
+      tombAWasDown = !!input.a;
+      tombBWasDown = !!input.b;
+      return;
+    }
+    
+    if (tombEncounterStarted) {
+  tombReading = false;
+  tombCurrentSign = null;
+  tombIgnoredSign = null;
+  removeTombPrompt();
+  removeTombWriting();
+  tombAWasDown = !!input.a;
+  tombBWasDown = !!input.b;
+  return;
+}
+
+    const aPressed = !!input.a && !tombAWasDown;
+    const bPressed = !!input.b && !tombBWasDown;
+
+    tombAWasDown = !!input.a;
+    tombBWasDown = !!input.b;
+
+  if (tombReading) {
+  if (bPressed) {
+    if (
+      tombCurrentSign &&
+      tombCurrentSign.id === "forbiddenSpell" &&
+      !tombEncounterStarted
+    ) {
+      tombEncounterStarted = true;
+      tombAwakenDelay = 1.5;
+    }
+
+    tombReading = false;
+    tombCurrentSign = null;
+    removeTombWriting();
+  }
+  return;
+}
+
+    let nearest = null;
+    let nearestDistance = Infinity;
+
+    for (const sign of tombSigns) {
+      const sx = W * sign.x;
+      const sy = H * sign.y;
+      const dx = player.x - sx;
+      const dy = player.y - sy;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = sign;
+      }
+    }
+
+    if (!nearest || nearestDistance > 105) {
+      tombIgnoredSign = null;
+      removeTombPrompt();
+      return;
+    }
+
+    if (tombIgnoredSign === nearest.id) {
+      removeTombPrompt();
+      return;
+    }
+
+    showTombPrompt(nearest);
+
+    if (aPressed) {
+      tombReading = true;
+      tombCurrentSign = nearest;
+      showTombWriting(nearest);
+      return;
+    }
+
+    if (bPressed) {
+      tombIgnoredSign = nearest.id;
+      removeTombPrompt();
+    }
+  }
+  function drawTombFirstGraveRattle() {
+  if (
+    window.__uvzuCurrentLevelCode !== "TOMB1" ||
+    tombFirstGraveRattle <= 0
+  ) {
+    return;
+  }
+
+const grave =
+  tombGraveSequence[
+    Math.min(tombSkeletonNumber, tombGraveSequence.length - 1)
+  ];
+
+const gx = W * grave.x;
+const gy = H * grave.y;
+
+  const shake = Math.sin(tombFirstGraveRattle * 45) * 5;
+
+  ctx.save();
+  ctx.translate(shake, 0);
+
+  ctx.strokeStyle = "rgba(255,235,170,.95)";
+  ctx.lineWidth = 3;
+
+  // vibration marks around the upper-left grave
+  ctx.beginPath();
+
+  ctx.moveTo(gx - 52, gy - 20);
+  ctx.lineTo(gx - 66, gy - 30);
+
+  ctx.moveTo(gx - 55, gy);
+  ctx.lineTo(gx - 72, gy);
+
+  ctx.moveTo(gx + 52, gy - 20);
+  ctx.lineTo(gx + 66, gy - 30);
+
+  ctx.moveTo(gx + 55, gy);
+  ctx.lineTo(gx + 72, gy);
+
+  ctx.stroke();
+
+  // dust near the base
+  ctx.fillStyle = "rgba(210,200,160,.65)";
+
+  ctx.beginPath();
+  ctx.arc(gx - 26, gy + 45, 7, 0, Math.PI * 2);
+  ctx.arc(gx, gy + 49, 9, 0, Math.PI * 2);
+  ctx.arc(gx + 25, gy + 44, 6, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawTombFirstSkeleton() {
+  if (
+    window.__uvzuCurrentLevelCode !== "TOMB1" ||
+    !tombFirstSkeletonActive
+  ) {
+    return;
+  }
+
+ const grave =
+  tombGraveSequence[
+    Math.min(tombSkeletonNumber, tombGraveSequence.length - 1)
+  ];
+
+const gx = W * grave.x;
+const graveY = H * grave.y;
+  const riseLength = 1.2;
+  const riseProgress =
+    1 - Math.max(0, Math.min(1, tombFirstSkeletonRise / riseLength));
+
+ const x =
+  tombFirstSkeletonX == null
+    ? gx
+    : tombFirstSkeletonX;
+
+const y =
+  tombFirstSkeletonRise > 0
+    ? graveY + 78 - riseProgress * 58
+    : (
+        tombFirstSkeletonY == null
+          ? graveY + 20
+          : tombFirstSkeletonY
+      );
+  ctx.save();
+  ctx.translate(x, y);
+  
+ if (tombFatherBurning && grave.name === "Father") {
+  const flicker = Math.sin(performance.now() * 0.03) * 8;
+  const flicker2 = Math.cos(performance.now() * 0.024) * 6;
+
+  ctx.save();
+  ctx.globalAlpha = 0.95;
+
+  // outer red glow
+  ctx.fillStyle = "rgba(255,50,0,0.35)";
+  ctx.beginPath();
+  ctx.ellipse(0, -2, 40 + flicker2, 58 + flicker, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // large outer orange flames
+  ctx.fillStyle = "#ff4a00";
+  ctx.beginPath();
+  ctx.moveTo(-34, 34);
+  ctx.lineTo(-28, 8);
+  ctx.lineTo(-24, -24 - flicker);
+  ctx.lineTo(-14, 2);
+  ctx.lineTo(-8, -42 + flicker2);
+  ctx.lineTo(0, -62 - flicker);
+  ctx.lineTo(10, -30 + flicker2);
+  ctx.lineTo(18, -48 - flicker);
+  ctx.lineTo(26, 0);
+  ctx.lineTo(33, -18 + flicker2);
+  ctx.lineTo(38, 34);
+  ctx.closePath();
+  ctx.fill();
+
+  // mid orange/yellow flames
+  ctx.fillStyle = "#ff9a00";
+  ctx.beginPath();
+  ctx.moveTo(-26, 32);
+  ctx.lineTo(-20, 4);
+  ctx.lineTo(-12, -16 + flicker2);
+  ctx.lineTo(-4, 10);
+  ctx.lineTo(0, -40 - flicker);
+  ctx.lineTo(8, 4);
+  ctx.lineTo(16, -20 + flicker2);
+  ctx.lineTo(24, 32);
+  ctx.closePath();
+  ctx.fill();
+
+  // inner bright core
+  ctx.fillStyle = "#ffe45c";
+  ctx.beginPath();
+  ctx.moveTo(-14, 28);
+  ctx.lineTo(-9, 0);
+  ctx.lineTo(-2, -14 + flicker2);
+  ctx.lineTo(4, 6);
+  ctx.lineTo(10, -10 - flicker);
+  ctx.lineTo(15, 28);
+  ctx.closePath();
+  ctx.fill();
+
+  // small sparks
+  ctx.fillStyle = "#ffd21f";
+  ctx.beginPath();
+  ctx.arc(-18, -48 + flicker2, 3, 0, Math.PI * 2);
+  ctx.arc(16, -54 - flicker, 3, 0, Math.PI * 2);
+  ctx.arc(2, -68 + flicker2, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+  // shadow beneath skeleton
+  ctx.fillStyle = "rgba(0,0,0,.28)";
+  ctx.beginPath();
+  ctx.ellipse(0, 34, 22, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const bone = "#e7dfb5";
+  const boneDark = "#b8ad7d";
+
+  // skull
+  ctx.fillStyle = bone;
+  ctx.beginPath();
+  ctx.arc(0, -29, 13, 0, Math.PI * 2);
+  ctx.fill();
+
+  // jaw
+  ctx.fillStyle = boneDark;
+  ctx.fillRect(-8, -21, 16, 7);
+
+  // eye sockets
+  ctx.fillStyle = "#181612";
+  ctx.fillRect(-8, -33, 5, 5);
+  ctx.fillRect(3, -33, 5, 5);
+
+  // nose hole
+  ctx.fillRect(-2, -27, 4, 4);
+
+  // spine
+  ctx.fillStyle = bone;
+  ctx.fillRect(-3, -14, 6, 25);
+
+  // ribs
+  ctx.strokeStyle = bone;
+  ctx.lineWidth = 4;
+
+  ctx.beginPath();
+  ctx.moveTo(0, -12);
+  ctx.lineTo(-12, -8);
+  ctx.lineTo(-8, -1);
+
+  ctx.moveTo(0, -12);
+  ctx.lineTo(12, -8);
+  ctx.lineTo(8, -1);
+
+  ctx.moveTo(0, -4);
+  ctx.lineTo(-11, 0);
+  ctx.lineTo(-7, 7);
+
+  ctx.moveTo(0, -4);
+  ctx.lineTo(11, 0);
+  ctx.lineTo(7, 7);
+  ctx.stroke();
+
+  // arms
+  ctx.beginPath();
+  ctx.moveTo(-10, -8);
+  ctx.lineTo(-19, 6);
+  ctx.lineTo(-16, 18);
+
+  ctx.moveTo(10, -8);
+  ctx.lineTo(19, 6);
+  ctx.lineTo(16, 18);
+  ctx.stroke();
+
+  // pelvis
+  ctx.fillStyle = boneDark;
+  ctx.fillRect(-9, 9, 18, 7);
+
+  // legs
+  ctx.strokeStyle = bone;
+  ctx.lineWidth = 5;
+
+  ctx.beginPath();
+  ctx.moveTo(-5, 15);
+  ctx.lineTo(-8, 30);
+  ctx.lineTo(-12, 37);
+
+  ctx.moveTo(5, 15);
+  ctx.lineTo(8, 30);
+  ctx.lineTo(12, 37);
+  ctx.stroke();
+
+// HP bar
+ctx.fillStyle = "rgba(0,0,0,.65)";
+ctx.fillRect(-22, -53, 44, 6);
+
+ctx.fillStyle = "#d94b3d";
+ctx.fillRect(
+  -21,
+  -52,
+  42 * (tombFirstSkeletonHP / 4),
+  4
+);
+// Sword — only visible in the skeleton's hand while held.
+if (
+  grave.name !== "Father" &&
+  tombFirstSkeletonSwordState === "held"
+) {
+  ctx.save();
+
+  ctx.translate(14, 0);
+
+  const swordSwingProgress =
+    tombFirstSkeletonSwordSwing > 0
+      ? 1 - tombFirstSkeletonSwordSwing / 0.35
+      : 0;
+
+  // Keep the sword vertical instead of angled.
+  // During the swing, move it up and down.
+  const swordOffsetY =
+    tombFirstSkeletonSwordSwing > 0
+      ? -10 + swordSwingProgress * 20
+      : 0;
+
+  ctx.translate(0, swordOffsetY);
+
+  // blade
+  ctx.strokeStyle = "#d9d9d9";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, -27);
+  ctx.stroke();
+
+  // point
+  ctx.fillStyle = "#d9d9d9";
+  ctx.beginPath();
+  ctx.moveTo(-4, -26);
+  ctx.lineTo(0, -34);
+  ctx.lineTo(4, -26);
+  ctx.closePath();
+  ctx.fill();
+
+  // handle
+  ctx.fillStyle = "#5b3a22";
+  ctx.fillRect(-2, 0, 4, 9);
+
+  // guard
+  ctx.strokeStyle = "#caa85c";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-7, 1);
+  ctx.lineTo(7, 1);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+ctx.restore();
+}
+
+function updateTombFirstSkeletonCombat(dt) {
+  if (
+    window.__uvzuCurrentLevelCode !== "TOMB1" ||
+    !tombFirstSkeletonActive ||
+    tombFirstSkeletonRise > 0
+  ) {
+    return;
+  }
+
+  tombFirstSkeletonHitLock =
+    Math.max(0, tombFirstSkeletonHitLock - dt);
+
+  if (tombFirstSkeletonX == null) {
+    tombFirstSkeletonX = W * 0.30;
+  }
+
+  if (tombFirstSkeletonY == null) {
+    tombFirstSkeletonY = H * 0.13 + 20;
+  }
+
+  let sx = tombFirstSkeletonX;
+  let sy = tombFirstSkeletonY;
+  const currentSkeleton =
+  tombGraveSequence[
+    Math.min(tombSkeletonNumber, tombGraveSequence.length - 1)
+  ];
+if (tombFatherBurning) {
+  tombFatherBurnTimer = Math.max(0, tombFatherBurnTimer - dt);
+
+  // Stop Father attacking while he burns.
+  tombFirstSkeletonFireballs.length = 0;
+
+if (tombFatherBurnTimer === 0) {
+  tombFatherBurning = false;
+  tombFirstSkeletonActive = false;
+  tombSkeletonNumber += 1;
+
+  player.lives = 99;
+
+  const message = document.createElement("div");
+  message.id = "tombFatherVictoryMessage";
+  message.innerHTML =
+    "CONGRATULATIONS, MORTAL<br><br>" +
+    "HERE LIES THE GIFT OF THE GODS<br>" +
+    "FOR CLOSING DOORS THAT SHOULD NEVER HAVE BEEN OPENED";
+
+  message.style.position = "fixed";
+  message.style.left = "50%";
+  message.style.top = "50%";
+  message.style.transform = "translate(-50%, -50%)";
+  message.style.zIndex = "100000";
+  message.style.width = "80vw";
+  message.style.maxWidth = "700px";
+  message.style.padding = "24px";
+  message.style.textAlign = "center";
+  message.style.fontFamily = "Georgia, serif";
+  message.style.fontSize = "24px";
+  message.style.fontWeight = "900";
+  message.style.lineHeight = "1.5";
+  message.style.color = "#ffd86b";
+  message.style.background = "rgba(0,0,0,0.88)";
+  message.style.border = "3px solid #ffd86b";
+  message.style.borderRadius = "14px";
+  message.style.boxShadow = "0 0 30px rgba(255,160,0,0.8)";
+
+  document.body.appendChild(message);
+  
+  setTimeout(() => {
+  message.style.transition = "opacity 1.5s";
+  message.style.opacity = "0";
+
+ setTimeout(() => {
+  message.remove();
+
+  const returnButton = document.createElement("button");
+  returnButton.id = "tombReturnToOverworld";
+  returnButton.textContent = "RETURN TO THE OVERWORLD";
+
+  returnButton.style.position = "fixed";
+  returnButton.style.left = "50%";
+  returnButton.style.top = "50%";
+  returnButton.style.transform = "translate(-50%, -50%)";
+  returnButton.style.zIndex = "100000";
+  returnButton.style.padding = "18px 28px";
+  returnButton.style.fontSize = "22px";
+  returnButton.style.fontWeight = "900";
+  returnButton.style.fontFamily = "Georgia, serif";
+  returnButton.style.color = "#ffd86b";
+  returnButton.style.background = "rgba(0,0,0,0.9)";
+  returnButton.style.border = "3px solid #ffd86b";
+  returnButton.style.borderRadius = "14px";
+  returnButton.style.boxShadow = "0 0 30px rgba(255,160,0,0.8)";
+
+returnButton.onclick = function() {
+  if (!graveyardSecretReturnState) return;
+
+  window.__uvzuCurrentLevelCode = "GRV2";
+  window.__uvzuLevelTheme = "graveyard";
+
+  state.time = graveyardSecretReturnState.time;
+  state.enemies = graveyardSecretReturnState.enemies.map((e) => ({ ...e }));
+  state.enemyShots = graveyardSecretReturnState.enemyShots.map((b) => ({ ...b }));
+  state.playerShots = graveyardSecretReturnState.playerShots.map((b) => ({ ...b }));
+  state.spawnTimer = graveyardSecretReturnState.spawnTimer;
+  state.finalSpawned = graveyardSecretReturnState.finalSpawned;
+  state.finalSpawnTimer = graveyardSecretReturnState.finalSpawnTimer;
+  state.grv2TarantulasKilled =
+    graveyardSecretReturnState.grv2TarantulasKilled;
+
+  player.x = graveyardSecretReturnState.playerX;
+  player.y = graveyardSecretReturnState.playerY;
+  player.face = graveyardSecretReturnState.playerFace;
+
+  graveyardSecretReturnState = null;
+
+  if (window.__uvzuUpdateLevelMusic) {
+    window.__uvzuUpdateLevelMusic();
+  }
+
+  returnButton.remove();
+};
+  document.body.appendChild(returnButton);
+  }, 1500);
+}, 5000);
+}
+
+  return;
+}
+
+const usesSword = currentSkeleton.name !== "Father";
+
+let dx = player.x - sx;
+let dy = player.y - sy;
+let distance = Math.sqrt(dx * dx + dy * dy);
+
+// If the sword has landed, walk over and retrieve it.
+if (
+  usesSword &&
+  tombFirstSkeletonSwordState === "landed" &&
+  tombFirstSkeletonThrownSwordX != null &&
+  tombFirstSkeletonThrownSwordY != null
+) {
+  const retrieveDx =
+    tombFirstSkeletonThrownSwordX - sx;
+
+  const retrieveDy =
+    tombFirstSkeletonThrownSwordY - sy;
+
+  const retrieveDistance =
+    Math.sqrt(
+      retrieveDx * retrieveDx +
+      retrieveDy * retrieveDy
+    ) || 1;
+
+  if (retrieveDistance > 25) {
+    const retrieveSpeed = 50;
+
+    sx +=
+      (retrieveDx / retrieveDistance) *
+      retrieveSpeed *
+      dt;
+
+    sy +=
+      (retrieveDy / retrieveDistance) *
+      retrieveSpeed *
+      dt;
+
+    sx = clamp(sx, 86, W - 86);
+    sy = clamp(sy, 105, H - 78);
+
+    tombFirstSkeletonX = sx;
+    tombFirstSkeletonY = sy;
+  } else {
+    // Sword retrieved. Guard goes back up.
+    tombFirstSkeletonSwordState = "held";
+    tombFirstSkeletonSwordLanded = false;
+    tombFirstSkeletonThrowTimer = 10.0;
+
+    tombFirstSkeletonThrownSwordX = null;
+    tombFirstSkeletonThrownSwordY = null;
+    tombFirstSkeletonSwordTargetX = null;
+    tombFirstSkeletonSwordTargetY = null;
+
+    tombFirstSkeletonSwordTimer = 0.8;
+    tombFirstSkeletonFireTimer = 1.2;
+  }
+}
+
+// Normal pursuit only while holding the sword.
+if (
+  (!usesSword || tombFirstSkeletonSwordState === "held") &&
+  distance > 150
+) {
+  const speed = 38;
+
+  sx += (dx / distance) * speed * dt;
+  sy += (dy / distance) * speed * dt;
+
+  sx = clamp(sx, 86, W - 86);
+  sy = clamp(sy, 105, H - 78);
+
+  tombFirstSkeletonX = sx;
+  tombFirstSkeletonY = sy;
+}
+// Recurring sword throw phase
+if (
+  usesSword &&
+  tombFirstSkeletonSwordState === "held"
+) {
+  tombFirstSkeletonThrowTimer -= dt;
+
+  if (tombFirstSkeletonThrowTimer <= 0) {
+    tombFirstSkeletonThrowTimer = 0;
+    tombFirstSkeletonSwordState = "flying";
+
+    // Lock onto where the player is NOW.
+    tombFirstSkeletonSwordTargetX = player.x;
+    tombFirstSkeletonSwordTargetY = player.y;
+
+    // Sword starts at the skeleton.
+    tombFirstSkeletonThrownSwordX = sx + 14;
+    tombFirstSkeletonThrownSwordY = sy - 10;
+
+    const throwDx =
+      tombFirstSkeletonSwordTargetX -
+      tombFirstSkeletonThrownSwordX;
+
+    const throwDy =
+      tombFirstSkeletonSwordTargetY -
+      tombFirstSkeletonThrownSwordY;
+
+    const throwDistance =
+      Math.sqrt(throwDx * throwDx + throwDy * throwDy) || 1;
+
+    const throwSpeed = 320;
+
+    tombFirstSkeletonSwordVx =
+      (throwDx / throwDistance) * throwSpeed;
+
+    tombFirstSkeletonSwordVy =
+      (throwDy / throwDistance) * throwSpeed;
+
+    tombFirstSkeletonSwordSpin = 0;
+    tombFirstSkeletonSwordLanded = false;
+
+    // Cancel any close-range swing in progress.
+    tombFirstSkeletonSwordSwing = 0;
+    tombFirstSkeletonSwordDidHit = false;
+  }
+}
+  // Sword attack at close range
+tombFirstSkeletonSwordTimer -= dt;
+
+if (
+  usesSword &&
+  tombFirstSkeletonSwordState === "held" &&
+  distance <= 85 &&
+  tombFirstSkeletonSwordTimer <= 0 &&
+  tombFirstSkeletonSwordSwing <= 0
+) {
+  tombFirstSkeletonSwordSwing = 0.35;
+  tombFirstSkeletonSwordTimer = 1.0;
+  tombFirstSkeletonSwordDidHit = false;
+}
+
+if (tombFirstSkeletonSwordSwing > 0) {
+  tombFirstSkeletonSwordSwing =
+    Math.max(0, tombFirstSkeletonSwordSwing - dt);
+}
+
+// Sword damage window
+if (
+  usesSword &&
+  tombFirstSkeletonSwordSwing > 0.12 &&
+  tombFirstSkeletonSwordSwing < 0.24 &&
+  !tombFirstSkeletonSwordDidHit &&
+  distance < 72
+) {
+  tombFirstSkeletonSwordDidHit = true;
+  damagePlayerByLaser();
+}
+
+// Cast fire only while the player is at range.
+tombFirstSkeletonFireTimer -= dt;
+
+if (
+  (!usesSword || tombFirstSkeletonSwordState === "held") &&
+  tombFirstSkeletonFireTimer <= 0 &&
+  distance > 85
+) {
+  const fireDx = player.x - sx;
+  const fireDy = player.y - sy;
+  const fireDistance =
+    Math.sqrt(fireDx * fireDx + fireDy * fireDy) || 1;
+
+  const fireSpeed = 150;
+  const fireballCount = currentSkeleton.fireballCount || 1;
+
+for (let i = 0; i < fireballCount; i++) {
+  const spread =
+    fireballCount === 1
+      ? 0
+      : (i - (fireballCount - 1) / 2) * 0.18;
+
+ const baseAngle = Math.atan2(fireDy, fireDx);
+
+const angle =
+  fireballCount === 4
+    ? i * (Math.PI / 2)
+    : baseAngle + spread;
+
+  tombFirstSkeletonFireballs.push({
+    x: sx + Math.cos(angle) * 18,
+    y: sy - 8,
+    vx: Math.cos(angle) * fireSpeed,
+    vy: Math.sin(angle) * fireSpeed,
+    life: 3
+  });
+}
+
+  tombFirstSkeletonFireTimer = 2.0;
+}
+
+if (currentSkeleton.usesMouthFire) {
+  tombFatherMouthFireTimer -= dt;
+
+  if (tombFatherMouthFireTimer <= 0) {
+    const mouthDx = player.x - sx;
+    const mouthDy = player.y - sy;
+    const mouthDistance =
+      Math.sqrt(mouthDx * mouthDx + mouthDy * mouthDy) || 1;
+
+    const mouthSpeed = 220;
+
+    tombFirstSkeletonFireballs.push({
+      x: sx,
+      y: sy - 24,
+      vx: (mouthDx / mouthDistance) * mouthSpeed,
+      vy: (mouthDy / mouthDistance) * mouthSpeed,
+      life: 3
+    });
+
+    tombFatherMouthFireTimer = 0.55;
+  }
+}
+  // Player projectiles
+  for (let i = state.playerShots.length - 1; i >= 0; i--) {
+    const shot = state.playerShots[i];
+
+  if (
+  (!usesSword || tombFirstSkeletonSwordState !== "held") &&
+  Math.abs(shot.x - sx) < 30 &&
+  Math.abs(shot.y - sy) < 45
+) {
+      state.playerShots.splice(i, 1);
+      tombFirstSkeletonHP -= 1;
+
+    if (tombFirstSkeletonHP <= 0) {
+  tombFirstSkeletonHP = 0;
+
+  if (currentSkeleton.name === "Father") {
+  window.stopTombMusic();
+  tombFatherBurning = true;
+  tombFatherBurnTimer = 5.0;
+  return;
+}
+
+  tombFirstSkeletonActive = false;
+  tombSkeletonNumber += 1;
+
+  if (tombSkeletonNumber < tombGraveSequence.length) {
+    tombNextSkeletonDelay = 2.0;
+  }
+
+  return;
+}
+    }
+  }
+
+  // Headbutt
+  dx = player.x - sx;
+  dy = player.y - sy;
+  distance = Math.sqrt(dx * dx + dy * dy);
+
+if (
+  (!usesSword || tombFirstSkeletonSwordState !== "held") &&
+  player.headTimer > 0 &&
+  tombFirstSkeletonHitLock <= 0 &&
+  distance < 80
+) {
+    tombFirstSkeletonHP -= 1;
+    tombFirstSkeletonHitLock = 0.4;
+
+ if (tombFirstSkeletonHP <= 0) {
+  tombFirstSkeletonHP = 0;
+
+  if (currentSkeleton.name === "Father") {
+  window.stopTombMusic();
+  tombFatherBurning = true;
+  tombFatherBurnTimer = 5.0;
+  return;
+}
+
+  tombFirstSkeletonActive = false;
+  tombSkeletonNumber += 1;
+
+  if (tombSkeletonNumber < tombGraveSequence.length) {
+    tombNextSkeletonDelay = 2.0;
+  }
+
+  return;
+}
+  }
+
+  // Solid body collision — player cannot walk through skeleton.
+  dx = player.x - sx;
+  dy = player.y - sy;
+  distance = Math.sqrt(dx * dx + dy * dy);
+
+  const minimumDistance = 52;
+
+  if (distance < minimumDistance) {
+    let nx = 1;
+    let ny = 0;
+
+    if (distance > 0.001) {
+      nx = dx / distance;
+      ny = dy / distance;
+    }
+
+    player.x = sx + nx * minimumDistance;
+    player.y = sy + ny * minimumDistance;
+
+    player.x = clamp(player.x, 86, W - 86);
+    player.y = clamp(player.y, 105, H - 78);
+  }
+}
+
+function updateTombFirstSkeletonThrownSword(dt) {
+  if (
+    window.__uvzuCurrentLevelCode !== "TOMB1" ||
+    !tombFirstSkeletonActive
+  ) {
+    return;
+  }
+
+  if (tombFirstSkeletonSwordState !== "flying") {
+    return;
+  }
+
+  tombFirstSkeletonThrownSwordX +=
+    tombFirstSkeletonSwordVx * dt;
+
+  tombFirstSkeletonThrownSwordY +=
+    tombFirstSkeletonSwordVy * dt;
+
+  tombFirstSkeletonSwordSpin += dt * 12;
+
+  const targetDx =
+    tombFirstSkeletonSwordTargetX -
+    tombFirstSkeletonThrownSwordX;
+
+  const targetDy =
+    tombFirstSkeletonSwordTargetY -
+    tombFirstSkeletonThrownSwordY;
+
+  const distanceToTarget =
+    Math.sqrt(targetDx * targetDx + targetDy * targetDy);
+
+  // If the flying sword hits the player, lose a life.
+  const playerDx =
+    player.x - tombFirstSkeletonThrownSwordX;
+
+  const playerDy =
+    player.y - tombFirstSkeletonThrownSwordY;
+
+  if (
+    Math.sqrt(playerDx * playerDx + playerDy * playerDy) < 36
+  ) {
+   player.hp = 1;
+player.invuln = 0;
+damagePlayerByLaser();
+
+    tombFirstSkeletonSwordState = "landed";
+    tombFirstSkeletonSwordLanded = true;
+
+    tombFirstSkeletonThrownSwordX =
+      tombFirstSkeletonSwordTargetX;
+
+    tombFirstSkeletonThrownSwordY =
+      tombFirstSkeletonSwordTargetY;
+
+    return;
+  }
+
+  // Once it reaches the locked target position,
+  // leave the sword on the ground there.
+  if (distanceToTarget < 15) {
+    tombFirstSkeletonThrownSwordX =
+      tombFirstSkeletonSwordTargetX;
+
+    tombFirstSkeletonThrownSwordY =
+      tombFirstSkeletonSwordTargetY;
+
+    tombFirstSkeletonSwordState = "landed";
+    tombFirstSkeletonSwordLanded = true;
+  }
+}
+function drawTombFirstSkeletonThrownSword() {
+  if (
+    window.__uvzuCurrentLevelCode !== "TOMB1" ||
+    !tombFirstSkeletonActive ||
+    tombFirstSkeletonSwordState === "held" ||
+    tombFirstSkeletonThrownSwordX == null ||
+    tombFirstSkeletonThrownSwordY == null
+  ) {
+    return;
+  }
+
+  ctx.save();
+
+  ctx.translate(
+    tombFirstSkeletonThrownSwordX,
+    tombFirstSkeletonThrownSwordY
+  );
+
+  if (tombFirstSkeletonSwordState === "flying") {
+    ctx.rotate(tombFirstSkeletonSwordSpin);
+  } else {
+    // Sword lying/stuck on the ground.
+    ctx.rotate(Math.PI / 2);
+  }
+
+  // blade
+  ctx.strokeStyle = "#d9d9d9";
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(0, -27);
+  ctx.stroke();
+
+  // point
+  ctx.fillStyle = "#d9d9d9";
+  ctx.beginPath();
+  ctx.moveTo(-4, -26);
+  ctx.lineTo(0, -34);
+  ctx.lineTo(4, -26);
+  ctx.closePath();
+  ctx.fill();
+
+  // handle
+  ctx.fillStyle = "#5b3a22";
+  ctx.fillRect(-2, 0, 4, 9);
+
+  // guard
+  ctx.strokeStyle = "#caa85c";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(-7, 1);
+  ctx.lineTo(7, 1);
+  ctx.stroke();
+
+  ctx.restore();
+}
+function updateTombFirstSkeletonFireballs(dt) {
+  if (window.__uvzuCurrentLevelCode !== "TOMB1") {
+    tombFirstSkeletonFireballs.length = 0;
+    return;
+  }
+
+  for (
+    let i = tombFirstSkeletonFireballs.length - 1;
+    i >= 0;
+    i--
+  ) {
+    const fire = tombFirstSkeletonFireballs[i];
+
+    fire.x += fire.vx * dt;
+    fire.y += fire.vy * dt;
+    fire.life -= dt;
+
+    if (
+      fire.life <= 0 ||
+      fire.x < 0 ||
+      fire.x > W ||
+      fire.y < 0 ||
+      fire.y > H
+    ) {
+      tombFirstSkeletonFireballs.splice(i, 1);
+      continue;
+    }
+
+    const dx = player.x - fire.x;
+    const dy = player.y - fire.y;
+
+    if (Math.sqrt(dx * dx + dy * dy) < 27) {
+      tombFirstSkeletonFireballs.splice(i, 1);
+      damagePlayerByLaser();
+    }
+  }
+}
+
+function drawTombFirstSkeletonFireballs() {
+  if (window.__uvzuCurrentLevelCode !== "TOMB1") {
+    return;
+  }
+
+  for (const fire of tombFirstSkeletonFireballs) {
+    ctx.save();
+
+    ctx.fillStyle = "rgba(255,110,25,.28)";
+    ctx.beginPath();
+    ctx.arc(fire.x, fire.y, 16, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#ff5a1f";
+    ctx.beginPath();
+    ctx.arc(fire.x, fire.y, 10, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#ffd34d";
+    ctx.beginPath();
+    ctx.arc(fire.x, fire.y, 5, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+ function applyDifficulty(name) {
+  window.__uvzuCurrentDifficultyName = name;
+  
+    if (name === "Easy") {
+      MAX_ENEMIES = 2;
+      ENEMY_X_SPEED = 85;
+      ENEMY_Y_SPEED = 55;
+      SPAWN_MIN = 1.10;
+      SPAWN_MAX = 1.60;
+      RAY_CHANCE = 0.12;
+    } else if (name === "Normal") {
+      MAX_ENEMIES = 3;
+      ENEMY_X_SPEED = 105;
+      ENEMY_Y_SPEED = 70;
+      SPAWN_MIN = 0.80;
+      SPAWN_MAX = 1.25;
+      RAY_CHANCE = 0.20;
+    } else {
+      MAX_ENEMIES = 4;
+      ENEMY_X_SPEED = 125;
+      ENEMY_Y_SPEED = 88;
+      SPAWN_MIN = 0.55;
+      SPAWN_MAX = 0.95;
+      RAY_CHANCE = 0.32;
+    }
+  }
+
+  window.__uvzuIsPlaying = function() {
+    return gameStarted && !paused;
+  };
+
+  window.__uvzuSetPaused = function(value) {
+    paused = !!value;
+    last = performance.now();
+  };
+
+  window.__uvzuStartGame = function(name) {
+  const selectedLevelCode = window.__uvzuCurrentLevelCode;
+  const selectedLevelTheme = window.__uvzuLevelTheme;
+
+  applyDifficulty(name || "Easy");
+
+  if (window.__uvzuCurrentLevelCode === "TOMB1") {
+    tombEncounterStarted = false;
+    tombAwakenDelay = 0;
+    tombFirstGraveRattle = 0;
+    tombSkeletonNumber = 0;
+    tombNextSkeletonDelay = 0;
+
+    tombFirstSkeletonActive = false;
+    tombFirstSkeletonRise = 0;
+    tombFirstSkeletonHP = 4;
+    tombFirstSkeletonHitLock = 0;
+    tombFirstSkeletonX = null;
+    tombFirstSkeletonY = null;
+
+    tombFirstSkeletonFireTimer = 1.2;
+    tombFatherMouthFireTimer = 1.5;
+    tombFirstSkeletonFireballs.length = 0;
+
+    tombFirstSkeletonSwordTimer = 0.8;
+    tombFirstSkeletonSwordSwing = 0;
+    tombFirstSkeletonSwordDidHit = false;
+    tombFirstSkeletonThrowTimer = 10.0;
+    tombFirstSkeletonSwordState = "held";
+    tombFirstSkeletonThrownSwordX = null;
+    tombFirstSkeletonThrownSwordY = null;
+    tombFirstSkeletonSwordTargetX = null;
+    tombFirstSkeletonSwordTargetY = null;
+    tombFirstSkeletonSwordVx = 0;
+    tombFirstSkeletonSwordVy = 0;
+    tombFirstSkeletonSwordSpin = 0;
+    tombFirstSkeletonSwordLanded = false;
+
+    tombReading = false;
+    tombCurrentSign = null;
+    tombIgnoredSign = null;
+
+    removeTombPrompt();
+    removeTombWriting();
+  }
+
+    try {
+    fullRestart();
+
+    window.__uvzuCurrentLevelCode = selectedLevelCode;
+    window.__uvzuLevelTheme = selectedLevelTheme;
+      if (
+        (window.__uvzuIsMultiplayerHost && window.__uvzuIsMultiplayerHost()) ||
+        (window.__uvzuIsMultiplayerGuest && window.__uvzuIsMultiplayerGuest())
+      ) {
+        player.lives = 5;
+        updateHud();
+      }
+    } catch (e) {}
+
+    try {
+      startMusic && startMusic();
+    } catch (e) {}
+
+    paused = false;
+    gameStarted = true;
+    last = performance.now();
+  };
+
+  function loop(now) {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+
+    if (!gameStarted) {
+      drawBackground();
+      requestAnimationFrame(loop);
+      return;
+    }
+
+    if (paused) {
+      draw();
+      requestAnimationFrame(loop);
+      return;
+    }
+
+  update(dt);
+  if (
+  window.__uvzuCurrentLevelCode === "TOMB1" &&
+  tombNeedsFullRestart &&
+  !state.resetQueued
+) {
+  player.x = W / 2;
+  player.y = H * 0.72;
+  tombNeedsFullRestart = false;
+}
+  
+  if (
+  window.__uvzuCurrentLevelCode === "TOMB1" &&
+  state.enemies.length > 0
+) {
+  state.enemies.length = 0;
+}
+
+updateTombSigns();
+
+if (
+  window.__uvzuCurrentLevelCode === "TOMB1" &&
+  tombEncounterStarted &&
+  tombAwakenDelay > 0
+) {
+  tombAwakenDelay -= dt;
+
+  if (tombAwakenDelay <= 0) {
+  tombAwakenDelay = 0;
+  tombFirstGraveRattle = 1.5;
+  window.startTombMusic();
+}
+}
+
+if (tombFirstGraveRattle > 0) {
+  tombFirstGraveRattle = Math.max(0, tombFirstGraveRattle - dt);
+
+  if (
+    tombFirstGraveRattle === 0 &&
+    !tombFirstSkeletonActive
+  ) {
+   tombFirstSkeletonActive = true;
+tombFirstSkeletonRise = 1.2;
+tombFirstSkeletonHP = 4;
+const grave =
+  tombGraveSequence[
+    Math.min(tombSkeletonNumber, tombGraveSequence.length - 1)
+  ];
+
+tombFirstSkeletonX = W * grave.x;
+tombFirstSkeletonY = H * grave.y + 20;
+tombFirstSkeletonFireTimer = 1.2;
+tombFirstSkeletonFireballs.length = 0;
+tombFirstSkeletonSwordTimer = 0.8;
+tombFirstSkeletonSwordSwing = 0;
+tombFirstSkeletonSwordDidHit = false;
+tombFirstSkeletonThrowTimer = 10.0;
+tombFirstSkeletonSwordState = "held";
+tombFirstSkeletonThrownSwordX = null;
+tombFirstSkeletonThrownSwordY = null;
+tombFirstSkeletonSwordTargetX = null;
+tombFirstSkeletonSwordTargetY = null;
+tombFirstSkeletonSwordVx = 0;
+tombFirstSkeletonSwordVy = 0;
+tombFirstSkeletonSwordSpin = 0;
+tombFirstSkeletonSwordLanded = false;
+  }
+}
+
+if (
+  window.__uvzuCurrentLevelCode === "TOMB1" &&
+  tombNextSkeletonDelay > 0 &&
+  !tombFirstSkeletonActive
+) {
+  tombNextSkeletonDelay = Math.max(0, tombNextSkeletonDelay - dt);
+
+  if (
+    tombNextSkeletonDelay === 0 &&
+    tombSkeletonNumber < tombGraveSequence.length
+  ) {
+    tombFirstGraveRattle = 1.5;
+  }
+}
+if (tombFirstSkeletonRise > 0) {
+  tombFirstSkeletonRise =
+    Math.max(0, tombFirstSkeletonRise - dt);
+}
+
+updateTombFirstSkeletonCombat(dt);
+updateTombFirstSkeletonThrownSword(dt);
+updateTombFirstSkeletonFireballs(dt);
+if (
+  window.__uvzuCurrentLevelCode === "TOMB1" &&
+  state.resetQueued
+) {
+  tombNeedsFullRestart = true;
+
+  tombEncounterStarted = false;
+  tombAwakenDelay = 0;
+  tombFirstGraveRattle = 0;
+  tombSkeletonNumber = 0;
+tombNextSkeletonDelay = 0;
+
+  tombFirstSkeletonActive = false;
+  tombFirstSkeletonRise = 0;
+  tombFirstSkeletonHP = 4;
+  tombFirstSkeletonHitLock = 0;
+  tombFirstSkeletonX = null;
+  tombFirstSkeletonY = null;
+
+ tombFirstSkeletonFireTimer = 1.2;
+tombFatherMouthFireTimer = 1.5;
+tombFirstSkeletonFireballs.length = 0;
+
+  tombFirstSkeletonSwordTimer = 0.8;
+  tombFirstSkeletonSwordSwing = 0;
+  tombFirstSkeletonSwordDidHit = false;
+  tombFirstSkeletonThrowTimer = 10.0;
+tombFirstSkeletonSwordState = "held";
+tombFirstSkeletonThrownSwordX = null;
+tombFirstSkeletonThrownSwordY = null;
+tombFirstSkeletonSwordTargetX = null;
+tombFirstSkeletonSwordTargetY = null;
+tombFirstSkeletonSwordVx = 0;
+tombFirstSkeletonSwordVy = 0;
+tombFirstSkeletonSwordSpin = 0;
+tombFirstSkeletonSwordLanded = false;
+
+  tombReading = false;
+  tombCurrentSign = null;
+  tombIgnoredSign = null;
+
+  removeTombPrompt();
+  removeTombWriting();
+}
+
+draw();
+drawTombFirstGraveRattle();
+drawTombFirstSkeleton();
+drawTombFirstSkeletonThrownSword();
+drawTombFirstSkeletonFireballs();
+    requestAnimationFrame(loop);
+  }
+
+  updateHud();
+  requestAnimationFrame(loop);`;
+
+      code = code.slice(0, bootStart) + replacementBoot + code.slice(bootEnd);
+
+code = code.replace(
+  "const MAX_Y = GROUND_Y;",
+  `const MAX_Y =
+    window.__uvzuCurrentLevelCode === "RNBW1"
+      ? H - 20
+      : GROUND_Y;`
+);
+
+code = window.__uvzuInstallDowntown(code);
+const run = new Function(code + "\n//# sourceURL=graphics-v107.js");
+run();
+      
+      createTitleMenu();
+    })
+    .catch(showLoadError);
+})();
+
+
+// Downtown level: installed inside the existing game's runtime.
+(() => {
+  function downtownRuntime() {
+    const cityCode = "CITY3";
+    const inCity = () => window.__uvzuCurrentLevelCode === cityCode;
+    const guest = () => !!window.__uvzuIsMultiplayerGuest?.();
+    const host = () => !!window.__uvzuIsMultiplayerHost?.();
+    const ghost = () => !!window.__uvzuIsLocalGhost?.();
+    const base = { fullRestart, safeLifeReset, startFinalWave, update,
+      updateEnding, headbutt, updateShots, draw, drawBackground, updateHud };
+    const attackSeconds = 15;
+    const restSeconds = 5;
+    const partHP = 3;
+    const carSites = [0.13, 0.36, 0.64, 0.87];
+    let city, lastSnapshot = 0, lastStrike = 0, lastCheer = 0;
+    let lastRequest = -999, sentNextLevel = false;
+    const handledHits = new Set();
+
+    function freshCity() {
+      return { level: cityCode, run: Date.now(), clock: 0, boss: null,
+        ending: false, endTime: 0, finished: false, playTime: 0 };
+    }
+    city = freshCity();
+
+    window.__uvzuGetDowntownState = () => inCity() ? city : null;
+
+    fullRestart = function() {
+      base.fullRestart();
+      city = freshCity();
+      lastSnapshot = lastStrike = lastCheer = 0;
+      lastRequest = -999;
+      handledHits.clear();
+      sentNextLevel = false;
+      state.continueReady = false;
+      document.getElementById("continueLevelPrompt")?.remove();
+      if (inCity()) {
+        window.__uvzuLevelTheme = "downtown";
+        player.webbedTimer = player.webFlash = 0;
+        player.webTrapX = player.webTrapY = null;
+      }
+    };
+
+    safeLifeReset = function() {
+      if (!inCity() || state.mode !== "final") return base.safeLifeReset();
+      // Keep the boss and completed parts when the player loses one life.
+      clearBattlefield();
+      resetPlayerPosition();
+      state.resetQueued = false;
+    };
+
+    startFinalWave = function() {
+      if (!inCity()) return base.startFinalWave();
+      clearBattlefield();
+      state.mode = "final";
+      state.finalSpawned = 0;
+      if (!guest()) {
+        city.boss = { x: W + 170, y: H * 0.81, face: -1,
+          stage: 0, hp: partHP, mode: "enter", timer: 3, elapsed: 0,
+          hitLock: 0, beat: -1, fired: false, strike: 0,
+          targetX: W / 2, targetY: GROUND_Y, fireAngle: Math.PI,
+          fireOn: false, stompFlash: 0 };
+      }
+    };
+
+    function bossBox(b) {
+      return { x: b.x - 112, y: b.y - 65, w: 224, h: 107 };
+    }
+    function headBox(p) {
+      return { x: p.x + p.face * 38 - 25, y: p.y - 30, w: 70, h: 48 };
+    }
+    function mouth(b) { return { x: b.x + b.face * 174, y: b.y - 110 }; }
+    function vulnerable() {
+      return city.boss && !city.ending && city.boss.mode === "rest" && city.boss.hp > 0;
+    }
+    function hurtBoss(kind) {
+      const b = city.boss;
+      if (!vulnerable() || b.hitLock > 0) return;
+      if (guest()) {
+        if (gameClock - lastRequest < 0.35) return;
+        lastRequest = gameClock;
+        window.__uvzuRequestEnemyKill?.("city_" + kind + "_" + b.stage + "_" + Date.now());
+        return;
+      }
+      b.hp = Math.max(0, b.hp - 1);
+      b.hitLock = 0.4;
+      addParticles(b.x, b.y - 20, "rainbow");
+      if (b.hp === 0 && b.stage === 3) {
+        city.ending = true;
+        city.endTime = 0;
+        b.fireOn = false;
+        state.mode = "cityWin";
+        state.score += 400;
+        clearBattlefield();
+        player.giant = player.ray = player.headTimer = player.dodgeTimer = 0;
+        player.invuln = 999999;
+      }
+    }
+
+    headbutt = function() {
+      const ready = player.headCd <= 0 && player.dodgeTimer <= 0 && player.actionLock <= 0;
+      base.headbutt();
+      if (inCity() && ready && city.boss && rectsOverlap(headBox(player), bossBox(city.boss))) {
+        hurtBoss("head");
+      }
+    };
+
+    updateShots = function(dt) {
+      if (inCity() && city.boss && !city.ending) {
+        const box = bossBox(city.boss);
+        for (let i = state.playerShots.length - 1; i >= 0; i--) {
+          const s = state.playerShots[i];
+          if (rectsOverlap({ x: s.x + s.vx * dt - s.r, y: s.y - s.r,
+            w: s.r * 2, h: s.r * 2 }, box)) {
+            hurtBoss("ray");
+            state.playerShots.splice(i, 1);
+          }
+        }
+      }
+      base.updateShots(dt);
+    };
+
+    function receiveGuestHits() {
+      if (!host() || !city.boss) return;
+      const hits = window.__uvzuGetGuestKillRequests?.() || {};
+      for (const [id, hit] of Object.entries(hits)) {
+        const match = /^city_(head|ray)_([0-3])_\d+$/.exec(id);
+        if (!match || handledHits.has(id)) continue;
+        handledHits.add(id);
+        const other = window.__uvzuGetRemotePlayer?.();
+        if (Number(match[2]) === city.boss.stage && hit.at >= city.run &&
+          Date.now() - hit.at < 2500 && other && !other.dead && !other.ghost) {
+          const valid = match[1] === "head"
+            ? rectsOverlap(headBox(other), bossBox(city.boss))
+            : other.ray > 0;
+          if (valid) hurtBoss(match[1]);
+        }
+        window.__uvzuClearGuestKillRequest?.(id);
+      }
+    }
+
+    function beginAttack() {
+      const b = city.boss;
+      b.mode = "attack";
+      b.timer = attackSeconds;
+      b.elapsed = 0;
+      b.beat = -1;
+      b.fireOn = false;
+      if (b.stage % 2 === 1) {
+        b.x = clamp(b.x, 170, W - 170);
+        b.face = b.x >= W / 2 ? -1 : 1;
+      }
+    }
+
+    function updateBoss(dt) {
+      const b = city.boss;
+      if (!b || city.ending) return;
+      b.hitLock = Math.max(0, b.hitLock - dt);
+      b.stompFlash = Math.max(0, b.stompFlash - dt);
+      b.timer = Math.max(0, b.timer - dt);
+      const other = window.__uvzuGetRemotePlayer?.();
+      const target = ghost() && other && !other.dead && !other.ghost ? other : player;
+
+      if (b.mode === "enter") {
+        b.x = lerp(W + 170, W * 0.78, 1 - b.timer / 3);
+        if (b.timer <= 0) beginAttack();
+        return;
+      }
+      if (b.mode === "rest") {
+        b.fireOn = false;
+        if (b.timer <= 0) {
+          if (b.hp === 0) { b.stage++; b.hp = partHP; }
+          beginAttack();
+        }
+        return;
+      }
+      if (b.timer <= 0) {
+        b.mode = "rest";
+        b.timer = restSeconds;
+        b.fireOn = false;
+        return;
+      }
+
+      b.elapsed = attackSeconds - b.timer;
+      const stomp = b.stage % 2 === 0;
+      const cycle = stomp ? 2.5 : 3;
+      const beat = Math.floor(b.elapsed / cycle);
+      const within = b.elapsed % cycle;
+      if (beat !== b.beat) {
+        b.beat = beat;
+        b.fired = false;
+        b.targetX = clamp(target.x, 50, W - 50);
+        b.targetY = clamp(target.y, H * 0.6 + 15, H - 26);
+        if (stomp) {
+          b.face = b.targetX >= b.x ? 1 : -1;
+        } else {
+          const m = mouth(b);
+          const forward = Math.max(30, (target.x - m.x) * b.face);
+          const slope = clamp(Math.atan2(target.y - 24 - m.y, forward), -0.55, 0.65);
+          b.fireAngle = b.face > 0 ? slope : Math.PI - slope;
+        }
+      }
+      if (stomp) {
+        const targetX = b.targetX - b.face * 76;
+        const targetY = b.targetY - 42;
+        b.x += clamp(targetX - b.x, -560 * dt, 560 * dt);
+        b.y += clamp(targetY - b.y, -220 * dt, 220 * dt);
+        if (within >= 1.4 && !b.fired) {
+          b.fired = true;
+          b.strike++;
+          b.stompFlash = 0.3;
+        }
+      } else {
+        b.fireOn = within >= 1 && within < 2.4;
+      }
+    }
+
+    function fireTouchesPlayer(b) {
+      const m = mouth(b);
+      const dx = player.x - m.x, dy = player.y - 24 - m.y;
+      const along = dx * Math.cos(b.fireAngle) + dy * Math.sin(b.fireAngle);
+      const across = Math.abs(-dx * Math.sin(b.fireAngle) + dy * Math.cos(b.fireAngle));
+      return along > -15 && along < 680 && across < 20 + Math.max(0, along) * 0.13;
+    }
+    function bossHazards() {
+      const b = city.boss;
+      if (!b || city.ending) return;
+      const struck = b.strike !== lastStrike;
+      lastStrike = b.strike;
+      if (ghost() || player.lives <= 0 || player.dodgeTimer > 0 || player.invuln > 0) return;
+      const stompHit = struck && Math.abs(player.x - b.targetX) < 65 &&
+        Math.abs(player.y - b.targetY) < 36;
+      if (stompHit || (b.fireOn && fireTouchesPlayer(b))) {
+        damagePlayerByLaser();
+        player.invuln = Math.max(player.invuln, 0.8);
+      }
+    }
+
+    function cheer(number) {
+      if (lastCheer >= number) return;
+      lastCheer = number;
+      if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
+        const shout = new window.SpeechSynthesisUtterance("Hip hip horray!");
+        shout.rate = 1.12;
+        shout.pitch = 1.2;
+        window.speechSynthesis.speak(shout);
+      }
+    }
+    function updateCelebration(dt) {
+      city.endTime += dt;
+      state.mode = "cityWin";
+      if (city.endTime >= 6) cheer(1);
+      if (city.endTime >= 8.2) cheer(2);
+      if (city.endTime >= 12 && !city.finished && !guest()) {
+        city.finished = true;
+        if (host()) window.__uvzuSignalLevelCompleted?.();
+      }
+    }
+
+    function receiveCity() {
+      if (!guest()) return;
+      const packet = window.__uvzuGetMultiplayerEnemyState?.();
+      if (!packet?.city || packet.city.level !== cityCode || packet.updatedAt === lastSnapshot) return;
+      lastSnapshot = packet.updatedAt;
+      if (city.run !== packet.city.run) {
+        lastStrike = lastCheer = 0;
+        state.resetQueued = false;
+      }
+      const hadBoss = !!city.boss;
+      city = JSON.parse(JSON.stringify(packet.city));
+      state.mode = city.ending ? "cityWin" : city.boss ? "final" : "play";
+      state.time = city.playTime;
+      if ((!hadBoss && city.boss) || city.ending) clearBattlefield();
+      else if (city.boss) state.enemies.length = 0;
+    }
+
+    update = function(dt) {
+      if (inCity()) receiveCity();
+      base.update(dt);
+      if (!inCity()) return;
+      city.clock += dt;
+      city.playTime = state.time;
+      if (city.ending) {
+        updateCelebration(dt);
+      } else if (city.boss) {
+        if (!guest()) { updateBoss(dt); receiveGuestHits(); }
+        bossHazards();
+      }
+      updateHud();
+    };
+
+    updateEnding = function(dt) {
+      if (inCity()) return;
+      base.updateEnding(dt);
+      if (host() && window.__uvzuCurrentLevelCode === "GRV2" &&
+        state.mode === "victory" && !sentNextLevel) {
+        sentNextLevel = true;
+        window.__uvzuSignalNextLevel?.(cityCode);
+      }
+    };
+
+    updateHud = function() {
+      base.updateHud();
+      if (!inCity()) return;
+      if (city.ending) timeEl.textContent = "Downtown saved!";
+      else if (city.boss) timeEl.textContent = "Boss: part " + (city.boss.stage + 1) + "/4";
+    };
+
+    function rect(x, y, w, h, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(Math.round(x), Math.round(y), w, h);
+    }
+    function flame(x, y, size, time) {
+      for (let i = 0; i < 5; i++) {
+        const rise = 0.75 + Math.sin(time * 11 + i * 2) * 0.2;
+        ctx.fillStyle = ["#e54723", "#ff7a22", "#ffc74d"][i % 3];
+        ctx.beginPath();
+        ctx.moveTo(x - size * 0.3 + i * size * 0.12, y);
+        ctx.lineTo(x - size * 0.3 + i * size * 0.14 + Math.sin(time * 6 + i) * 6, y - size * rise);
+        ctx.lineTo(x + i * size * 0.13, y);
+        ctx.fill();
+      }
+    }
+    function person(x, y, i, walking, handsUp = false) {
+      const skin = ["#d69b73", "#e9b78c", "#986446"][i % 3];
+      const shirts = ["#78b7bc", "#e5a74f", "#b583be", "#cf746c"];
+      const stride = walking ? Math.sin(city.clock * 15 + i) * 8 : 0;
+      rect(x - 8, y - 23, 7, 21 + stride * 0.2, "#343448");
+      rect(x + 2, y - 23, 7, 21 - stride * 0.2, "#343448");
+      rect(x - 10 - stride, y - 4, 11, 5, "#201f29");
+      rect(x + 1 + stride, y - 4, 11, 5, "#201f29");
+      rect(x - 10, y - 43, 21, 23, shirts[i % 4]);
+      rect(x - 8, y - 60, 17, 18, skin);
+      rect(x - 9, y - 62, 19, 6, "#392b29");
+      if (i % 2) rect(x + 7, y - 58, 5, 23, "#392b29");
+      rect(x + 3, y - 53, 3, 3, "#2b2127");
+      const armY = handsUp ? y - 57 : y - 37;
+      rect(x - 15, armY, 6, handsUp ? 24 : 18, skin);
+      rect(x + 10, armY, 6, handsUp ? 24 : 18, skin);
+    }
+    function car(x, y, index) {
+      const color = ["#596d78", "#8a564f", "#4b4848", "#909083"][index];
+      rect(x - 78, y - 3, 156, 13, "#24242b");
+      rect(x - 70, y - 28, 140, 30, color);
+      rect(x - 39, y - 56, 82, 32, color);
+      rect(x - 33, y - 50, 32, 23, "#263340");
+      rect(x + 6, y - 50, 28, 23, "#263340");
+      ctx.strokeStyle = "#9caaa5";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(x - 19, y - 49); ctx.lineTo(x - 10, y - 41);
+      ctx.lineTo(x - 23, y - 32); ctx.moveTo(x - 10, y - 41);
+      ctx.lineTo(x - 2, y - 34); ctx.stroke();
+      rect(x - 73, y - 20, 18, 7, "#c4b68e");
+      rect(x + 58, y - 20, 13, 7, "#993f37");
+      for (const dx of [-44, 44]) {
+        rect(x + dx - 14, y - 8, 28, 19, "#1e2027");
+        rect(x + dx - 6, y - 5, 12, 10, "#657078");
+      }
+      rect(x - 8, y - 16, 9, 3, "#b2aaa0");
+      if (index === 2) {
+        for (let n = 0; n < 7; n++) {
+          const phase = (city.clock * 0.3 + n / 7) % 1;
+          ctx.fillStyle = "rgba(51,45,48," + (0.48 * (1 - phase)) + ")";
+          ctx.beginPath();
+          ctx.arc(x - 32 + phase * 100, y - 60 - phase * 160, 14 + phase * 35, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        flame(x - 40, y - 27, 82, city.clock);
+        flame(x + 5, y - 31, 54, city.clock + 2);
+      }
+    }
+    function crowdPosition(i, t) {
+      const fromCar = i < 6;
+      const originX = fromCar ? W * carSites[[0, 1, 3][Math.floor(i / 2)]] + (i % 2 ? 22 : -22)
+        : i % 2 ? W + 35 : -35;
+      const originY = fromCar ? H * 0.6 - 3 : H * 0.84 + (i % 2) * 16;
+      const start = 1.7 + i * 0.07;
+      const amount = clamp((t - start) / 2.8, 0, 1);
+      return { x: lerp(originX, W / 2 + (i - 4.5) * 19, amount),
+        y: lerp(originY, H * 0.85 + (i % 2) * 13, amount), visible: t > start };
+    }
+    function drawCrowd(behind) {
+      for (let i = 0; i < 10; i++) {
+        const p = crowdPosition(i, city.endTime);
+        if (!p.visible || (p.y < H * 0.6 + 32) !== behind) continue;
+        person(p.x, p.y, i, city.endTime < 5, city.endTime >= 5);
+      }
+    }
+
+    function drawStreet() {
+      const sky = ctx.createLinearGradient(0, 0, 0, H * 0.6);
+      sky.addColorStop(0, "#302e40"); sky.addColorStop(1, "#b07769");
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < 13; i++) {
+        const x = i * W / 12 - 30, top = 85 + (i * 47 % 115);
+        rect(x, top, 64, H * 0.58 - top, "#55505c");
+      }
+      for (let i = 0; i < 7; i++) {
+        const x = i * 158 - 28, top = 110 + (i * 37 % 70);
+        rect(x, top, 138, H * 0.56 - top, i % 2 ? "#41444e" : "#49434c");
+        rect(x + 16, top - 13, 56, 14, "#49434c");
+        for (let col = 0; col < 4; col++) for (let row = 0; row < 4; row++) {
+          if (top + 20 + row * 32 > H * 0.5) continue;
+          rect(x + 15 + col * 29, top + 18 + row * 32, 16, 22,
+            (i + col + row) % 5 === 0 ? "#937267" : "#272e3a");
+        }
+        ctx.strokeStyle = "#262935"; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(x + 100, top); ctx.lineTo(x + 74, top + 47);
+        ctx.lineTo(x + 92, top + 79); ctx.stroke();
+      }
+      rect(0, H * 0.54, W, H * 0.07, "#79716f");
+      rect(0, H * 0.60, W, H * 0.4, "#42454d");
+      rect(0, H * 0.60, W, 7, "#a29a8e");
+      for (let i = 0; i < 8; i++) rect(i * 140 - 22, H * 0.83, 77, 6, "#b7aa74");
+      for (let i = 0; i < 18; i++) {
+        const x = (i * 137 + 41) % W, y = H * 0.66 + (i * 31 % (H * 0.28));
+        rect(x, y, 10 + i % 9, 3, i % 3 ? "#323740" : "#82766d");
+      }
+      rect(64, H * 0.3, 6, H * 0.31, "#343941");
+      rect(40, H * 0.3, 100, 25, "#54685e");
+      ctx.fillStyle = "#dad3b6"; ctx.font = "bold 14px monospace";
+      ctx.fillText("DOWNTOWN", 47, H * 0.3 + 18);
+      if (!city.ending && city.clock > 2 && city.clock < 8) {
+        person(-110 + (city.clock - 2) * 200, H * 0.6 + 95, 0, true);
+        person(-185 + (city.clock - 2) * 200, H * 0.6 + 102, 1, true);
+      }
+      if (city.ending) drawCrowd(true);
+      carSites.forEach((site, i) => car(W * site, H * 0.6 + 19, i));
+    }
+
+    function drawBoss() {
+      const b = city.boss;
+      if (!b || city.ending) return;
+      const stomping = b.mode === "attack" && b.stage % 2 === 0;
+      if (stomping) {
+        ctx.fillStyle = b.stompFlash > 0 ? "rgba(255,198,119,.65)" : "rgba(255,77,63,.28)";
+        ctx.strokeStyle = "#ff7b5a"; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.ellipse(b.targetX, b.targetY, 65, 30, 0, 0, Math.PI * 2);
+        ctx.fill(); ctx.stroke();
+      }
+      ctx.save();
+      const lift = stomping && !b.fired ? Math.sin(Math.min(1, (b.elapsed % 2.5) / 1.4) * Math.PI / 2) * 24 : 0;
+      ctx.translate(b.x, b.y - lift + (b.mode === "rest" ? 7 : 0));
+      ctx.scale(3.2, 3.2);
+      if (b.hitLock > 0) ctx.globalAlpha = 0.65;
+      drawUnicorn(0, 0, b.face, false, false, false);
+      ctx.scale(b.face, 1);
+      rect(36, -46, 10, 3, "#7c2e43");
+      rect(45, -36, 12, 7, "#492538");
+      rect(48, -35, 7, 2, "#ffb34d");
+      ctx.restore();
+
+      if (b.mode === "attack" && b.stage % 2 === 1) {
+        const m = mouth(b);
+        ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(b.fireAngle);
+        if (b.fireOn) {
+          const length = 650 + Math.sin(city.clock * 28) * 20;
+          [0.13, 0.09, 0.04].forEach((spread, i) => {
+            ctx.fillStyle = ["rgba(245,75,32,.82)", "#ff9f32", "#ffe293"][i];
+            const reach = length * (1 - i * 0.12);
+            ctx.beginPath(); ctx.moveTo(0, -8);
+            for (let j = 1; j <= 16; j++) {
+              const x = reach * j / 16;
+              const flicker = Math.sin(city.clock * 27 + j * 2.3 + i) * 0.035;
+              ctx.lineTo(x, -8 - x * (spread + flicker));
+            }
+            ctx.lineTo(reach + 30, 0);
+            for (let j = 16; j >= 1; j--) {
+              const x = reach * j / 16;
+              const flicker = Math.sin(city.clock * 23 + j * 2.1 + i) * 0.035;
+              ctx.lineTo(x, 8 + x * (spread + flicker));
+            }
+            ctx.lineTo(0, 8); ctx.fill();
+          });
+        } else if (b.elapsed % 3 < 1) {
+          ctx.strokeStyle = "rgba(255,195,105,.7)"; ctx.lineWidth = 3;
+          ctx.setLineDash([12, 13]); ctx.beginPath();
+          ctx.moveTo(0, 0); ctx.lineTo(680, 0); ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+    function label(text, y, size = 22, color = "#fff2d8") {
+      ctx.save(); ctx.textAlign = "center"; ctx.font = "900 " + size + "px system-ui, sans-serif";
+      ctx.lineWidth = 5; ctx.strokeStyle = "#242634"; ctx.strokeText(text, W / 2, y);
+      ctx.fillStyle = color; ctx.fillText(text, W / 2, y); ctx.restore();
+    }
+    function drawBossHud() {
+      const b = city.boss;
+      if (!b || city.ending) return;
+      label("GIANT UNICORN  ·  PART " + (b.stage + 1) + " / 4", 48, 23);
+      const width = 68, left = W / 2 - 149;
+      for (let i = 0; i < 4; i++) {
+        rect(left + i * 78, 63, width, 10, "#262833");
+        const health = i < b.stage ? 0 : i === b.stage ? b.hp / partHP : 1;
+        rect(left + i * 78, 63, width * health, 10, i === b.stage ? "#ff9d67" : "#b47588");
+      }
+      let hint = b.mode === "enter" ? "HERE HE COMES!"
+        : b.mode === "rest" ? (b.hp ? "HEADBUTT HIS LEGS!" : "PART CLEARED!")
+        : b.stage % 2 === 0 ? "DODGE THE STOMPS!" : "WATCH HIS MOUTH!";
+      if (b.mode !== "enter") hint += "  " + Math.ceil(b.timer) + "s";
+      label(hint, 102, 19, b.mode === "rest" ? "#9cebbb" : "#ffe6b0");
+    }
+
+    function drawCelebration() {
+      const t = city.endTime, b = city.boss;
+      if (t < 1.7) {
+        const fade = Math.max(0, 1 - t / 1.7);
+        for (let i = 0; i < 38; i++) {
+          const angle = i * 2.399, speed = 65 + (i * 29 % 190);
+          const x = b.x + Math.cos(angle) * speed * t;
+          const y = b.y - 100 + Math.sin(angle) * speed * t + 95 * t * t;
+          ctx.globalAlpha = fade;
+          rect(x, y, 8 + i % 11, 8 + i % 11, ["#ffbf55", "#ff6c41", "#ffd1e7"][i % 3]);
+        }
+        ctx.globalAlpha = 1;
+        label("KABOOM!", 150, 34);
+      }
+      drawCrowd(false);
+      const center = clamp((t - 1.7) / 3.3, 0, 1);
+      const x = lerp(player.x, W / 2, center);
+      let y = lerp(player.y, H * 0.84, center);
+      if (t >= 5) {
+        y -= 45 * clamp(t - 5, 0, 1);
+        for (const start of [6, 8.2]) {
+          const u = (t - start) / 1.6;
+          if (u > 0 && u < 1) y -= Math.sin(u * Math.PI) * 125;
+        }
+        if (t > 10) y += 45 * clamp((t - 10) / 0.8, 0, 1);
+      }
+      drawUnicorn(x, y, 1, false, false, false);
+      if (t >= 6 && t < 10.6) {
+        label("Hip hip horray! Hip hip horray!", 153, 28);
+        for (let i = 0; i < 10; i += 3) {
+          const p = crowdPosition(i, t);
+          ctx.save(); ctx.textAlign = "center"; ctx.font = "bold 13px sans-serif";
+          ctx.fillStyle = "#fff2d8"; ctx.fillText("Horray!", p.x, p.y - 75 - (i % 2) * 18); ctx.restore();
+        }
+      }
+      if (t >= 10.6) label("DOWNTOWN SAVED!", 155, 34);
+    }
+
+    drawBackground = function() {
+      if (inCity()) { drawStreet(); drawBoss(); } else base.drawBackground();
+    };
+    draw = function() {
+      if (!inCity()) return base.draw();
+      if (city.ending) {
+        drawStreet();
+        drawCelebration();
+        return;
+      }
+      // Use the game's existing enemies, player, controls and effects.
+      base.draw();
+      if (!city.boss && city.clock < 4) label("APOCALYPTIC DOWNTOWN", 83, 28);
+      drawBossHud();
+    };
+  }
+
+  window.__uvzuInstallDowntown = function(code) {
+    const replaceOne = (before, after) => {
+      if (code.split(before).length !== 2) throw new Error("Downtown hook missing: " + before.slice(0, 65));
+      code = code.replace(before, () => after);
+    };
+    replaceOne('    if (state.mode === "final") {',
+      '    if (state.mode === "final" && window.__uvzuCurrentLevelCode !== "CITY3") {');
+    replaceOne('      window.__uvzuIsLevelCompleted &&',
+      '      window.__uvzuCurrentLevelCode !== "CITY3" &&\n      window.__uvzuIsLevelCompleted &&');
+    replaceOne('if (window.__uvzuCurrentLevelCode === "RNBW1") {\n              window.__uvzuCurrentLevelCode = "GRV2";\n              window.__uvzuLevelTheme = "graveyard";',
+      'if (["RNBW1", "GRV2"].includes(window.__uvzuCurrentLevelCode)) {\n              const next = window.__uvzuCurrentLevelCode === "RNBW1" ? "GRV2" : "CITY3";\n              window.__uvzuCurrentLevelCode = next;\n              window.__uvzuLevelTheme = next === "GRV2" ? "graveyard" : "downtown";');
+    // Give the new street the same movement depth as the other side-view levels.
+    code = code.replace(/window\.__uvzuCurrentLevelCode === "RNBW1" \|\|\s*window\.__uvzuCurrentLevelCode === "GRV2"/g,
+      '(window.__uvzuCurrentLevelCode === "CITY3" || window.__uvzuCurrentLevelCode === "RNBW1" || window.__uvzuCurrentLevelCode === "GRV2")');
+    replaceOne('  let last = performance.now();', '(' + downtownRuntime.toString() + ')();\n\n  let last = performance.now();');
+    return code;
+  };
+})();
