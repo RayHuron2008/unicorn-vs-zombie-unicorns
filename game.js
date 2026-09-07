@@ -4985,7 +4985,7 @@ const tombGraveSequence = [
   x: 0.50,
   y: 0.91,
   title: "My Brother Peter & Sister-in-Law, Alison",
-  text: "I'll Finish It. I'll Finish What Our Family Started. We Will Rise Again and See the Light of Day, or the World Will Be Cursed."
+  text: "I'll Finish It. I'll Finish What Our Family Started. We Will Rise Again and See the Light of Day!"
 },
 {
   id: "forbiddenSpell",
