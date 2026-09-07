@@ -4933,34 +4933,6 @@ window.__uvzuJumpToFather = function() {
   tombFatherMouthFireTimer = 1.5;
 };
 
-window.__uvzuShowFatherTestButton = function() {
-  if (document.getElementById("fatherTestButton")) return;
-
-  const button = document.createElement("button");
-  button.id = "fatherTestButton";
-  button.textContent = "TEST FATHER";
-
-  button.style.position = "fixed";
-  button.style.right = "12px";
-  button.style.top = "70px";
-  button.style.zIndex = "99999";
-  button.style.padding = "12px 16px";
-  button.style.fontSize = "16px";
-
-  button.onclick = function() {
-    window.__uvzuJumpToFather();
-  };
-
-  document.body.appendChild(button);
-};
-
-window.__uvzuShowFatherTestButton();
-  };
-
-  document.body.appendChild(button);
-};
-
-window.__uvzuShowFatherTestButton();
 
 const tombGraveSequence = [
   // Sam and Mary
