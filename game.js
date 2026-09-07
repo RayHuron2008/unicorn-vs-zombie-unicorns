@@ -6422,7 +6422,25 @@ run();
     const host = () => !!window.__uvzuIsMultiplayerHost?.();
     const ghost = () => !!window.__uvzuIsLocalGhost?.();
     const base = { fullRestart, safeLifeReset, startFinalWave, update,
-      updateEnding, headbutt, updateShots, draw, drawBackground, updateHud };
+   updateEnding, headbutt, updateShots, draw, drawBackground, updateHud };
+    const originalStartMusic = startMusic;
+ startMusic = function() {
+   if (inCity()) {
+     window.__uvzuStopMainMusic?.();
+     return;
+   }
+   originalStartMusic();
+ };
+ window.__uvzuStartMainMusic = startMusic;
+
+ const originalLevelMusic = window.__uvzuUpdateLevelMusic;
+ window.__uvzuUpdateLevelMusic = function() {
+   originalLevelMusic?.();
+   if (inCity()) {
+     window.__uvzuStopMainMusic?.();
+     window.stopTombMusic?.();
+   }
+ };
     const attackSeconds = 15;
     const restSeconds = 5;
     const partHP = 3;
@@ -6600,33 +6618,41 @@ run();
       const cycle = stomp ? 2.5 : 3;
       const beat = Math.floor(b.elapsed / cycle);
       const within = b.elapsed % cycle;
-      if (beat !== b.beat) {
-        b.beat = beat;
-        b.fired = false;
-        b.targetX = clamp(target.x, 50, W - 50);
-        b.targetY = clamp(target.y, H * 0.6 + 15, H - 26);
-        if (stomp) {
-          b.face = b.targetX >= b.x ? 1 : -1;
-        } else {
-          const m = mouth(b);
-          const forward = Math.max(30, (target.x - m.x) * b.face);
-          const slope = clamp(Math.atan2(target.y - 24 - m.y, forward), -0.55, 0.65);
-          b.fireAngle = b.face > 0 ? slope : Math.PI - slope;
-        }
-      }
-      if (stomp) {
-        const targetX = b.targetX - b.face * 76;
-        const targetY = b.targetY - 42;
-        b.x += clamp(targetX - b.x, -560 * dt, 560 * dt);
-        b.y += clamp(targetY - b.y, -220 * dt, 220 * dt);
-        if (within >= 1.4 && !b.fired) {
-          b.fired = true;
-          b.strike++;
-          b.stompFlash = 0.3;
-        }
-      } else {
-        b.fireOn = within >= 1 && within < 2.4;
-      }
+         if (beat !== b.beat) {
+     b.beat = beat;
+     b.fired = false;
+     b.targetX = clamp(target.x, 50, W - 50);
+     b.targetY = clamp(target.y, H * 0.6 + 15, H - 26);
+     if (stomp) {
+       b.face = b.targetX >= b.x ? 1 : -1;
+     }
+   }
+   if (stomp) {
+     const targetX = b.targetX - b.face * 76;
+     const targetY = b.targetY - 42;
+     b.x += clamp(targetX - b.x, -560 * dt, 560 * dt);
+     b.y += clamp(targetY - b.y, -220 * dt, 220 * dt);
+     if (within >= 1.4 && !b.fired) {
+       b.fired = true;
+       b.strike++;
+       b.stompFlash = 0.3;
+     }
+   } else {
+     if (within < 1) {
+       // Make room to breathe, face the player, and aim during the warning.
+       const side = target.x >= b.x ? 1 : -1;
+       let aimX = target.x - side * 260;
+       if (aimX < 170 || aimX > W - 170) aimX = target.x + side * 260;
+       b.x += clamp(clamp(aimX, 170, W - 170) - b.x, -520 * dt, 520 * dt);
+       b.face = target.x >= b.x ? 1 : -1;
+       b.targetX = target.x;
+       b.targetY = target.y - 24;
+       const m = mouth(b);
+       b.fireAngle = Math.atan2(b.targetY - m.y, b.targetX - m.x);
+     }
+     // Keep that direction once the flames start, leaving time to dodge.
+     b.fireOn = within >= 1 && within < 2.4;
+   }
     }
 
     function fireTouchesPlayer(b) {
@@ -6858,7 +6884,7 @@ run();
       ctx.translate(b.x, b.y - lift + (b.mode === "rest" ? 7 : 0));
       ctx.scale(3.2, 3.2);
       if (b.hitLock > 0) ctx.globalAlpha = 0.65;
-      drawUnicorn(0, 0, b.face, false, false, false);
+      drawUnicorn(0, 0, b.face, true, false, false);
       ctx.scale(b.face, 1);
       rect(36, -46, 10, 3, "#7c2e43");
       rect(45, -36, 12, 7, "#492538");
@@ -6967,7 +6993,7 @@ run();
       }
       // Use the game's existing enemies, player, controls and effects.
       base.draw();
-      if (!city.boss && city.clock < 4) label("APOCALYPTIC DOWNTOWN", 83, 28);
+      
       drawBossHud();
     };
   }
