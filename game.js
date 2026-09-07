@@ -6638,7 +6638,7 @@ run();
        b.stompFlash = 0.3;
      }
    } else {
-     if (within < 1) {
+     if (within < 0.75) {
        // Make room to breathe, face the player, and aim during the warning.
        const side = target.x >= b.x ? 1 : -1;
        let aimX = target.x - side * 260;
