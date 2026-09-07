@@ -6679,12 +6679,7 @@ run();
     function cheer(number) {
       if (lastCheer >= number) return;
       lastCheer = number;
-      if (window.speechSynthesis && window.SpeechSynthesisUtterance) {
-        const shout = new window.SpeechSynthesisUtterance("Hip hip horray!");
-        shout.rate = 1.12;
-        shout.pitch = 1.2;
-        window.speechSynthesis.speak(shout);
-      }
+      
     }
     function updateCelebration(dt) {
       city.endTime += dt;
