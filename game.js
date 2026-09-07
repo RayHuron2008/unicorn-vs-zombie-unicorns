@@ -4955,6 +4955,12 @@ window.__uvzuShowFatherTestButton = function() {
 };
 
 window.__uvzuShowFatherTestButton();
+  };
+
+  document.body.appendChild(button);
+};
+
+window.__uvzuShowFatherTestButton();
 
 const tombGraveSequence = [
   // Sam and Mary
