@@ -6404,6 +6404,15 @@ code = code.replace(
 );
 
 code = window.__uvzuInstallDowntown(code);
+      code = window.__uvzuInstallTombMultiplayer(code, {
+  room: () => firebaseCurrentRoom,
+  role: () => firebasePlayerRole,
+  send: async (changes) => {
+    if (!firebaseRoomCode || !firebasePlayerRole) throw new Error("No multiplayer room");
+    const { dbMod, db } = await getFirebaseDatabase();
+    await dbMod.update(dbMod.ref(db, "rooms/" + firebaseRoomCode), changes);
+  }
+});
 const run = new Function(code + "\n//# sourceURL=graphics-v107.js");
 run();
       
