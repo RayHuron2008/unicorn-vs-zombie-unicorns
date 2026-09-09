@@ -1170,7 +1170,11 @@ window.stopTombMusic = function stopTombMusic() {
 
               if (!["RNBW1", "GRV2", "CITY3", "FRST5"].includes(finalLevelCode)) {
       alert("Use RNBW1, GRV2, CITY3, or FRST5.");
+          return;
     }
+
+    window.__uvzuCurrentLevelCode = finalLevelCode;
+    window.__uvzuCurrentDifficultyName = finalDifficultyName;
 window.__uvzuLevelTheme =
   finalLevelCode === "FRST5" ? "forest" :
   finalLevelCode === "GRV2" ? "graveyard" :
@@ -1355,6 +1359,7 @@ window.__uvzuLevelTheme =
 
             if (!["RNBW1", "GRV2", "CITY3", "FRST5"].includes(levelCode)) {
         alert("Use RNBW1, GRV2, CITY3, or FRST5.");
+              return;
       }
 
       if (roomCode === "Room Code" || roomCode === "Creating...") {
