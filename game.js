@@ -354,6 +354,7 @@ window.stopTombMusic = function stopTombMusic() {
           y: Math.round(player.y),
                    face: player.face || 1,
           ray: player.ray || 0,
+                  catcherTrap: window.__uvzuGetCatcherStatus?.() || null,
           giant: player.giant || 0,
           lives: typeof player.lives === "number" ? player.lives : 0,
           hp: typeof player.hp === "number" ? player.hp : 0,
@@ -495,6 +496,7 @@ window.stopTombMusic = function stopTombMusic() {
           enemies: safeEnemies,
           city: window.__uvzuGetDowntownState?.() || null,
                   forest: window.__uvzuGetForestState?.() || null,
+          catchers: window.__uvzuGetCatcherState?.() || null,
           updatedAt: now
         });
       })
@@ -1168,14 +1170,15 @@ window.stopTombMusic = function stopTombMusic() {
     const hud = document.getElementById("hud");
     const controls = document.getElementById("controls");
 
-              if (!["RNBW1", "GRV2", "CITY3", "FRST5"].includes(finalLevelCode)) {
-      alert("Use RNBW1, GRV2, CITY3, or FRST5.");
-          return;
-    }
+              if (!["RNBW1", "GRV2", "CITY3", "FRST5", "HUNT6"].includes(finalLevelCode)) {
+  alert("Use RNBW1, GRV2, CITY3, FRST5, or HUNT6.");
+  return;
+}
 
     window.__uvzuCurrentLevelCode = finalLevelCode;
     window.__uvzuCurrentDifficultyName = finalDifficultyName;
 window.__uvzuLevelTheme =
+    finalLevelCode === "HUNT6" ? "catchers" :
   finalLevelCode === "FRST5" ? "forest" :
   finalLevelCode === "GRV2" ? "graveyard" :
   finalLevelCode === "CITY3" ? "downtown" : "rainbow";
@@ -1357,10 +1360,10 @@ window.__uvzuLevelTheme =
       const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
       const difficultyName = hostDifficultySelect.value || "Easy";
 
-            if (!["RNBW1", "GRV2", "CITY3", "FRST5"].includes(levelCode)) {
-        alert("Use RNBW1, GRV2, CITY3, or FRST5.");
-              return;
-      }
+            if (!["RNBW1", "GRV2", "CITY3", "FRST5", "HUNT6"].includes(levelCode)) {
+  alert("Use RNBW1, GRV2, CITY3, FRST5, or HUNT6.");
+  return;
+            }
 
       if (roomCode === "Room Code" || roomCode === "Creating...") {
         roomCode = generateRoomCode();
@@ -1553,6 +1556,7 @@ if (
   typedLevelCode &&
   typedLevelCode !== "RNBW1" &&
   typedLevelCode !== "GRV2" &&
+    typedLevelCode !== "HUNT6" &&
     typedLevelCode !== "FRST5" &&
   typedLevelCode !== "CITY3" &&
   typedLevelCode !== "TOMB1" &&
@@ -1563,6 +1567,7 @@ if (
 }
 
 window.__uvzuCurrentLevelCode =
+    typedLevelCode === "HUNT6" ? "HUNT6" :
     typedLevelCode === "FRST5" ? "FRST5" :
   typedLevelCode === "CITY3" ? "CITY3" :
   typedLevelCode === "GRV2"
@@ -1574,6 +1579,7 @@ window.__uvzuCurrentLevelCode =
         : "RNBW1";
 
 window.__uvzuLevelTheme =
+    typedLevelCode === "HUNT6" ? "catchers" :
     typedLevelCode === "FRST5" ? "forest" :
   typedLevelCode === "CITY3" ? "downtown" :
   typedLevelCode === "GRV2"
@@ -6455,7 +6461,8 @@ code = window.__uvzuInstallDowntown(code);
     await dbMod.update(dbMod.ref(db, "rooms/" + firebaseRoomCode), changes);
   }
 });
- code = window.__uvzuInstallForest(code);     
+ code = window.__uvzuInstallForest(code); 
+     code = window.__uvzuInstallCatchers(code); 
 const run = new Function(code + "\n//# sourceURL=graphics-v107.js");
 run();
       
