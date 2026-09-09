@@ -6409,7 +6409,42 @@ code = code.replace(
       ? H - 20
       : GROUND_Y;`
 );
+  // Armed zombie unicorns need a clear lane to the player before firing.
+code = code.replace(
+  "        if (e.shootTimer <= 0) {",
+  `        if (
+          e.shootTimer <= 0 &&
+          !state.enemies.some((other) => {
+            if (!other || other === e || other.hp <= 0) return false;
 
+            const shotX = e.x + e.face * 28;
+            const shotY = e.y - 34;
+            const shotDx = player.x - shotX;
+            const shotDy = player.y - 28 - shotY;
+            const shotLengthSquared = shotDx * shotDx + shotDy * shotDy;
+
+            if (shotLengthSquared <= 1) return false;
+
+            const otherX = other.x;
+            const otherY = other.y - 28;
+            const along =
+              ((otherX - shotX) * shotDx + (otherY - shotY) * shotDy) /
+              shotLengthSquared;
+
+            if (along <= 0.06 || along >= 0.94) return false;
+
+            const nearestX = shotX + shotDx * along;
+            const nearestY = shotY + shotDy * along;
+            const blockRadius = Math.min(
+              36,
+              Math.max(26, (other.w || 54) * 0.5)
+            );
+
+            return distance(nearestX, nearestY, otherX, otherY) < blockRadius;
+          })
+        ) {`
+);
+      
 code = window.__uvzuInstallDowntown(code);
       code = window.__uvzuInstallTombMultiplayer(code, {
   room: () => firebaseCurrentRoom,
