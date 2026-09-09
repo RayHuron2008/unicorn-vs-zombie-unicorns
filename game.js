@@ -1569,6 +1569,7 @@ window.__uvzuCurrentLevelCode =
         : "RNBW1";
 
 window.__uvzuLevelTheme =
+    typedLevelCode === "FRST5" ? "forest" :
   typedLevelCode === "CITY3" ? "downtown" :
   typedLevelCode === "GRV2"
     ? "graveyard"
