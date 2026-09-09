@@ -494,6 +494,7 @@ window.stopTombMusic = function stopTombMusic() {
         return dbMod.set(dbMod.ref(db, path), {
           enemies: safeEnemies,
           city: window.__uvzuGetDowntownState?.() || null,
+                  forest: window.__uvzuGetForestState?.() || null,
           updatedAt: now
         });
       })
@@ -1167,14 +1168,13 @@ window.stopTombMusic = function stopTombMusic() {
     const hud = document.getElementById("hud");
     const controls = document.getElementById("controls");
 
-       if (!["RNBW1", "GRV2", "CITY3"].includes(finalLevelCode)) {
-      alert("Use RNBW1, GRV2, or CITY3.");
-      return;
+              if (!["RNBW1", "GRV2", "CITY3", "FRST5"].includes(finalLevelCode)) {
+      alert("Use RNBW1, GRV2, CITY3, or FRST5.");
     }
-
-              window.__uvzuCurrentLevelCode = finalLevelCode;
-       window.__uvzuCurrentDifficultyName = finalDifficultyName;
-       window.__uvzuLevelTheme = finalLevelCode === "GRV2" ? "graveyard" : finalLevelCode === "CITY3" ? "downtown" : "rainbow";
+window.__uvzuLevelTheme =
+  finalLevelCode === "FRST5" ? "forest" :
+  finalLevelCode === "GRV2" ? "graveyard" :
+  finalLevelCode === "CITY3" ? "downtown" : "rainbow";
 
        if (window.__uvzuUpdateLevelMusic) {
          window.__uvzuUpdateLevelMusic();
@@ -1353,9 +1353,8 @@ window.stopTombMusic = function stopTombMusic() {
       const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
       const difficultyName = hostDifficultySelect.value || "Easy";
 
-      if (!["RNBW1", "GRV2", "CITY3"].includes(levelCode)) {
-        alert("Use RNBW1, GRV2, or CITY3.");
-        return;
+            if (!["RNBW1", "GRV2", "CITY3", "FRST5"].includes(levelCode)) {
+        alert("Use RNBW1, GRV2, CITY3, or FRST5.");
       }
 
       if (roomCode === "Room Code" || roomCode === "Creating...") {
@@ -1549,6 +1548,7 @@ if (
   typedLevelCode &&
   typedLevelCode !== "RNBW1" &&
   typedLevelCode !== "GRV2" &&
+    typedLevelCode !== "FRST5" &&
   typedLevelCode !== "CITY3" &&
   typedLevelCode !== "TOMB1" &&
   typedLevelCode !== "VHS3"
@@ -1558,6 +1558,7 @@ if (
 }
 
 window.__uvzuCurrentLevelCode =
+    typedLevelCode === "FRST5" ? "FRST5" :
   typedLevelCode === "CITY3" ? "CITY3" :
   typedLevelCode === "GRV2"
     ? "GRV2"
@@ -6413,6 +6414,7 @@ code = window.__uvzuInstallDowntown(code);
     await dbMod.update(dbMod.ref(db, "rooms/" + firebaseRoomCode), changes);
   }
 });
+ code = window.__uvzuInstallForest(code);     
 const run = new Function(code + "\n//# sourceURL=graphics-v107.js");
 run();
       
