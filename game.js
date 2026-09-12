@@ -6462,7 +6462,11 @@ code = window.__uvzuInstallDowntown(code);
   }
 });
  code = window.__uvzuInstallForest(code); 
-     code = window.__uvzuInstallCatchers(code); 
+          code = window.__uvzuInstallCatchers(code);
+     code = window.__uvzuInstallRainbowFinalFix(code);
+     if (typeof window.__uvzuInstallTester === "function") {
+       code = window.__uvzuInstallTester(code);
+     }
 const run = new Function(code + "\n//# sourceURL=graphics-v107.js");
 run();
       
