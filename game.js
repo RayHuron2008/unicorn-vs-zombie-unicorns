@@ -643,7 +643,7 @@ window.stopTombMusic = function stopTombMusic() {
         justify-content: stretch;
         background:
           linear-gradient(rgba(0,0,0,.06), rgba(0,0,0,.16)),
-          url("file_00000000122c720cab795833c670e371.png") center center / cover no-repeat;
+          var(--menu-art) center center / cover no-repeat #000;
       }
 
       #menuShade {
