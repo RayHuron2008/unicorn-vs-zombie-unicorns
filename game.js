@@ -1631,7 +1631,7 @@ window.__uvzuLevelTheme =
       <div id="pausePanel">
         <div id="pauseTitle">PAUSED</div>
         <div style="font: 900 16px system-ui, sans-serif; color: #4b2670;">
-          Level Code: RNBW1
+                    Level Code: ${window.__uvzuCurrentLevelCode || "RNBW1"}
         </div>
         <button id="resumeBtn" class="pauseBtn">RESUME</button>
 <button id="pauseControlsBtn" class="pauseBtn">CONTROLS</button>
@@ -6463,7 +6463,8 @@ code = window.__uvzuInstallDowntown(code);
 });
  code = window.__uvzuInstallForest(code); 
           code = window.__uvzuInstallCatchers(code);
-     code = window.__uvzuInstallRainbowFinalFix(code);
+          code = window.__uvzuInstallRainbowFinalFix(code);
+     code = window.__uvzuInstallClassicLevels(code);
      if (typeof window.__uvzuInstallTester === "function") {
        code = window.__uvzuInstallTester(code);
      }
