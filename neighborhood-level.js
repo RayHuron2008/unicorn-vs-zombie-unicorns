@@ -1,9 +1,16 @@
-// Neighborhood rescue, level 7, revision 2. Load before game.js.
+// Neighborhood rescue, level 7, revision 3: stronger pressure and difficulty scaling.
 // Level code: RSCU7. All gameplay, scenery, and rescue synchronization live here.
 (() => {
   function neighborhoodRuntime() {
     const LEVEL = "RSCU7", TOTAL = 8, SPAWN_SECONDS = 60;
-    const RELEASE_AT = [0, 0, 12, 20, 28, 36, 44, 52];
+    const RELEASE_AT = [0, 0, 0, 16, 24, 36, 44, 52];
+    // Faster arrivals and a second-half surge; the ordinary difficulty menu applies.
+    const DIFFICULTY = {
+      Easy:   { speed: 78, gap: 2.6, cap: 5, windup: .66, recovery: 1.6 },
+      Normal: { speed: 90, gap: 2.3, cap: 6, windup: .60, recovery: 1.5 },
+      Hard:   { speed: 102, gap: 2.0, cap: 7, windup: .54, recovery: 1.4 }
+    };
+    const settings = () => DIFFICULTY[window.__uvzuCurrentDifficultyName] || DIFFICULTY.Easy;
     const active = () => window.__uvzuCurrentLevelCode === LEVEL;
     const host = () => !!window.__uvzuIsMultiplayerHost?.();
     const guest = () => !!window.__uvzuIsMultiplayerGuest?.();
@@ -23,7 +30,7 @@
     let notice = "", noticeTime = 0, sceneryCanvas = null;
     const seenStrikes = new Set();
     const fresh = () => ({ level: LEVEL, session: session(), run: Date.now() + "-" + (++serial),
-      clock: 0, phase: "rescue", phaseTime: 0, rescued: 0, spawned: 0, spawnTimer: 6,
+      clock: 0, phase: "rescue", phaseTime: 0, rescued: 0, spawned: 0, spawnTimer: 2.8,
       nextNeighbor: 0, revealTimer: 0, event: 0, failure: "", zombies: [], strikes: [],
       lastRescuer: "", ending: null,
       people: spots.map(([x,y], id) => ({ id, x, y, hp: 3, status: "inside", carrier: "",
@@ -173,7 +180,7 @@
     }
     function revealNeighbors() {
       let outside = rescue.people.filter(p => p.status === "waiting" || p.status === "riding").length;
-      while (outside < 2 && rescue.nextNeighbor < TOTAL && rescue.revealTimer <= 0 &&
+      while (outside < 3 && rescue.nextNeighbor < TOTAL && rescue.revealTimer <= 0 &&
           rescue.clock >= RELEASE_AT[rescue.nextNeighbor]) {
         const p = rescue.people[rescue.nextNeighbor++]; p.status = "waiting"; p.invuln = 3;
         outside++; if (rescue.nextNeighbor > 2) { rescue.revealTimer = 1.8; say("ANOTHER NEIGHBOR NEEDS A RIDE!"); }
@@ -209,11 +216,12 @@
       rescue.revealTimer = Math.max(0, rescue.revealTimer - dt); revealNeighbors();
     }
     function spawnZombie() {
-      const number = rescue.spawned++, right = number % 3 === 2;
+      const number = rescue.spawned++, right = number % 2 === 1, tune = settings();
       state.enemies.push({ id: "rescue-z-" + rescue.run + "-" + number,
-        x: right ? W + 46 : -46, y: right ? 480 : 360 + (number % 3) * 60,
+        x: right ? W + 46 : -46, y: [377,479,459,351][number % 4],
         w: 54, h: 34, face: right ? -1 : 1, type: "normal", hp: 1, shootTimer: 999, sep: 1,
-        speed: 44 + number % 4 * 4, mode: "walk", timer: 0, cooldown: 0,
+        speed: tune.speed + number % 4 * 4 + Math.min(12,rescue.clock*.2),
+        huntsPeople: number % 3 !== 2, mode: "walk", timer: 0, cooldown: 0,
         targetX: 0, targetY: 0, targetPerson: -1 });
     }
     function hitPerson(p) {
@@ -230,23 +238,33 @@
       push();
     }
     function tickZombies(dt) {
-      const waiting = rescue.people.filter(p => p.status === "waiting"), live = players();
+      const waiting = rescue.people.filter(p => p.status === "waiting"), live = players(), tune = settings();
+      const assigned = new Map();
       for (const z of state.enemies) {
         z.cooldown = Math.max(0, z.cooldown-dt);
         if (z.mode === "windup") {
           z.timer -= dt;
-          if (z.timer <= 0) { z.mode = "rest"; z.timer = .6; z.cooldown = 1.8; zombieStrike(z); }
+          if (z.timer <= 0) { z.mode = "rest"; z.timer = .45; z.cooldown = tune.recovery; zombieStrike(z); }
           if (rescue.phase !== "rescue") break;
           continue;
         }
         if (z.mode === "rest") { z.timer -= dt; if (z.timer <= 0) z.mode = "walk"; continue; }
         const targets = waiting.map(p => ({ ...p, civilian: true })).concat(live);
-        targets.sort((a,b) => Math.hypot(a.x-z.x,(a.y-z.y)*1.25) - Math.hypot(b.x-z.x,(b.y-z.y)*1.25));
+        const targetCost = p => {
+          const distance = Math.hypot(p.x-z.x,(p.y-z.y)*1.25);
+          // Players can intercept an attacker, but a distant player cannot draw every
+          // zombie away from the people. Spread hunters across the waiting neighbors.
+          if (!p.civilian && distance < 82) return distance*.45;
+          if (p.civilian && z.huntsPeople) return distance*.58 + (assigned.get(p.id)||0)*75;
+          return distance;
+        };
+        targets.sort((a,b) => targetCost(a)-targetCost(b));
         const target = targets[0]; if (!target) continue;
+        if (target.civilian) assigned.set(target.id,(assigned.get(target.id)||0)+1);
         const dx = target.x-z.x, dy = target.y-z.y, d = Math.hypot(dx,dy) || 1;
         z.face = dx >= 0 ? 1 : -1;
         if (Math.abs(dx) < 48 && Math.abs(dy) < 27 && z.cooldown <= 0) {
-          z.mode = "windup"; z.timer = .75; z.targetX = target.x; z.targetY = target.y;
+          z.mode = "windup"; z.timer = tune.windup; z.targetX = target.x; z.targetY = target.y;
           z.targetPerson = target.civilian ? target.id : -1; continue;
         }
         if (d > 35) { z.x += dx/d*z.speed*dt; z.y += dy/d*z.speed*dt*.85; }
@@ -345,8 +363,10 @@
         rescue.zombies = state.enemies;
         if (rescue.phase === "rescue") {
           rescue.clock += dt; rescue.spawnTimer -= dt;
-          if (rescue.clock < SPAWN_SECONDS && rescue.spawnTimer <= 0 && state.enemies.length < (host() ? 5 : 4)) {
-            spawnZombie(); rescue.spawnTimer = 4.8;
+          const tune=settings(), surge=rescue.clock>=25, teammate=players().length>1;
+          const cap=Math.min(8,tune.cap+(surge?1:0)+(teammate?1:0));
+          if (rescue.clock < SPAWN_SECONDS && rescue.spawnTimer <= 0 && state.enemies.length < cap) {
+            spawnZombie(); rescue.spawnTimer = tune.gap-(surge ? .6 : 0)-(teammate ? .2 : 0);
           }
           rescue.strikes = rescue.strikes.filter(s => rescue.clock-s.born < 1);
         }
