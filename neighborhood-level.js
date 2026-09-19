@@ -1,8 +1,9 @@
-// Neighborhood rescue, level 7, revision 3: stronger pressure and difficulty scaling.
+// Neighborhood rescue, level 7, revision 4: Pixel Sunwalk soundtrack.
 // Level code: RSCU7. All gameplay, scenery, and rescue synchronization live here.
 (() => {
   function neighborhoodRuntime() {
     const LEVEL = "RSCU7", TOTAL = 8, SPAWN_SECONDS = 60;
+    const MUSIC_URL = "./Pixel%20Sunwalk%20(Remix).m4a";
     const RELEASE_AT = [0, 0, 0, 16, 24, 36, 44, 52];
     // Faster arrivals and a second-half surge; the ordinary difficulty menu applies.
     const DIFFICULTY = {
@@ -28,6 +29,7 @@
     const spots = [[195,405],[470,465],[330,359],[625,475],[125,481],[535,360],[365,482],[630,408]];
     let serial = 0, loss = 0, lastPacket = 0, hasSnapshot = false, retryWaiting = false, nextSent = false;
     let notice = "", noticeTime = 0, sceneryCanvas = null;
+    let rescueMusic = null;
     const seenStrikes = new Set();
     const fresh = () => ({ level: LEVEL, session: session(), run: Date.now() + "-" + (++serial),
       clock: 0, phase: "rescue", phaseTime: 0, rescued: 0, spawned: 0, spawnTimer: 2.8,
@@ -43,6 +45,30 @@
     const inSafeZone = p => p.x >= safeZone.x && p.x <= safeZone.x + safeZone.w &&
       p.y >= safeZone.y && p.y <= safeZone.y + safeZone.h;
     const passenger = who => rescue.people.find(p => p.status === "riding" && p.carrier === who);
+    const wantsMusic = () => active() && gameStarted && !paused && !document.hidden && rescue.phase !== "failed";
+    function stopRescueMusic(reset = false) {
+      if (!rescueMusic) return;
+      rescueMusic.pause();
+      if (reset) rescueMusic.currentTime = 0;
+    }
+    function playRescueMusic() {
+      if (!wantsMusic()) { stopRescueMusic(!active()); return; }
+      window.__uvzuStopMainMusic?.(); window.stopTombMusic?.();
+      if (!rescueMusic) {
+        rescueMusic = new Audio(MUSIC_URL);
+        rescueMusic.loop = true;
+        rescueMusic.volume = 0.45;
+        rescueMusic.preload = "auto";
+      }
+      if (!rescueMusic.paused) return;
+      // Phone browsers may require a tap before allowing audio. The existing
+      // pointer handlers and the keyboard handler below retry on the next input.
+      try {
+        rescueMusic.play()?.then(() => {
+          if (!wantsMusic()) stopRescueMusic(!active());
+        }).catch(() => {});
+      } catch (_) {}
+    }
     function localPosition() {
       resetPlayerPosition();
       player.x = guest() ? 330 : 250; player.y = 447;
@@ -52,16 +78,17 @@
       document.getElementById("neighborhoodResult")?.remove(); retryWaiting = false;
     }
     function initialize() {
+      stopRescueMusic(true);
       window.__uvzuReviveLocalForNextLevel?.(player);
       old.fullRestart(); rescue = fresh(); loss = 0; seenStrikes.clear();
       hasSnapshot = false; lastPacket = 0; noticeTime = 0; nextSent = false;
       removeResult(); localPosition(); state.mode = "play"; state.enemies = rescue.zombies;
       window.__uvzuLevelTheme = "neighborhood";
       window.__uvzuStopMainMusic?.(); window.stopTombMusic?.();
-      revealNeighbors(); updateHud();
+      revealNeighbors(); updateHud(); playRescueMusic();
     }
     fullRestart = function() {
-      if (!active()) { nextSent = false; removeResult(); return old.fullRestart(); }
+      if (!active()) { stopRescueMusic(true); nextSent = false; removeResult(); return old.fullRestart(); }
       // A guest's retry is a request; only the host creates the new shared run.
       if (guest() && hasSnapshot && rescue.session === session()) {
         retryWaiting = true;
@@ -82,14 +109,31 @@
     spawnEnemy = function(...args) { if (!active()) return old.spawnEnemy(...args); };
     startFinalWave = function() { if (!active()) return old.startFinalWave(); };
     updateEnding = function(dt) { if (!active()) return old.updateEnding(dt); };
-    startMusic = function() { if (active()) window.__uvzuStopMainMusic?.(); else old.startMusic(); };
+    startMusic = function() {
+      if (active()) playRescueMusic();
+      else { stopRescueMusic(true); old.startMusic(); }
+    };
     const previousMusic = window.__uvzuUpdateLevelMusic;
     window.__uvzuUpdateLevelMusic = function() {
-      previousMusic?.(); if (active()) { window.__uvzuStopMainMusic?.(); window.stopTombMusic?.(); }
+      previousMusic?.(); playRescueMusic();
     };
+    const previousStart = window.__uvzuStartGame;
+    window.__uvzuStartGame = function(...args) {
+      const result = previousStart(...args);
+      playRescueMusic(); return result;
+    };
+    const previousPause = window.__uvzuSetPaused;
+    window.__uvzuSetPaused = function(value) {
+      previousPause(value); playRescueMusic();
+    };
+    window.addEventListener("keydown", () => { if (active()) playRescueMusic(); });
+    document.addEventListener?.("visibilitychange", playRescueMusic);
+    window.addEventListener("pagehide", () => stopRescueMusic());
+    window.addEventListener("pageshow", playRescueMusic);
     function finish(phase, reason = "") {
       if (rescue.phase !== "rescue") return;
       rescue.phase = phase; rescue.phaseTime = 0; rescue.failure = reason;
+      if (phase === "failed") stopRescueMusic();
       state.mode = "rescueScene"; rescue.strikes = [];
       state.playerShots.length = state.enemyShots.length = 0;
       if (phase === "won") {
@@ -304,6 +348,7 @@
       if (!data || data.level !== LEVEL || data.session !== session() || packet.updatedAt <= lastPacket) return;
       const reset = data.run !== rescue.run;
       if (reset) {
+        stopRescueMusic(true);
         window.__uvzuReviveLocalForNextLevel?.(player); old.fullRestart(); localPosition();
         loss = 0; seenStrikes.clear(); removeResult(); noticeTime = 0;
       }
@@ -312,6 +357,7 @@
       rescue.people = list(rescue.people); rescue.zombies = list(rescue.zombies); rescue.strikes = list(rescue.strikes);
       if (!reset && rescue.rescued > before) say("SAFE!  " + rescue.rescued + " / " + TOTAL + " NEIGHBORS");
       state.time = rescue.clock; state.enemies = rescue.zombies;
+      if (reset) playRescueMusic();
     }
     function receiveRetry() {
       if (!host()) return false;
@@ -321,6 +367,7 @@
     }
     function showResult() {
       if (rescue.phase !== "failed" || document.getElementById("neighborhoodResult")) return;
+      stopRescueMusic();
       const overlay = document.createElement("div"); overlay.id = "neighborhoodResult";
       overlay.style.cssText = "position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#13293bb3;padding:24px;font-family:system-ui,sans-serif;text-align:center;color:white";
       const card = document.createElement("div");
