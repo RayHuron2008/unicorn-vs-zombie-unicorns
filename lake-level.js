@@ -1,8 +1,8 @@
 // Lake catapults, level 9. Load after volcano-level.js and before game.js.
-// LAKE9: B launches rocks; three shots, then a five-second reload.
+// LAKE9: sink all 12 enemy boats, then fight the fish. No level countdown.
 (() => {
   function lakeRuntime() {
-    const LEVEL="LAKE9", SURVIVAL=60, MAGAZINE=3, RELOAD=5, FISH_HP=12, SWIM_TIME=10;
+    const LEVEL="LAKE9", TOTAL_BOATS=12, MAGAZINE=3, RELOAD=5, FISH_HP=12, SWIM_TIME=10;
     const SHOT_GAP=.45, FLIGHT=.95;
     const SETTINGS={
       Easy:   { cap:3, gap:4.8, boatSpeed:39, warning:1.05, rockFlight:1.35, fishSpeed:110, jumpWarning:1.3 },
@@ -130,10 +130,14 @@
       lake.kills.push({id:b.id,who});lake.sinking.push({...b,born:lake.clock});rewards();push();
     }
     function spawnBoat(){
+      // Sinking boats occupy a slot until they disappear, even in multiplayer.
+      if(guest()||lake.phase!=="battle"||lake.spawned>=TOTAL_BOATS||
+        state.enemies.length+lake.sinking.length>=tune().cap)return false;
       const n=lake.spawned++,right=n%2===1;
       state.enemies.push({id:"lake-boat-"+lake.run+"-"+n,type:"lakeBoat",x:right?W+65:-65,y:[380,472,415,350][n%4],
         w:98,h:45,hp:3,face:right?-1:1,mode:"sail",ammo:MAGAZINE,reloadAt:0,timer:.8,
         targetX:480,targetY:430,vx:0,vy:0,lastThrow:-99,flash:0,shootTimer:999,sep:1});
+      return true;
     }
     function enemyLaunch(b){
       lake.rocks.push({id:lake.run+"-enemy-"+(++lake.event),team:"enemy",fromX:b.x,fromY:b.y,x:b.targetX,y:b.targetY,
@@ -160,7 +164,9 @@
     }
     updateEnemies=function(dt){if(!active())return old.updateEnemies(dt);if(!guest()&&lake.phase==="battle")tickBoats(dt);};
     startFinalWave=function(){
-      if(!active())return old.startFinalWave();if(guest()||lake.phase!=="battle")return;
+      if(!active())return old.startFinalWave();
+      if(guest()||lake.phase!=="battle"||lake.spawned<TOTAL_BOATS||
+        lake.kills.length<TOTAL_BOATS||state.enemies.length>0)return;
       lake.phase="arrival";lake.phaseTime=0;lake.rocks=[];lake.bites=[];state.enemies.length=0;pendingShots=[];
       state.mode="lakeScene";state.playerShots.length=state.enemyShots.length=0;state.finalSpawned=0;
       lake.fish={x:760,y:413,hits:0,mode:"arrival",face:-1,timer:0,vx:0,vy:0,flash:0,jumps:0,
@@ -249,7 +255,7 @@
         loss=shotSeq=0;seenRewards.clear();seenHazards.clear();
       }
       lake=copy(data);for(const key of ["boats","rocks","sinking","bites","kills"])lake[key]=list(lake[key]);
-      lake.crews||={host:crew(),guest:crew()};state.enemies=lake.boats;state.time=Math.min(SURVIVAL,lake.clock);
+      lake.crews||={host:crew(),guest:crew()};state.enemies=lake.boats;state.time=0;
       lastPacket=packet.updatedAt;hasSnapshot=true;pendingShots=pendingShots.filter(a=>a.seq>(lake.crews.guest?.lastSeq||0));
       if(lake.phase==="won")swallow=null;rewards();
     }
@@ -279,11 +285,11 @@
         lake.boats=state.enemies;
         if(lake.phase==="battle"){
           lake.spawnTimer-=dt;
-          if(lake.clock>=SURVIVAL)startFinalWave();
-          else if(lake.spawnTimer<=0&&state.enemies.length<Math.min(6,tune().cap+(players().length>1?1:0))){spawnBoat();lake.spawnTimer=tune().gap;}
+          if(lake.spawnTimer<=0&&spawnBoat())lake.spawnTimer=tune().gap;
         }
         tickFish(dt);
         if(fighting())for(const s of lake.rocks)if(!s.hit&&lake.clock-s.born>=s.flight)impactRock(s);
+        if(lake.phase==="battle")startFinalWave();
         lake.rocks=lake.rocks.filter(s=>lake.clock-s.born<s.flight+.8);
         lake.sinking=lake.sinking.filter(b=>lake.clock-b.born<2.2);lake.bites=lake.bites.filter(b=>lake.clock-b.born<.8);
         if(lake.phase==="won"&&lake.phaseTime>=3.6&&!lake.finished){lake.finished=true;if(host())window.__uvzuSignalLevelCompleted?.();push();}
@@ -300,7 +306,7 @@
     updateHud=function(){
       old.updateHud();if(!active())return;
       if(livesEl)livesEl.textContent="Lives: "+player.lives+" | Boat: "+(ghost()?0:hull)+" / 3";
-      if(timeEl)timeEl.textContent=lake.phase==="battle"?"Time: "+Math.max(0,Math.ceil(SURVIVAL-lake.clock))+"s":
+      if(timeEl)timeEl.textContent=lake.phase==="battle"?"Boats sunk: "+lake.kills.length+" / "+TOTAL_BOATS:
         lake.phase==="boss"?"Fish hits: "+lake.fish.hits+" / 12":lake.phase==="won"?"Fish defeated!":"";
       if(powerLabelEl)powerLabelEl.textContent=ammo>0?"Rocks: "+ammo+" / 3":"Reload: "+Math.max(0,Math.ceil(reloadAt-lake.clock))+"s";
       if(powerFillEl)powerFillEl.style.width=(ammo>0?ammo/MAGAZINE*100:clamp(1-(reloadAt-lake.clock)/RELOAD,0,1)*100)+"%";
@@ -451,7 +457,7 @@
       box(312,17,336,57,"#1c455cdc");box(312,17,336,3,"#e5daa0");
       text(lake.fish?"GIANT LAKE FISH":"LAKE CATAPULTS",480,42,21);
       if(lake.fish){for(let i=0;i<FISH_HP;i++)box(367+i*19,55,14,9,i<lake.fish.hits?"#f5ce8a":"#7fa3a6");}
-      else text("THREE ROCKS SINK AN ENEMY BOAT",480,64,12,"#d9eacb");
+      else text("SINK ALL "+TOTAL_BOATS+" ENEMY BOATS",480,64,12,"#d9eacb");
       if(lake.phase==="battle"&&lake.clock<9)text(lake.clock<5?"B: LAUNCH ROCK   •   3 SHOTS, THEN RELOAD 5s":
         "FACE YOUR TARGET   •   A + DIRECTION: QUICK ROW",480,102,17,"#fff0b6");
       if(lake.phase==="arrival")text("SOMETHING BIG IS BENEATH THE BOATS...",480,103,19,"#fff0b6");
@@ -465,6 +471,9 @@
   }
   window.__uvzuInstallLake=function(code){
     function once(before,after){if(code.split(before).length!==2)throw new Error("Lake hook missing: "+before.slice(0,90));code=code.replace(before,()=>after);}
+    // Skip the base game's timed battle logic only for this level.
+    once('      window.__uvzuCurrentLevelCode !== "TOMB1"\n    ) {\n      state.time += dt;',
+      '      !["TOMB1", "LAKE9"].includes(window.__uvzuCurrentLevelCode)\n    ) {\n      state.time += dt;');
     const movement='(["LAVA8", "RSCU7", "HUNT6", "CITY3", "FRST5", "RNBW1", "GRV2"].includes(window.__uvzuCurrentLevelCode))';
     if(code.split(movement).length!==6)throw new Error("Lake movement hooks missing");
     code=code.split(movement).join('(["LAKE9", "LAVA8", "RSCU7", "HUNT6", "CITY3", "FRST5", "RNBW1", "GRV2"].includes(window.__uvzuCurrentLevelCode))');
