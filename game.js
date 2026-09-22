@@ -357,6 +357,7 @@ window.stopTombMusic = function stopTombMusic() {
                   catcherTrap: window.__uvzuGetCatcherStatus?.() || null,
           neighborhoodStatus: window.__uvzuGetNeighborhoodStatus?.() || null,
           volcanoStatus: window.__uvzuGetVolcanoStatus?.() || null,
+          lakeStatus: window.__uvzuGetLakeStatus?.() || null,
           giant: player.giant || 0,
           lives: typeof player.lives === "number" ? player.lives : 0,
           hp: typeof player.hp === "number" ? player.hp : 0,
@@ -501,6 +502,7 @@ window.stopTombMusic = function stopTombMusic() {
           catchers: window.__uvzuGetCatcherState?.() || null,
           neighborhood: window.__uvzuGetNeighborhoodState?.() || null,
           volcano: window.__uvzuGetVolcanoState?.() || null,
+          lake: window.__uvzuGetLakeState?.() || null,
           updatedAt: now
         });
       })
@@ -1174,14 +1176,15 @@ window.stopTombMusic = function stopTombMusic() {
     const hud = document.getElementById("hud");
     const controls = document.getElementById("controls");
 
-              if (!["RNBW1", "GRV2", "CITY3", "FRST5", "HUNT6", "RSCU7", "LAVA8"].includes(finalLevelCode)) {
-  alert("Use RNBW1, GRV2, CITY3, FRST5, HUNT6, RSCU7, or LAVA8.");
+              if (!["RNBW1", "GRV2", "CITY3", "FRST5", "HUNT6", "RSCU7", "LAVA8", "LAKE9"].includes(finalLevelCode)) {
+  alert("Use RNBW1, GRV2, CITY3, FRST5, HUNT6, RSCU7, LAVA8, or LAKE9.");
   return;
 }
 
     window.__uvzuCurrentLevelCode = finalLevelCode;
     window.__uvzuCurrentDifficultyName = finalDifficultyName;
 window.__uvzuLevelTheme =
+    finalLevelCode === "LAKE9" ? "lake" :
     finalLevelCode === "LAVA8" ? "volcano" :
     finalLevelCode === "RSCU7" ? "neighborhood" :
     finalLevelCode === "HUNT6" ? "catchers" :
@@ -1366,8 +1369,8 @@ window.__uvzuLevelTheme =
       const levelCode = hostLevelCodeInput.value.trim().toUpperCase() || "RNBW1";
       const difficultyName = hostDifficultySelect.value || "Easy";
 
-            if (!["RNBW1", "GRV2", "CITY3", "FRST5", "HUNT6", "RSCU7", "LAVA8"].includes(levelCode)) {
-  alert("Use RNBW1, GRV2, CITY3, FRST5, HUNT6, RSCU7, or LAVA8.");
+            if (!["RNBW1", "GRV2", "CITY3", "FRST5", "HUNT6", "RSCU7", "LAVA8", "LAKE9"].includes(levelCode)) {
+  alert("Use RNBW1, GRV2, CITY3, FRST5, HUNT6, RSCU7, LAVA8, or LAKE9.");
   return;
             }
 
@@ -1562,6 +1565,7 @@ if (
   typedLevelCode &&
   typedLevelCode !== "RNBW1" &&
   typedLevelCode !== "GRV2" &&
+    typedLevelCode !== "LAKE9" &&
     typedLevelCode !== "LAVA8" &&
     typedLevelCode !== "RSCU7" &&
     typedLevelCode !== "HUNT6" &&
@@ -1575,6 +1579,7 @@ if (
 }
 
 window.__uvzuCurrentLevelCode =
+    typedLevelCode === "LAKE9" ? "LAKE9" :
     typedLevelCode === "LAVA8" ? "LAVA8" :
     typedLevelCode === "RSCU7" ? "RSCU7" :
     typedLevelCode === "HUNT6" ? "HUNT6" :
@@ -1589,6 +1594,7 @@ window.__uvzuCurrentLevelCode =
         : "RNBW1";
 
 window.__uvzuLevelTheme =
+    typedLevelCode === "LAKE9" ? "lake" :
     typedLevelCode === "LAVA8" ? "volcano" :
     typedLevelCode === "RSCU7" ? "neighborhood" :
     typedLevelCode === "HUNT6" ? "catchers" :
@@ -6479,6 +6485,7 @@ code = window.__uvzuInstallDowntown(code);
      code = window.__uvzuInstallClassicLevels(code);
      code = window.__uvzuInstallNeighborhood(code);
      code = window.__uvzuInstallVolcano(code);
+     code = window.__uvzuInstallLake(code);
      if (typeof window.__uvzuInstallTester === "function") {
        code = window.__uvzuInstallTester(code);
      }
