@@ -3,6 +3,7 @@
 (() => {
   function lakeRuntime() {
     const LEVEL="LAKE9", TOTAL_BOATS=12, MAGAZINE=3, RELOAD=5, FISH_HP=12, SWIM_TIME=10;
+    const MUSIC_URL="./Aquatic%20Adventure.m4a";
     const SHOT_GAP=.45, FLIGHT=.95;
     const SETTINGS={
       Easy:   { cap:3, gap:4.8, boatSpeed:39, warning:1.05, rockFlight:1.35, fishSpeed:110, jumpWarning:1.3 },
@@ -19,7 +20,7 @@
       playerShoot,headbutt,killEnemy,updateShots,loseLife,draw,drawBackground,updateHud,startMusic};
     const session=()=>{const r=window.__uvzuTombTravelNetwork?.room?.()||{};return[r.createdAt||0,r.nextLevelAt||0,r.ghostResetAt||0].join(":");};
     const crew=()=>({ammo:MAGAZINE,reloadAt:0,shotAt:0,lastSeq:0,loss:0});
-    let serial=0,lastPacket=0,hasSnapshot=false,nextSent=false,sceneryCanvas=null;
+    let serial=0,lastPacket=0,hasSnapshot=false,nextSent=false,sceneryCanvas=null,lakeMusic=null;
     let hull=3,ammo=MAGAZINE,reloadAt=0,shotAt=0,shotSeq=0,loss=0,lastThrow=-99,hitFlash=0,swallow=null,graceUntil=0;
     let pendingShots=[];
     const seenHazards=new Set(),seenRewards=new Set();
@@ -29,6 +30,19 @@
     let lake=fresh();
     const fighting=()=>lake.phase==="battle"||lake.phase==="boss";
     const push=()=>{if(host())window.__uvzuMultiplayerPushEnemyState?.(state.enemies,true);};
+    const wantsLakeMusic=()=>active()&&gameStarted&&!paused&&!document.hidden&&lake.phase!=="lost";
+    function stopLakeMusic(reset=false){
+      if(!lakeMusic)return;
+      if(!lakeMusic.paused)lakeMusic.pause();
+      if(reset)lakeMusic.currentTime=0;
+    }
+    function playLakeMusic(){
+      if(!wantsLakeMusic()){stopLakeMusic(!active());return;}
+      window.__uvzuStopMainMusic?.();window.stopTombMusic?.();
+      if(!lakeMusic){lakeMusic=new Audio(MUSIC_URL);lakeMusic.loop=true;lakeMusic.volume=.45;lakeMusic.preload="auto";}
+      if(lakeMusic.paused===false)return;
+      try{lakeMusic.play()?.then(()=>{if(!wantsLakeMusic())stopLakeMusic(!active());}).catch(()=>{});}catch(_){}
+    }
     window.__uvzuGetLakeState=()=>active()?{...lake,boats:state.enemies}:null;
     window.__uvzuGetLakeStatus=()=>active()?{level:LEVEL,run:lake.run,hull,ammo,reloadAt,loss,lastThrow,swallow,launches:pendingShots}:null;
     function resetPosition() {
@@ -39,13 +53,14 @@
     }
     function coopLives(){if(host()||guest())player.lives=window.__uvzuTesterLifeBudget?.(5)??5;}
     function initialize(){
+      stopLakeMusic(true);
       window.__uvzuReviveLocalForNextLevel?.(player);old.fullRestart();coopLives();lake=fresh();
       state.enemies=lake.boats;state.mode="play";loss=shotSeq=lastPacket=0;hasSnapshot=false;nextSent=false;
       seenHazards.clear();seenRewards.clear();resetPosition();
-      window.__uvzuLevelTheme="lake";window.__uvzuStopMainMusic?.();window.stopTombMusic?.();updateHud();
+      window.__uvzuLevelTheme="lake";window.__uvzuStopMainMusic?.();window.stopTombMusic?.();updateHud();playLakeMusic();
     }
     fullRestart=function(){
-      if(!active()){nextSent=false;return old.fullRestart();}
+      if(!active()){stopLakeMusic(true);nextSent=false;return old.fullRestart();}
       if(guest()&&hasSnapshot&&lake.session===session()){window.__uvzuRequestEnemyKill?.("lake-retry-"+lake.run);return;}
       initialize();push();
     };
@@ -72,9 +87,18 @@
     killEnemy=function(...args){if(!active())return old.killEnemy(...args);};
     updateShots=function(dt){if(!active())return old.updateShots(dt);};
     updateEnding=function(dt){if(!active())return old.updateEnding(dt);};
-    startMusic=function(){if(active())window.__uvzuStopMainMusic?.();else old.startMusic();};
+    startMusic=function(){if(active())playLakeMusic();else{stopLakeMusic(true);old.startMusic();}};
     const previousMusic=window.__uvzuUpdateLevelMusic;
-    window.__uvzuUpdateLevelMusic=function(){previousMusic?.();if(active()){window.__uvzuStopMainMusic?.();window.stopTombMusic?.();}};
+    window.__uvzuUpdateLevelMusic=function(){previousMusic?.();playLakeMusic();};
+    const previousStart=window.__uvzuStartGame;
+    window.__uvzuStartGame=function(...args){const result=previousStart(...args);playLakeMusic();return result;};
+    const previousPause=window.__uvzuSetPaused;
+    window.__uvzuSetPaused=function(value){previousPause(value);playLakeMusic();};
+    window.addEventListener("keydown",()=>{if(active())playLakeMusic();});
+    window.addEventListener("pointerdown",()=>{if(active())playLakeMusic();});
+    document.addEventListener?.("visibilitychange",playLakeMusic);
+    window.addEventListener("pagehide",()=>stopLakeMusic());
+    window.addEventListener("pageshow",playLakeMusic);
     function players(includeUnavailable=false){
       const result=[{...player,role:role(),dead:ghost(),lakeStatus:window.__uvzuGetLakeStatus()}];
       const remote=window.__uvzuGetRemotePlayer?.();
@@ -251,13 +275,14 @@
       if(!data||data.level!==LEVEL||data.session!==session()||packet.updatedAt<=lastPacket)return;
       const reset=data.run!==lake.run;
       if(reset){
+        stopLakeMusic(true);
         window.__uvzuReviveLocalForNextLevel?.(player);old.fullRestart();coopLives();resetPosition();
         loss=shotSeq=0;seenRewards.clear();seenHazards.clear();
       }
       lake=copy(data);for(const key of ["boats","rocks","sinking","bites","kills"])lake[key]=list(lake[key]);
       lake.crews||={host:crew(),guest:crew()};state.enemies=lake.boats;state.time=0;
       lastPacket=packet.updatedAt;hasSnapshot=true;pendingShots=pendingShots.filter(a=>a.seq>(lake.crews.guest?.lastSeq||0));
-      if(lake.phase==="won")swallow=null;rewards();
+      if(lake.phase==="won")swallow=null;rewards();if(reset)playLakeMusic();
     }
     function receiveRetry(){
       if(!host())return false;const id="lake-retry-"+lake.run;
@@ -272,7 +297,7 @@
       else{window.__uvzuCurrentLevelCode=LEVEL;window.__uvzuLevelTheme="lake";window.__uvzuUpdateLevelMusic?.();fullRestart();}
     }
     update=function(dt){
-      if(!active()){old.update(dt);continueVolcano();return;}
+      if(!active()){stopLakeMusic(true);old.update(dt);continueVolcano();return;}
       const travel=window.__uvzuGetNextLevelSignal?.(),resetAt=window.__uvzuGetGhostResetAt?.();
       if((travel?.at&&travel.at!==window.__uvzuLastAppliedNextLevelAt)||(resetAt&&resetAt!==window.__uvzuLastAppliedGhostResetAt)){old.update(dt);return;}
       receiveState();if(receiveRetry())return;receiveLaunches();rewards();reloadLocal();
@@ -301,7 +326,7 @@
       if(swallow&&lake.clock>=swallow.until&&fighting()){
         swallow=null;state.mode=lake.phase==="boss"?"final":"play";player.invuln=0;loseLife();
       }
-      hazards();rewards();reloadLocal();updateHud();
+      hazards();rewards();reloadLocal();if(lake.phase==="lost")stopLakeMusic();updateHud();
     };
     updateHud=function(){
       old.updateHud();if(!active())return;
@@ -386,25 +411,59 @@
       const b=lake.fish,p=fishPose();if(!b)return;
       const sink=lake.phase==="won"?clamp((lake.phaseTime-.5)/2.7,0,1):0;
       const mouth=b.mode==="leap"||players(true).some(p=>p.lakeStatus?.swallow);
-      oval(b.x,b.y+11,134,30,"rgba(27,88,114,"+(.42*(1-sink))+")");
+      const sway=Math.sin(gameClock*3.4)*7;
+      oval(b.x,b.y+14,144,31,"rgba(27,88,114,"+(.42*(1-sink))+")");
       ctx.save();ctx.translate(p.x,p.y+sink*58);ctx.scale(b.face||1,1);
       ctx.rotate(p.turn+sink*.9);ctx.globalAlpha=1-sink;
       if(b.mode==="warning"||b.mode==="arrival")ctx.globalAlpha=.45;
       if(b.flash>0&&Math.floor(gameClock*20)%2===0)ctx.globalAlpha*=.65;
-      poly([[-96,-18],[-150,-62],[-136,-18],[-155,23],[-102,5]],"#2d728e");
-      poly([[-111,-13],[-142,-43],[-126,-12],[-142,11]],"#69afad");
-      poly([[-43,-48],[-16,-89],[18,-56],[41,-45]],"#29758b");
-      line(-18,-77,-6,-53,"#85bfb5",3);
-      oval(0,-19,112,47,"#448f9e");oval(18,-6,93,31,"#86bfb0");
-      oval(-6,-35,86,22,"#64b0ae");poly([[-12,-4],[-34,26],[18,8],[39,-6]],"#3e8195");
-      for(let i=0;i<6;i++){const x=-71+i*24;ctx.strokeStyle="#377d914d";ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,-23,15,-.9,.9);ctx.stroke();}
-      line(55,-44,43,-21,"#2e7184",3);line(43,-21,52,2,"#2e7184",3);
-      oval(75,-39,13,14,"#fff6cc");oval(80,-37,6,9,"#244459");oval(82,-41,2,3,"#ffffff");
-      if(mouth){oval(105,-8,29,35,"#254459");oval(112,3,21,20,"#b87578");oval(114,15,12,7,"#dfa396");
-        for(let i=0;i<3;i++)poly([[87+i*13,-32],[97+i*13,-30],[92+i*13,-19]],"#f6edd5");
-      }else{line(95,-10,114,-5,"#24495a",4);line(114,-5,106,3,"#24495a",3);}
+      // A long tail, four paddles and an armored back make it feel like an old lake guardian.
+      poly([[-82,-20],[-117,-26],[-151,-44+sway],[-164,-38+sway],[-145,-14+sway],
+        [-169,11+sway],[-149,15+sway],[-106,8],[-77,5]],"#225665");
+      poly([[-121,-25],[-156,-38+sway],[-145,-17+sway],[-115,-8]],"#5b968c");
+      poly([[-60,-13],[-27,1],[-71,47+sway*.4],[-91,53+sway*.4],[-84,31]],"#225a67");
+      poly([[19,-12],[57,-8],[77,35-sway*.4],[63,46-sway*.4],[26,21]],"#285d67");
+      for(let i=0;i<6;i++){
+        const x=-78+i*22,y=-57-Math.sin(i*.65)*5;
+        poly([[x-13,y+18],[x,y-8-(i%2)*5],[x+13,y+18]],"#245463");
+        line(x-5,y+8,x,y-2-(i%2)*5,"#8cb8a3",2);
+      }
+      oval(-10,-17,109,48,"#204e5d");oval(-9,-21,104,44,"#43817f");
+      oval(-4,2,91,24,"#80aa96");oval(-24,-38,74,16,"#579b8d");
+      for(let i=0;i<5;i++){
+        const x=-78+i*30;
+        poly([[x-13,-39],[x,-49-(i%2)*4],[x+15,-39],[x+11,-24],[x-10,-25]],
+          i%2?"#316e73":"#36797a");
+        line(x-9,-34,x+6,-39-(i%2)*3,"#91b9a4",2);
+      }
+      for(const [x,y] of [[-70,-8],[-36,-4],[1,-8],[37,-9],[68,-10]]){
+        oval(x,y,5,3,"#a5c4a6");oval(x+5,y+9,3,2,"#537e77");
+      }
+      poly([[-6,3],[28,9],[5,51-sway*.4],[-12,55-sway*.4],[-21,30]],"#285d67");
+      poly([[32,-1],[61,9],[65,55+sway*.4],[45,62+sway*.4],[27,35]],"#326d72");
+      line(38,27,52,49+sway*.4,"#8db7a3",3);
+      // The raised neck and broad, blunt snout keep the silhouette clear on a phone.
+      ctx.lineCap="round";ctx.beginPath();ctx.moveTo(42,-34);ctx.quadraticCurveTo(58,-88,91,-66);
+      ctx.strokeStyle="#204e5d";ctx.lineWidth=38;ctx.stroke();
+      ctx.strokeStyle="#4c8a82";ctx.lineWidth=29;ctx.stroke();
+      line(62,-66,74,-77,"#98bca1",3);
+      poly([[66,-71],[74,-88],[102,-93],[119,-85],[125,-71],[149,-65],
+        [151,-51],[134,-42],[102,-45],[77,-55]],"#204e5d");
+      poly([[70,-70],[78,-85],[104,-89],[119,-80],[123,-67],[145,-62],
+        [146,-53],[132,-47],[102,-49],[80,-57]],"#6ca392");
+      poly([[75,-67],[90,-84],[118,-80],[129,-63],[109,-66]],"#417d7b");
+      for(let i=0;i<3;i++)poly([[75+i*10,-78],[80+i*10,-95-i%2*4],[86+i*10,-79]],"#376d72");
+      line(91,-83,107,-82,"#295b64",3);
+      oval(101,-73,9,8,"#efc77f");oval(104,-73,3.8,6,"#263d49");oval(105,-76,2,2,"#fff6db");
+      oval(137,-60,2.5,2.5,"#325b63");
+      if(mouth){
+        oval(129,-42,23,20,"#244955");
+        poly([[110,-36],[126,-40],[150,-35],[145,-23],[128,-22],[114,-27]],"#69988b");
+        for(let i=0;i<3;i++)poly([[121+i*9,-49],[128+i*9,-48],[125+i*9,-41]],"#e8ddbc");
+        oval(133,-30,12,4,"#af8980");
+      }else{line(119,-49,142,-46,"#28535d",3);line(142,-46,147,-51,"#28535d",2);}
       ctx.restore();
-      if(b.mode!=="leap"){ctx.save();ctx.globalAlpha=1-sink;line(b.x-109,b.y+13,b.x-44,b.y+17,"#bfe9d3bb",3);line(b.x+41,b.y+18,b.x+115,b.y+12,"#bfe9d3aa",3);ctx.restore();}
+      if(b.mode!=="leap"){ctx.save();ctx.globalAlpha=1-sink;line(b.x-125,b.y+14,b.x-45,b.y+18,"#bfe9d3bb",3);line(b.x+43,b.y+19,b.x+135,b.y+13,"#bfe9d3aa",3);ctx.restore();}
       if(sink>0&&lake.phaseTime<4)for(let i=0;i<9;i++){const age=(lake.phaseTime*.45+i*.13)%1;oval(b.x+Math.sin(i*3)*105,b.y+21-age*48,3+age*3,2+age*2,"#c2ede69c");}
     }
     function visibleRocks(){
@@ -455,15 +514,15 @@
       if(lake.fish)actors.push({y:lake.fish.y+(lake.fish.mode==="leap"?60:0),draw:drawFish});
       actors.sort((a,b)=>a.y-b.y).forEach(a=>a.draw());drawRocks();ctx.restore();
       box(312,17,336,57,"#1c455cdc");box(312,17,336,3,"#e5daa0");
-      text(lake.fish?"GIANT LAKE FISH":"LAKE CATAPULTS",480,42,21);
+      text(lake.fish?"ANCIENT LAKE CREATURE":"LAKE CATAPULTS",480,42,21);
       if(lake.fish){for(let i=0;i<FISH_HP;i++)box(367+i*19,55,14,9,i<lake.fish.hits?"#f5ce8a":"#7fa3a6");}
       else text("SINK ALL "+TOTAL_BOATS+" ENEMY BOATS",480,64,12,"#d9eacb");
       if(lake.phase==="battle"&&lake.clock<9)text(lake.clock<5?"B: LAUNCH ROCK   •   3 SHOTS, THEN RELOAD 5s":
         "FACE YOUR TARGET   •   A + DIRECTION: QUICK ROW",480,102,17,"#fff0b6");
-      if(lake.phase==="arrival")text("SOMETHING BIG IS BENEATH THE BOATS...",480,103,19,"#fff0b6");
+      if(lake.phase==="arrival")text("SOMETHING ANCIENT IS BENEATH THE BOATS...",480,103,19,"#fff0b6");
       if(lake.phase==="boss")text(lake.fish.mode==="swim"?"ATTACK WHILE IT SWIMS!  "+Math.ceil(lake.fish.timer)+"s":
         "WATCH THE RING — IT'S ABOUT TO LEAP!",480,102,18,"#fff0b6");
-      if(lake.phase==="won"&&lake.phaseTime>2.5){box(264,104,432,75,"#1d455dde");text("THE LAKE IS CLEAR!",480,139,26);text("GIANT FISH DEFEATED",480,164,15,"#cee9d1");}
+      if(lake.phase==="won"&&lake.phaseTime>2.5){box(264,104,432,75,"#1d455dde");text("THE LAKE IS CLEAR!",480,139,26);text("LAKE CREATURE DEFEATED",480,164,15,"#cee9d1");}
       box(14,50,186,25,"#1c455ccc");text("BOAT "+(ghost()?0:hull)+" / 3",107,68,15,"#d7edcf");
       if(fighting()&&!ghost()){box(331,H-37,298,29,"#1c455cd9");text(swallow?"SWALLOWED!":ammo>0?"B: ROCKS  "+ammo+" / 3":
         "RELOADING  "+Math.max(0,Math.ceil(reloadAt-lake.clock))+"s",480,H-17,16,"#ffe6a9");}
