@@ -7085,6 +7085,58 @@ run();
     };
   }
 
+  function downtownMusicRuntime() {
+    const url = "./Burning%20City.m4a%20(Remix).m4a";
+    const active = () => window.__uvzuCurrentLevelCode === "CITY3";
+    const wanted = () => active() && gameStarted && !paused && !document.hidden;
+    let track = null, starting = false;
+    function stop(reset = false) {
+      if (!track) return;
+      if (!track.paused) track.pause();
+      if (reset && track.currentTime !== 0) track.currentTime = 0;
+    }
+    function sync() {
+      if (!wanted()) { stop(!active()); return; }
+      window.__uvzuStopMainMusic?.(); window.stopTombMusic?.();
+      if (!track) {
+        track = new Audio(url);
+        track.loop = true; track.volume = .45; track.preload = "auto";
+      }
+      if (!track.paused || starting) return;
+      starting = true;
+      try {
+        const result = track.play();
+        Promise.resolve(result).then(() => {
+          starting = false;
+          if (!wanted()) stop(!active());
+        }, () => { starting = false; });
+      } catch (_) { starting = false; }
+    }
+    const previousMusic = startMusic;
+    startMusic = function() {
+      if (active()) sync();
+      else { stop(true); previousMusic(); }
+    };
+    const previousLevelMusic = window.__uvzuUpdateLevelMusic;
+    window.__uvzuUpdateLevelMusic = function() { previousLevelMusic?.(); sync(); };
+    const previousStart = window.__uvzuStartGame;
+    window.__uvzuStartGame = function(...args) {
+      const result = previousStart(...args); sync(); return result;
+    };
+    const previousPause = window.__uvzuSetPaused;
+    window.__uvzuSetPaused = function(value) { previousPause(value); sync(); };
+    const previousRestart = fullRestart;
+    fullRestart = function() { stop(true); previousRestart(); sync(); };
+    const previousUpdate = update;
+    update = function(dt) { previousUpdate(dt); if (!active()) stop(true); };
+    for (const name of ["pointerdown", "keydown"]) {
+      window.addEventListener(name, () => { if (active()) sync(); });
+    }
+    document.addEventListener?.("visibilitychange", sync);
+    window.addEventListener("pagehide", () => stop());
+    window.addEventListener("pageshow", sync);
+  }
+
   window.__uvzuInstallDowntown = function(code) {
     const replaceOne = (before, after) => {
       if (code.split(before).length !== 2) throw new Error("Downtown hook missing: " + before.slice(0, 65));
@@ -7100,6 +7152,8 @@ run();
     code = code.replace(/window\.__uvzuCurrentLevelCode === "RNBW1" \|\|\s*window\.__uvzuCurrentLevelCode === "GRV2"/g,
       '(window.__uvzuCurrentLevelCode === "CITY3" || window.__uvzuCurrentLevelCode === "RNBW1" || window.__uvzuCurrentLevelCode === "GRV2")');
     replaceOne('  let last = performance.now();', '(' + downtownRuntime.toString() + ')();\n\n  let last = performance.now();');
+    replaceOne('  requestAnimationFrame(loop);\n})();',
+      '(' + downtownMusicRuntime.toString() + ')();\n  requestAnimationFrame(loop);\n})();');
     return code;
   };
 })();
