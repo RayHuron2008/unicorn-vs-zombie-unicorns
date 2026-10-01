@@ -26,17 +26,19 @@
     })));
     let serial=0,lastPacket=0,hasSnapshot=false,nextSent=false,scenery=null;
     let seq=0,loss=0,freezeUntil=0,graceUntil=0,shotAt=0,hitFlash=0,bridgeWalk=null;
-    let pending=[];
+    let pending=[],dragonRetry=null;
     const seenBolts=new Set(),seenBlasts=new Set(),seenKills=new Set(),seenDefeats=new Set();
     const fresh=()=>({level:LEVEL,session:session(),run:Date.now()+"-"+(++serial),clock:0,
       phase:"battle",phaseTime:0,spawned:0,defeated:0,spawnTimer:1.15,event:0,
       enemies:[],tiles:tileCoords(),bolts:[],sinking:[],kills:[],power:{host:0,guest:0},
-      acknowledged:{host:0,guest:0},dragon:null,finished:false});
+      acknowledged:{host:0,guest:0},dragon:null,dragonAttempt:0,
+      dragonLosses:{host:false,guest:false},finished:false});
     let ice=fresh();
     const push=()=>{if(host())window.__uvzuMultiplayerPushEnemyState?.(state.enemies,true);};
     window.__uvzuGetIceState=()=>active()?{...ice,enemies:state.enemies}:null;
     window.__uvzuGetIceStatus=()=>active()?{level:LEVEL,run:ice.run,loss,freezeUntil,
-      bridge:bridgeWalk?{id:bridgeWalk.id,progress:bridgeWalk.progress}:null,actions:pending}:null;
+      bridge:bridgeWalk?{id:bridgeWalk.id,progress:bridgeWalk.progress}:null,
+      dragonRetry,actions:pending}:null;
     function stopMusic(){window.__uvzuStopMainMusic?.();window.stopTombMusic?.();}
     startMusic=function(){if(active())stopMusic();else old.startMusic();};
     const priorMusic=window.__uvzuUpdateLevelMusic;
@@ -50,7 +52,7 @@
       window.__uvzuReviveLocalForNextLevel?.(player);old.fullRestart();
       if(host()||guest())player.lives=window.__uvzuTesterLifeBudget?.(5)??5;
       ice=fresh();state.enemies=ice.enemies;state.mode="play";state.time=0;
-      loss=seq=shotAt=lastPacket=0;hasSnapshot=false;nextSent=false;pending=[];
+      loss=seq=shotAt=lastPacket=0;hasSnapshot=false;nextSent=false;pending=[];dragonRetry=null;
       seenBolts.clear();seenBlasts.clear();seenKills.clear();seenDefeats.clear();resetPosition();
       window.__uvzuLevelTheme="ice";stopMusic();updateHud();push();
     }
@@ -75,14 +77,41 @@
     };
     loseLife=function(){
       if(!active())return old.loseLife();
+      const fightingDragon=!!ice.dragon&&["arrival","boss"].includes(ice.phase);
       const before=player.lives;old.loseLife();if(player.lives>=before)return;
       loss++;pending=[];freezeUntil=0;player.webbedTimer=player.webFlash=0;
       player.webTrapX=player.webTrapY=null;
       bridgeWalk=null;if(ice.dragon?.walkers)delete ice.dragon.walkers[role()];
       if((host()||guest())&&!ghost())safeLifeReset();
       if(!host()&&!guest()&&player.lives<=0)ice.phase="lost";
+      if(fightingDragon){
+        if(guest())dragonRetry={attempt:ice.dragonAttempt,loss};
+        else if(host()){
+          ice.dragonLosses.host=true;
+          if(ice.dragonLosses.guest)initialize();
+        }else if(!ghost())restartDragon();
+      }
       window.__uvzuMultiplayerPush?.(player);push();
     };
+    function resetDragonPlayer(){
+      // Reset the encounter without restarting the level or refilling lives.
+      bridgeWalk=null;freezeUntil=shotAt=hitFlash=0;pending=[];dragonRetry=null;
+      seenBolts.clear();seenBlasts.clear();
+      player.webbedTimer=player.webFlash=player.headTimer=player.dodgeTimer=0;
+      player.webTrapX=player.webTrapY=null;state.resetQueued=false;
+      state.playerShots.length=state.enemyShots.length=0;
+      if(!ghost()){
+        resetPosition();player.hp=HP_MAX;player.invuln=1.2;
+        player.headCd=0;player.dodgeCooldown=player.actionLock=.25;
+        player.aConsumed=!!(input.a||keys[" "]);
+      }
+    }
+    function restartDragon(){
+      if(host()||guest()||!ice.dragon||!["arrival","boss"].includes(ice.phase))return;
+      ice.tiles=tileCoords();ice.sinking=[];ice.power={host:0,guest:0};ice.finished=false;
+      state.enemies.length=0;resetDragonPlayer();newDragon();
+      window.__uvzuMultiplayerPush?.(player);updateHud();push();
+    }
     function players(all=false){
       const result=[{...player,role:role(),dead:ghost(),iceStatus:window.__uvzuGetIceStatus()}];
       const p=window.__uvzuGetRemotePlayer?.();
@@ -181,6 +210,7 @@
       if(!["battle","arrival","boss"].includes(ice.phase)||p.dead||p.iceStatus?.loss!==a.loss||
         Math.abs(ice.clock-a.at)>1.5||distance(p.x,p.y,a.x,a.y)>95||
         p.iceStatus?.freezeUntil>ice.clock)return;
+      if(ice.dragon&&a.dragonAttempt!==ice.dragonAttempt)return;
       const d=ice.dragon;
       if(a.kind==="bridgeEnter"){
         const b=d?.bridge;
@@ -226,7 +256,8 @@
       }
     }
     function act(kind){
-      const a={seq:++seq,kind,loss,at:ice.clock,x:player.x,y:player.y,bridgeId:bridgeWalk?.id||null};
+      const a={seq:++seq,kind,loss,at:ice.clock,x:player.x,y:player.y,
+        dragonAttempt:ice.dragonAttempt,bridgeId:bridgeWalk?.id||null};
       if(guest())pending.push(a);else accept(a,role(),{...player,role:role(),iceStatus:window.__uvzuGetIceStatus()});
       window.__uvzuMultiplayerPush?.(player);
     }
@@ -364,6 +395,8 @@
     }
     function newDragon(){
       ice.phase="arrival";ice.phaseTime=0;ice.bolts=[];
+      ice.dragonAttempt=(ice.dragonAttempt||0)+1;
+      ice.dragonLosses={host:false,guest:false};
       ice.dragon={x:802,y:417,stage:0,normal:0,mode:"arrival",timer:2.3,
         bridge:null,walkers:{},hit:false,flash:0,blastId:0,
         aim:{x:165,y:397},headFace:-1,headAngle:0,locked:false};
@@ -404,12 +437,12 @@
     function makeBridge(d){
       const sx=clamp(d.aim.x,80,d.x-325),sy=clamp(d.aim.y+29,351,495);
       const mouth=dragonMouth(d),ex=mouth.x,ey=mouth.y-13;
-      d.bridge={id:ice.run+"-bridge-"+d.blastId,sx,sy,ex,ey,born:ice.clock,
+      d.bridge={id:ice.run+"-dragon-"+ice.dragonAttempt+"-bridge-"+d.blastId,sx,sy,ex,ey,born:ice.clock,
         backX:d.x-26,backY:d.y-71,length:Math.hypot(ex-sx,ey-sy)};
       d.walkers={};d.hit=false;d.mode="bridge";d.timer=BRIDGE_TIME;push();
     }
     function dragonTick(dt){
-      const d=ice.dragon;if(!d)return;
+      const d=ice.dragon;if(!d||ice.phase==="lost")return;
       d.timer-=dt;d.flash=Math.max(0,d.flash-dt);
       if(d.mode==="arrival"){if(d.timer<=0){ice.phase="boss";warnDragon(d);}return;}
       if(d.mode==="warn"||d.mode==="superWarn"){
@@ -460,12 +493,16 @@
       if(!guest())return;
       const packet=window.__uvzuGetMultiplayerEnemyState?.(),data=packet?.ice;
       if(!data||data.level!==LEVEL||data.session!==session()||packet.updatedAt<=lastPacket)return;
-      const reset=data.run!==ice.run;
+      const reset=data.run!==ice.run,priorAttempt=ice.dragonAttempt||0;
       if(reset){window.__uvzuReviveLocalForNextLevel?.(player);old.fullRestart();
         player.lives=window.__uvzuTesterLifeBudget?.(5)??5;
-        loss=seq=shotAt=0;pending=[];seenBolts.clear();seenBlasts.clear();seenKills.clear();seenDefeats.clear();
+        loss=seq=shotAt=0;pending=[];dragonRetry=null;
+        seenBolts.clear();seenBlasts.clear();seenKills.clear();seenDefeats.clear();
         resetPosition();stopMusic();}
       ice=copy(data);for(const key of ["enemies","tiles","bolts","sinking","kills"])ice[key]=list(ice[key]);
+      if(!reset&&priorAttempt>0&&ice.dragonAttempt>priorAttempt){
+        resetDragonPlayer();window.__uvzuMultiplayerPush?.(player);
+      }
       state.enemies=ice.enemies;state.time=0;lastPacket=packet.updatedAt;hasSnapshot=true;
       pending=pending.filter(a=>a.seq>(ice.acknowledged?.guest||0));
       defeatEffects();
@@ -477,6 +514,15 @@
       if(!host())return false;const id="ice-retry-"+ice.run;
       if(!window.__uvzuGetGuestKillRequests?.()?.[id])return false;
       window.__uvzuClearGuestKillRequest?.(id);initialize();return true;
+    }
+    function receiveDragonRetry(){
+      if(!host()||!ice.dragon||!["arrival","boss"].includes(ice.phase))return false;
+      const p=players(true).find(p=>p.role==="guest"),request=p?.iceStatus?.dragonRetry;
+      if(!request||request.attempt!==ice.dragonAttempt||request.loss!==p.iceStatus.loss||
+        request.loss<=0||ice.dragonLosses.guest)return false;
+      ice.dragonLosses.guest=true;
+      if(ice.dragonLosses.host){initialize();return true;}
+      push();return false;
     }
     function continueLake(){
       if(window.__uvzuCurrentLevelCode!=="LAKE9"||guest()||nextSent)return;
@@ -492,7 +538,7 @@
       const travel=window.__uvzuGetNextLevelSignal?.(),resetAt=window.__uvzuGetGhostResetAt?.();
       if((travel?.at&&travel.at!==window.__uvzuLastAppliedNextLevelAt)||
         (resetAt&&resetAt!==window.__uvzuLastAppliedGhostResetAt)){old.update(dt);return;}
-      received();if(receiveRetry())return;guestActions();
+      received();if(receiveRetry()||receiveDragonRetry())return;guestActions();
       const run=ice.run;
       state.mode=ice.phase==="won"||ice.phase==="lost"?"iceScene":ice.phase==="battle"?"play":"final";
       old.update(dt);if(!active()||ice.run!==run)return;
