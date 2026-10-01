@@ -2,7 +2,7 @@
 (() => {
   function iceRuntime() {
     const LEVEL="ICE10", TOTAL=30, ICE_POWER=5, FREEZE=5, BRIDGE_TIME=10, STAGES=3;
-    const BRIDGE_SPEED=200, AIM_LOCK=.38, HEAD_X=-111, HEAD_Y=-70;
+    const BRIDGE_SPEED=200, BRIDGE_FORM=.45, BACK_JUMP=.55, AIM_LOCK=.38, HEAD_X=-111, HEAD_Y=-70;
     const SETTINGS={
       Easy:{cap:3,gap:2.8,speed:47,warning:1.3},
       Normal:{cap:4,gap:2.45,speed:57,warning:1.12},
@@ -92,13 +92,38 @@
     }
     const nearest=(x,y)=>players().sort((a,b)=>distance(a.x,a.y,x,y)-distance(b.x,b.y,x,y))[0];
     const bridgePoint=(b,t)=>({x:lerp(b.sx,b.ex,t),y:lerp(b.sy,b.ey,t)});
+    function jumpPoint(d,w){
+      const b=d.bridge,returning=Number.isFinite(w.returnAt);
+      const t=clamp((ice.clock-(returning?w.returnAt:w.jumpAt))/BACK_JUMP,0,1);
+      const from=returning?w.returnFrom:{x:b.ex,y:b.ey};
+      const to=returning?{x:b.ex,y:b.ey}:{x:b.backX,y:b.backY};
+      return {x:lerp(from.x,to.x,t),y:lerp(from.y,to.y,t)-Math.sin(t*Math.PI)*48};
+    }
+    function bridgeRider(p){
+      const d=ice.dragon,b=d?.bridge,s=p.iceStatus?.bridge,w=d?.walkers?.[p.role];
+      if(!b||s?.id!==b.id||w?.loss!==p.iceStatus?.loss)return null;
+      return w;
+    }
     function onBridge(p){
       const d=ice.dragon,b=d?.bridge,s=p.iceStatus?.bridge;
+      const w=bridgeRider(p);
+      if(w&&["bridge","retreat","fall"].includes(d.mode))return true;
       const point=b&&s?bridgePoint(b,clamp(s.progress,0,1)):null;
       return !!(b&&s?.id===b.id&&["bridge","retreat","fall"].includes(d.mode)&&
         distance(p.x,p.y,point.x,point.y)<34);
     }
-    const onBack=()=>bridgeWalk?.progress>=.995&&ice.dragon?.mode==="bridge";
+    function riderPosition(p){
+      const d=ice.dragon,w=bridgeRider(p);
+      if(!w||!["bridge","retreat","fall"].includes(d.mode))return p;
+      if(Number.isFinite(w.jumpAt)&&(!Number.isFinite(w.returnAt)||ice.clock-w.returnAt<BACK_JUMP))
+        return jumpPoint(d,w);
+      return bridgePoint(d.bridge,clamp(p.iceStatus.bridge.progress,0,1));
+    }
+    const localRider=()=>bridgeWalk&&ice.dragon?.walkers?.[role()];
+    const atMouth=()=>bridgeWalk?.progress>=.995&&ice.dragon?.mode==="bridge"&&
+      !Number.isFinite(localRider()?.jumpAt);
+    const onBack=()=>bridgeWalk&&ice.dragon?.mode==="bridge"&&
+      Number.isFinite(localRider()?.jumpAt)&&ice.clock>=localRider().jumpAt+BACK_JUMP;
     function onTile(p,t){return Math.abs(p.x-t.x)<46&&Math.abs(p.y-t.y)<26;}
     function tileUnder(p){return ice.tiles.find(t=>onTile(p,t));}
     function fall(){
@@ -163,13 +188,25 @@
           distance(a.x,a.y,b.sx,b.sy)<48&&distance(p.x,p.y,b.sx,b.sy)<72){
           d.walkers[who]={enteredAt:ice.clock,loss:a.loss};push();
         }
-      }else if(a.kind==="strike"){
+      }else if(a.kind==="bridgeJump"){
         const b=d?.bridge,w=d?.walkers?.[who],s=p.iceStatus?.bridge;
         if(d?.mode==="bridge"&&b&&w&&s?.id===b.id&&s.progress>=.995&&
-          w.loss===a.loss&&!d.hit&&distance(p.x,p.y,b.ex,b.ey)<26&&
+          a.bridgeId===b.id&&w.loss===a.loss&&!Number.isFinite(w.jumpAt)&&
+          distance(a.x,a.y,b.ex,b.ey)<26&&
           ice.clock-w.enteredAt>=b.length/BRIDGE_SPEED-.28){
+          w.jumpAt=ice.clock;push();
+        }
+      }else if(a.kind==="strike"){
+        const b=d?.bridge,w=d?.walkers?.[who],s=p.iceStatus?.bridge;
+        if(d?.mode==="bridge"&&b&&w&&s?.id===b.id&&a.bridgeId===b.id&&
+          w.loss===a.loss&&!d.hit&&Number.isFinite(w.jumpAt)&&ice.clock>=w.jumpAt+BACK_JUMP&&
+          distance(p.x,p.y,b.backX,b.backY)<26){
+          for(const walker of Object.values(d.walkers))if(Number.isFinite(walker.jumpAt)){
+            walker.returnFrom=jumpPoint(d,walker);walker.returnAt=ice.clock;
+          }
           d.hit=true;d.stage++;d.flash=.8;d.mode=d.stage>=STAGES?"fall":"retreat";
-          d.timer=d.stage>=STAGES?4:Math.max(1.6,b.length/BRIDGE_SPEED+.5);
+          d.timer=Math.max(d.stage>=STAGES?4:1.6,b.length/BRIDGE_SPEED+BACK_JUMP+.5);
+          if(d.stage>=STAGES)d.fallDuration=d.timer;
           d.normal=0;ice.phase=d.stage>=STAGES?"won":"boss";
           ice.phaseTime=0;
           if(ice.phase==="won"){state.enemies.length=0;ice.bolts.length=0;state.mode="iceWin";}
@@ -193,7 +230,7 @@
       if(guest())pending.push(a);else accept(a,role(),{...player,role:role(),iceStatus:window.__uvzuGetIceStatus()});
       window.__uvzuMultiplayerPush?.(player);
     }
-    // Movement on the ramp follows its surface. A never jumps onto the dragon.
+    // Walk to the mouth along the ramp, then A hops onto the back.
     currentDirection=function(){return active()&&bridgeWalk?{dx:0,dy:0}:old.currentDirection();};
     updateDodgeMovement=function(dt){
       if(active()&&bridgeWalk){player.dodgeTimer=0;return true;}
@@ -210,7 +247,8 @@
         leaveBridge(true);return;
       }
       if(!bridgeWalk){
-        if(d?.mode!=="bridge"||!b||ghost()||ice.clock<freezeUntil||player.dodgeTimer>0)return;
+        if(d?.mode!=="bridge"||!b||ice.clock-b.born<BRIDGE_FORM||ghost()||
+          ice.clock<freezeUntil||player.dodgeTimer>0)return;
         const toward=(dir.dx*(b.ex-b.sx)+dir.dy*(b.ey-b.sy))/b.length;
         if(distance(player.x,player.y,b.sx,b.sy)>38||toward<=.15)return;
         bridgeWalk={id:b.id,progress:0,entrySeq:seq+1};act("bridgeEnter");
@@ -218,6 +256,12 @@
       }
       if(guest()&&d.mode==="bridge"&&!d.walkers?.guest&&
         (ice.acknowledged?.guest||0)>=bridgeWalk.entrySeq){leaveBridge(true);return;}
+      const rider=d.walkers?.[role()];
+      if(rider&&Number.isFinite(rider.jumpAt)&&
+        (d.mode==="bridge"||(Number.isFinite(rider.returnAt)&&ice.clock-rider.returnAt<BACK_JUMP))){
+        Object.assign(player,jumpPoint(d,rider));
+        player.face=d.mode==="bridge"?1:-1;player.dodgeTimer=0;return;
+      }
       const toward=(dir.dx*(b.ex-b.sx)+dir.dy*(b.ey-b.sy))/b.length;
       const speed=d.mode==="bridge"?toward:-1;
       bridgeWalk.progress=clamp(bridgeWalk.progress+speed*BRIDGE_SPEED*dt/b.length,0,1);
@@ -228,8 +272,13 @@
     handleAAction=function(){
       if(!active())return old.handleAAction();
       if(bridgeWalk){
+        // The base game clamps ground movement before this hook; keep raised feet on the ice.
+        Object.assign(player,riderPosition({...player,role:role(),iceStatus:window.__uvzuGetIceStatus()}));
         if(!(input.a||keys[" "]))player.aConsumed=false;
-        else if(!player.aConsumed){player.aConsumed=true;if(onBack())headbutt();}
+        else if(!player.aConsumed){
+          player.aConsumed=true;
+          if(onBack())headbutt();else if(atMouth())act("bridgeJump");
+        }
         return;
       }
       if(ice.clock<freezeUntil){if(!(input.a||keys[" "]))player.aConsumed=false;return;}
@@ -354,8 +403,9 @@
     }
     function makeBridge(d){
       const sx=clamp(d.aim.x,80,d.x-325),sy=clamp(d.aim.y+29,351,495);
-      const ex=d.x-26,ey=d.y-71;
-      d.bridge={id:ice.run+"-bridge-"+d.blastId,sx,sy,ex,ey,length:Math.hypot(ex-sx,ey-sy)};
+      const mouth=dragonMouth(d),ex=mouth.x,ey=mouth.y-13;
+      d.bridge={id:ice.run+"-bridge-"+d.blastId,sx,sy,ex,ey,born:ice.clock,
+        backX:d.x-26,backY:d.y-71,length:Math.hypot(ex-sx,ey-sy)};
       d.walkers={};d.hit=false;d.mode="bridge";d.timer=BRIDGE_TIME;push();
     }
     function dragonTick(dt){
@@ -470,7 +520,8 @@
       if(timeEl)timeEl.textContent=ice.dragon?"Dragon: "+ice.dragon.stage+" / "+STAGES:
         "Zombies: "+ice.defeated+" / "+TOTAL;
       if(powerLabelEl)powerLabelEl.textContent=ice.clock<freezeUntil?
-        "Frozen: "+Math.ceil(freezeUntil-ice.clock)+"s":onBack()?"A / B: STRIKE!":bridgeWalk?"Walk across the ice":
+        "Frozen: "+Math.ceil(freezeUntil-ice.clock)+"s":onBack()?"A / B: STRIKE!":
+        atMouth()?"A: Jump onto his back":bridgeWalk?"Walk across the ice":
         ice.power[role()]>ice.clock?"B: Ice breath "+Math.ceil(ice.power[role()]-ice.clock)+"s":"A: Attack";
       if(powerFillEl)powerFillEl.style.width=(ice.power[role()]>ice.clock?
         clamp((ice.power[role()]-ice.clock)/ICE_POWER*100,0,100):0)+"%";
@@ -676,11 +727,11 @@
     }
     function drawDragon(){
       const d=ice.dragon;if(!d)return;
-      const fall=d.mode==="fall"?clamp((4-d.timer)/2.4,0,1):d.mode==="fallen"?1:0;
+      const fall=d.mode==="fall"?clamp(((d.fallDuration||4)-d.timer)/2.4,0,1):d.mode==="fallen"?1:0;
       const arrival=d.mode==="arrival"?clamp(d.timer/2.3,0,1):0;
       const x=d.x+arrival*arrival*245,y=d.y-Math.sin(arrival*Math.PI)*41;
       const wingBeat=Math.sin(ice.clock*(arrival?7:1.7))*(arrival?22:3);
-      const open=["warn","blast","superWarn","superBlast"].includes(d.mode);
+      const open=["warn","blast","superWarn","superBlast","bridge","retreat"].includes(d.mode);
       oval(x-6,y+22,147,21,"#25466c4d");oval(x-8,y+22,94,12,"#23436733");
       ctx.save();ctx.translate(x,y+fall*20);ctx.rotate(-fall*.91);
       if(d.flash>0&&Math.floor(ice.clock*17)%2)ctx.globalAlpha=.55;
@@ -808,7 +859,9 @@
     }
     function drawBridge(d){
       const b=d.bridge,dy=b.ey-b.sy,dx=b.ex-b.sx,nx=-dy/b.length,ny=dx/b.length;
-      const sx=b.sx,sy=b.sy+13,ex=b.ex,ey=b.ey+13,width=24;
+      // The frozen surface grows out from the same mouth that emitted the super breath.
+      const formed=clamp((ice.clock-b.born)/BRIDGE_FORM,0,1);
+      const sx=lerp(b.ex,b.sx,formed),sy=lerp(b.ey,b.sy,formed)+13,ex=b.ex,ey=b.ey+13,width=24;
       const points=[[sx-nx*width,sy-ny*width],[ex-nx*width,ey-ny*width],
         [ex+nx*width,ey+ny*width],[sx+nx*width,sy+ny*width]];
       poly([points[3],points[2],[points[2][0],points[2][1]+13],
@@ -826,8 +879,8 @@
         if(i%2)snowflake(cx,cy,4,"#f6ffff");
       }
       oval(sx,sy,32,12,"#eeffff77");snowflake(sx,sy,12,"#72a9c7");
-      // The end plate rests directly on the dragon's back, rather than its mouth.
-      oval(ex,ey,29,12,"#e2faff");line(ex-23,ey+5,ex+23,ey+5,"#8bbdd4",2);
+      oval(ex,ey,17,8,"#e2faff");snowflake(ex-3,ey,5,"#ffffff");
+      if(formed<1)iceBall(ex,ey,10,0,0,false);
       if(d.mode==="bridge"&&d.timer<2)for(let i=1;i<7;i++){
         const p=bridgePoint(b,i/7);line(p.x-9,p.y+1,p.x+7,p.y+26,"#527fa7",2);
       }
@@ -868,7 +921,8 @@
     }
     function drawPlayer(p){
       if(p.dead||p.ghost||p.lives<=0)return;
-      const x=p.x,y=p.y;
+      const point=riderPosition(p);
+      const x=point.x,y=point.y;
       if(onBridge(p))oval(x,y+14,28,6,"#ffffff88");
       else oval(x,y+14,24,8,"#41688a50");
       if(p.shieldCharges>0){
@@ -922,7 +976,8 @@
       if(ice.dragon?.mode==="warn"||ice.dragon?.mode==="superWarn")
         label("DODGE THE ICY BREATH!",480,111,19,"#fff2b7");
       if(onBack())label("ON HIS BACK — PRESS A OR B TO STRIKE!",480,112,18,"#fff2b7");
-      else if(ice.dragon?.mode==="bridge")label("WALK UP THE ICE BRIDGE TO HIS BACK",480,111,18,"#e5ffff");
+      else if(atMouth())label("PRESS A TO JUMP ONTO HIS BACK!",480,111,19,"#fff2b7");
+      else if(ice.dragon?.mode==="bridge")label("WALK UP THE ICE BRIDGE • A: JUMP ONTO HIS BACK",480,111,16,"#e5ffff");
       if(ice.dragon?.mode==="bridge")label("ICE BRIDGE: "+Math.ceil(ice.dragon.timer)+"s",480,139,15,"#fff0c9");
       if(ice.phase==="won"&&ice.phaseTime>1.9){
         box(311,99,338,64,"#244d6cdd");label("DRAGON DEFEATED!",480,139,27);
