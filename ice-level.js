@@ -2,6 +2,7 @@
 (() => {
   function iceRuntime() {
     const LEVEL="ICE10", TOTAL=30, ICE_POWER=5, FREEZE=5, BRIDGE_TIME=10, STAGES=3;
+    const BRIDGE_SPEED=200, AIM_LOCK=.38, HEAD_X=-111, HEAD_Y=-70;
     const SETTINGS={
       Easy:{cap:3,gap:2.8,speed:47,warning:1.3},
       Normal:{cap:4,gap:2.45,speed:57,warning:1.12},
@@ -17,14 +18,14 @@
     const list=x=>Array.isArray(x)?x.filter(Boolean):Object.values(x||{});
     const old={fullRestart,safeLifeReset,loseLife,update,spawnEnemy,updateEnemies,updateShots,
       updateEnding,startFinalWave,killEnemy,headbutt,handleAAction,playerShoot,draw,drawBackground,
-      updateHud,startMusic};
+      updateHud,startMusic,currentDirection,updateDodgeMovement};
     const session=()=>{const r=window.__uvzuTombTravelNetwork?.room?.()||{};
       return [r.createdAt||0,r.nextLevelAt||0,r.ghostResetAt||0].join(":");};
     const tileCoords=()=>[354,425,494].flatMap((y,row)=>[185,350,515,680,845].map((x,col)=>({
       id:row*5+col,x,y,stress:(row+col)%4===0?.14:0,brokenUntil:0
     })));
     let serial=0,lastPacket=0,hasSnapshot=false,nextSent=false,scenery=null;
-    let seq=0,loss=0,freezeUntil=0,graceUntil=0,shotAt=0,hitFlash=0,mountFlash=0;
+    let seq=0,loss=0,freezeUntil=0,graceUntil=0,shotAt=0,hitFlash=0,bridgeWalk=null;
     let pending=[];
     const seenBolts=new Set(),seenBlasts=new Set(),seenKills=new Set(),seenDefeats=new Set();
     const fresh=()=>({level:LEVEL,session:session(),run:Date.now()+"-"+(++serial),clock:0,
@@ -35,7 +36,7 @@
     const push=()=>{if(host())window.__uvzuMultiplayerPushEnemyState?.(state.enemies,true);};
     window.__uvzuGetIceState=()=>active()?{...ice,enemies:state.enemies}:null;
     window.__uvzuGetIceStatus=()=>active()?{level:LEVEL,run:ice.run,loss,freezeUntil,
-      mounted:ice.dragon?.mount===role(),actions:pending}:null;
+      bridge:bridgeWalk?{id:bridgeWalk.id,progress:bridgeWalk.progress}:null,actions:pending}:null;
     function stopMusic(){window.__uvzuStopMainMusic?.();window.stopTombMusic?.();}
     startMusic=function(){if(active())stopMusic();else old.startMusic();};
     const priorMusic=window.__uvzuUpdateLevelMusic;
@@ -43,7 +44,7 @@
     function resetPosition(){
       resetPlayerPosition();player.x=guest()?315:165;player.y=426;
       player.webbedTimer=player.webFlash=0;player.webTrapX=player.webTrapY=null;
-      player.actionLock=Math.max(.2,player.actionLock||0);freezeUntil=0;graceUntil=ice.clock+1.3;
+      player.actionLock=Math.max(.2,player.actionLock||0);freezeUntil=0;bridgeWalk=null;graceUntil=ice.clock+1.3;
     }
     function initialize(){
       window.__uvzuReviveLocalForNextLevel?.(player);old.fullRestart();
@@ -77,7 +78,7 @@
       const before=player.lives;old.loseLife();if(player.lives>=before)return;
       loss++;pending=[];freezeUntil=0;player.webbedTimer=player.webFlash=0;
       player.webTrapX=player.webTrapY=null;
-      if(ice.dragon?.mount===role())ice.dragon.mount=null;
+      bridgeWalk=null;if(ice.dragon?.walkers)delete ice.dragon.walkers[role()];
       if((host()||guest())&&!ghost())safeLifeReset();
       if(!host()&&!guest()&&player.lives<=0)ice.phase="lost";
       window.__uvzuMultiplayerPush?.(player);push();
@@ -90,6 +91,14 @@
       return all?result:result.filter(p=>!p.dead);
     }
     const nearest=(x,y)=>players().sort((a,b)=>distance(a.x,a.y,x,y)-distance(b.x,b.y,x,y))[0];
+    const bridgePoint=(b,t)=>({x:lerp(b.sx,b.ex,t),y:lerp(b.sy,b.ey,t)});
+    function onBridge(p){
+      const d=ice.dragon,b=d?.bridge,s=p.iceStatus?.bridge;
+      const point=b&&s?bridgePoint(b,clamp(s.progress,0,1)):null;
+      return !!(b&&s?.id===b.id&&["bridge","retreat","fall"].includes(d.mode)&&
+        distance(p.x,p.y,point.x,point.y)<34);
+    }
+    const onBack=()=>bridgeWalk?.progress>=.995&&ice.dragon?.mode==="bridge";
     function onTile(p,t){return Math.abs(p.x-t.x)<46&&Math.abs(p.y-t.y)<26;}
     function tileUnder(p){return ice.tiles.find(t=>onTile(p,t));}
     function fall(){
@@ -148,15 +157,20 @@
         Math.abs(ice.clock-a.at)>1.5||distance(p.x,p.y,a.x,a.y)>95||
         p.iceStatus?.freezeUntil>ice.clock)return;
       const d=ice.dragon;
-      if(a.kind==="mount"){
-        if(d?.mode==="bridge"&&d.mount===null&&d.stage<STAGES&&
-          p.x>d.x-185&&Math.abs(p.y-d.bridgeY)<47){
-          d.mount=who;d.hit=false;d.mountAt=ice.clock;d.fromX=p.x;d.fromY=p.y;push();
+      if(a.kind==="bridgeEnter"){
+        const b=d?.bridge;
+        if(d?.mode==="bridge"&&b&&a.bridgeId===b.id&&d.stage<STAGES&&
+          distance(a.x,a.y,b.sx,b.sy)<48&&distance(p.x,p.y,b.sx,b.sy)<72){
+          d.walkers[who]={enteredAt:ice.clock,loss:a.loss};push();
         }
       }else if(a.kind==="strike"){
-        if(d?.mode==="bridge"&&d.mount===who&&!d.hit&&ice.clock-d.mountAt>.35){
-          d.hit=true;d.stage++;d.flash=.8;d.mount=null;d.mode=d.stage>=STAGES?"fall":"recover";
-          d.timer=d.stage>=STAGES?2.8:1.6;d.normal=0;ice.phase=d.stage>=STAGES?"won":"boss";
+        const b=d?.bridge,w=d?.walkers?.[who],s=p.iceStatus?.bridge;
+        if(d?.mode==="bridge"&&b&&w&&s?.id===b.id&&s.progress>=.995&&
+          w.loss===a.loss&&!d.hit&&distance(p.x,p.y,b.ex,b.ey)<26&&
+          ice.clock-w.enteredAt>=b.length/BRIDGE_SPEED-.28){
+          d.hit=true;d.stage++;d.flash=.8;d.mode=d.stage>=STAGES?"fall":"retreat";
+          d.timer=d.stage>=STAGES?4:Math.max(1.6,b.length/BRIDGE_SPEED+.5);
+          d.normal=0;ice.phase=d.stage>=STAGES?"won":"boss";
           ice.phaseTime=0;
           if(ice.phase==="won"){state.enemies.length=0;ice.bolts.length=0;state.mode="iceWin";}
           push();
@@ -175,21 +189,48 @@
       }
     }
     function act(kind){
-      const a={seq:++seq,kind,loss,at:ice.clock,x:player.x,y:player.y};
+      const a={seq:++seq,kind,loss,at:ice.clock,x:player.x,y:player.y,bridgeId:bridgeWalk?.id||null};
       if(guest())pending.push(a);else accept(a,role(),{...player,role:role(),iceStatus:window.__uvzuGetIceStatus()});
       window.__uvzuMultiplayerPush?.(player);
     }
-    function canMount(){const d=ice.dragon;
-      return d?.mode==="bridge"&&d.mount===null&&!ghost()&&ice.clock>=freezeUntil&&
-        player.x>d.x-185&&Math.abs(player.y-d.bridgeY)<47;}
+    // Movement on the ramp follows its surface. A never jumps onto the dragon.
+    currentDirection=function(){return active()&&bridgeWalk?{dx:0,dy:0}:old.currentDirection();};
+    updateDodgeMovement=function(dt){
+      if(active()&&bridgeWalk){player.dodgeTimer=0;return true;}
+      return old.updateDodgeMovement(dt);
+    };
+    function leaveBridge(drop=false){
+      const b=ice.dragon?.bridge;
+      if(drop&&b&&bridgeWalk)player.y=clamp(lerp(b.sy,ice.dragon.y+34,bridgeWalk.progress),330,510);
+      bridgeWalk=null;player.dodgeTimer=0;window.__uvzuMultiplayerPush?.(player);
+    }
+    function walkBridge(dt){
+      const d=ice.dragon,b=d?.bridge,dir=old.currentDirection();
+      if(bridgeWalk&&(!b||bridgeWalk.id!==b.id||!["bridge","retreat","fall"].includes(d.mode)||ghost())){
+        leaveBridge(true);return;
+      }
+      if(!bridgeWalk){
+        if(d?.mode!=="bridge"||!b||ghost()||ice.clock<freezeUntil||player.dodgeTimer>0)return;
+        const toward=(dir.dx*(b.ex-b.sx)+dir.dy*(b.ey-b.sy))/b.length;
+        if(distance(player.x,player.y,b.sx,b.sy)>38||toward<=.15)return;
+        bridgeWalk={id:b.id,progress:0,entrySeq:seq+1};act("bridgeEnter");
+        player.headTimer=player.dodgeTimer=0;
+      }
+      if(guest()&&d.mode==="bridge"&&!d.walkers?.guest&&
+        (ice.acknowledged?.guest||0)>=bridgeWalk.entrySeq){leaveBridge(true);return;}
+      const toward=(dir.dx*(b.ex-b.sx)+dir.dy*(b.ey-b.sy))/b.length;
+      const speed=d.mode==="bridge"?toward:-1;
+      bridgeWalk.progress=clamp(bridgeWalk.progress+speed*BRIDGE_SPEED*dt/b.length,0,1);
+      Object.assign(player,bridgePoint(b,bridgeWalk.progress));
+      if(Math.abs(speed)>.02)player.face=speed>0?1:-1;
+      if(bridgeWalk.progress===0&&speed<0)leaveBridge();
+    }
     handleAAction=function(){
       if(!active())return old.handleAAction();
-      if(ice.dragon?.mount===role()){
+      if(bridgeWalk){
         if(!(input.a||keys[" "]))player.aConsumed=false;
-        else player.aConsumed=true;return;
-      }
-      if((input.a||keys[" "])&&!player.aConsumed&&canMount()){
-        player.aConsumed=true;act("mount");mountFlash=.5;return;
+        else if(!player.aConsumed){player.aConsumed=true;if(onBack())headbutt();}
+        return;
       }
       if(ice.clock<freezeUntil){if(!(input.a||keys[" "]))player.aConsumed=false;return;}
       old.handleAAction();
@@ -198,12 +239,12 @@
       if(!active())return old.headbutt();
       if(ghost()||ice.clock<freezeUntil||player.headCd>0||player.actionLock>0||player.dodgeTimer>0)return;
       player.headCd=.28;player.headTimer=.15;player.actionLock=.08;
-      if(ice.phase==="battle")act("head");
+      if(onBack())act("strike");else if(ice.phase==="battle")act("head");
     };
     playerShoot=function(){
       if(!active())return old.playerShoot();
       if(ghost()||ice.clock<freezeUntil||ice.clock<shotAt)return;
-      if(ice.dragon?.mount===role()){shotAt=ice.clock+.3;act("strike");return;}
+      if(onBack()){shotAt=ice.clock+.3;player.headTimer=.18;act("strike");return;}
       if(ice.phase!=="battle"||ice.power[role()]<=ice.clock)return;
       shotAt=ice.clock+.38;act("shoot");
     };
@@ -249,7 +290,7 @@
     };
     function tiles(dt){
       if(guest()||ice.phase==="won")return;
-      const actors=[...players(),...state.enemies];
+      const actors=[...players().filter(p=>!onBridge(p)),...state.enemies];
       for(const t of ice.tiles){
         if(t.brokenUntil){if(ice.clock>=t.brokenUntil){t.brokenUntil=0;t.stress=0;}continue;}
         const feet=actors.filter(p=>onTile(p,t));
@@ -275,48 +316,86 @@
     function newDragon(){
       ice.phase="arrival";ice.phaseTime=0;ice.bolts=[];
       ice.dragon={x:802,y:417,stage:0,normal:0,mode:"arrival",timer:2.3,
-        bridgeY:420,mount:null,hit:false,flash:0,blastId:0,targetY:420};
+        bridge:null,walkers:{},hit:false,flash:0,blastId:0,
+        aim:{x:165,y:397},headFace:-1,headAngle:0,locked:false};
       state.mode="final";push();
+    }
+    function aimAtPlayer(d){
+      const targets=players(),p=targets.find(p=>p.role===d.targetRole)||nearest(d.x,d.y);
+      if(!p)return;
+      d.targetRole=p.role;d.aim={x:p.x,y:p.y-29};
+      const dx=d.aim.x-(d.x+HEAD_X),dy=d.aim.y-(d.y+HEAD_Y);
+      d.headFace=dx<0?-1:1;
+      const angle=Math.atan2(dy,dx)-Math.atan2(22,d.headFace*55);
+      d.headAngle=Math.atan2(Math.sin(angle),Math.cos(angle));
+    }
+    function warnDragon(d,supercharged=false){
+      d.mode=supercharged?"superWarn":"warn";d.timer=supercharged?1.6:tune().warning;
+      d.locked=false;
+      // Alternate living players in multiplayer, then follow that player during the wind-up.
+      const targets=players().sort((a,b)=>a.role.localeCompare(b.role));
+      d.targetRole=targets[d.blastId%Math.max(1,targets.length)]?.role;
+      aimAtPlayer(d);push();
+    }
+    function dragonMouth(d){
+      const a=d.headAngle||0,vx=(d.headFace||-1)*55,vy=22;
+      return {x:d.x+HEAD_X+vx*Math.cos(a)-vy*Math.sin(a),
+        y:d.y+HEAD_Y+vx*Math.sin(a)+vy*Math.cos(a)};
+    }
+    function breathRay(d){
+      const mouth=dragonMouth(d),dx=d.aim.x-(d.x+HEAD_X),dy=d.aim.y-(d.y+HEAD_Y);
+      const len=Math.hypot(dx,dy)||1;
+      return {...mouth,dx:dx/len,dy:dy/len,length:1250};
+    }
+    function breathHits(d,p){
+      const ray=breathRay(d),dx=p.x-ray.x,dy=p.y-29-ray.y;
+      const along=dx*ray.dx+dy*ray.dy,across=Math.abs(dx*ray.dy-dy*ray.dx);
+      return along>=-18&&along<=ray.length&&across<(d.mode==="superBlast"?34:28);
+    }
+    function makeBridge(d){
+      const sx=clamp(d.aim.x,80,d.x-325),sy=clamp(d.aim.y+29,351,495);
+      const ex=d.x-26,ey=d.y-71;
+      d.bridge={id:ice.run+"-bridge-"+d.blastId,sx,sy,ex,ey,length:Math.hypot(ex-sx,ey-sy)};
+      d.walkers={};d.hit=false;d.mode="bridge";d.timer=BRIDGE_TIME;push();
     }
     function dragonTick(dt){
       const d=ice.dragon;if(!d)return;
       d.timer-=dt;d.flash=Math.max(0,d.flash-dt);
-      if(d.mode==="arrival"){if(d.timer<=0){ice.phase="boss";d.mode="warn";d.timer=tune().warning;
-        d.targetY=nearest(d.x,d.y)?.y||420;}return;}
-      if(d.mode==="warn"){
-        if(d.timer<=0){d.mode="blast";d.timer=.72;d.blastId++;push();}return;
+      if(d.mode==="arrival"){if(d.timer<=0){ice.phase="boss";warnDragon(d);}return;}
+      if(d.mode==="warn"||d.mode==="superWarn"){
+        if(!d.locked){aimAtPlayer(d);if(d.timer<=AIM_LOCK){d.locked=true;push();}}
+        if(d.timer<=0){d.mode=d.mode==="superWarn"?"superBlast":"blast";
+          d.timer=d.mode==="superBlast"?.65:.72;d.blastId++;push();}return;
       }
       if(d.mode==="blast"){
         if(d.timer<=0){d.normal++;d.mode="recover";d.timer=1.03;push();}return;
       }
+      if(d.mode==="superBlast"){if(d.timer<=0)makeBridge(d);return;}
       if(d.mode==="recover"){
         if(d.timer<=0){
-          if(d.normal>=3){d.mode="superWarn";d.timer=1.6;d.bridgeY=clamp(nearest(d.x,d.y)?.y||420,383,445);}
-          else{d.mode="warn";d.timer=tune().warning;d.targetY=clamp(nearest(d.x,d.y)?.y||420,344,494);}
-          push();
+          warnDragon(d,d.normal>=3);
         }return;
       }
-      if(d.mode==="superWarn"){
-        if(d.timer<=0){d.mode="bridge";d.timer=BRIDGE_TIME;d.mount=null;push();}return;
+      if(d.mode==="retreat"){
+        if(d.timer<=0){d.bridge=null;d.walkers={};d.mode="recover";d.timer=.8;push();}return;
       }
       if(d.mode==="bridge"&&d.timer<=0){
-        d.mount=null;d.normal=0;d.mode="recover";d.timer=1.2;push();
+        d.walkers={};d.normal=0;d.mode="recover";d.timer=1.2;push();
       }
-      if(d.mode==="fall"&&d.timer<=0){d.mode="fallen";ice.finished=true;
+      if(d.mode==="fall"&&d.timer<=0){d.mode="fallen";d.walkers={};ice.finished=true;
         if(host())window.__uvzuSignalLevelCompleted?.();push();}
     }
     function hazards(){
       if(ghost()||ice.phase==="won"||ice.phase==="lost"||state.resetQueued)return;
       const d=ice.dragon;
-      if(d?.mount===role())return;
+      if(bridgeWalk&&onBridge({...player,iceStatus:window.__uvzuGetIceStatus()}))return;
       const tile=tileUnder(player);
       if(tile?.brokenUntil>ice.clock){fall();return;}
       for(const b of ice.bolts){
         if(b.team!=="enemy"||seenBolts.has(b.id)||ice.clock-b.born>3.5)continue;
         if(Math.hypot((player.x-b.x)/27,(player.y-29-b.y)/25)<1){seenBolts.add(b.id);hurt();}
       }
-      if(d?.mode==="blast"&&!seenBlasts.has(d.blastId)&&
-        player.x<d.x-58&&Math.abs(player.y-d.targetY)<26){
+      if(["blast","superBlast"].includes(d?.mode)&&!seenBlasts.has(d.blastId)&&breathHits(d,player)){
         seenBlasts.add(d.blastId);hurt();
       }
       if(ice.phase==="battle")for(const e of state.enemies){
@@ -366,12 +445,9 @@
       received();if(receiveRetry())return;guestActions();
       const run=ice.run;
       state.mode=ice.phase==="won"||ice.phase==="lost"?"iceScene":ice.phase==="battle"?"play":"final";
-      if(ice.dragon?.mount===role()&&!ghost()){
-        player.x=ice.dragon.x-54;player.y=ice.dragon.y-74;player.webbedTimer=0;
-      }
       old.update(dt);if(!active()||ice.run!==run)return;
       ice.clock+=dt;ice.phaseTime+=dt;hitFlash=Math.max(0,hitFlash-dt);
-      mountFlash=Math.max(0,mountFlash-dt);player.x=clamp(player.x,35,W-35);
+      player.x=clamp(player.x,35,W-35);
       player.y=clamp(player.y,330,510);thaw();
       if(!guest()){
         ice.enemies=state.enemies;
@@ -387,14 +463,14 @@
         state.enemies=ice.enemies;
         for(const e of state.enemies){e.x+=(e.vx||0)*dt;e.y+=(e.vy||0)*dt;}
       }
-      hazards();updateHud();
+      walkBridge(dt);hazards();updateHud();
     };
     updateHud=function(){
       old.updateHud();if(!active())return;
       if(timeEl)timeEl.textContent=ice.dragon?"Dragon: "+ice.dragon.stage+" / "+STAGES:
         "Zombies: "+ice.defeated+" / "+TOTAL;
       if(powerLabelEl)powerLabelEl.textContent=ice.clock<freezeUntil?
-        "Frozen: "+Math.ceil(freezeUntil-ice.clock)+"s":ice.dragon?.mount===role()?"B: STRIKE!":
+        "Frozen: "+Math.ceil(freezeUntil-ice.clock)+"s":onBack()?"A / B: STRIKE!":bridgeWalk?"Walk across the ice":
         ice.power[role()]>ice.clock?"B: Ice breath "+Math.ceil(ice.power[role()]-ice.clock)+"s":"A: Attack";
       if(powerFillEl)powerFillEl.style.width=(ice.power[role()]>ice.clock?
         clamp((ice.power[role()]-ice.clock)/ICE_POWER*100,0,100):0)+"%";
@@ -600,11 +676,11 @@
     }
     function drawDragon(){
       const d=ice.dragon;if(!d)return;
-      const fall=d.mode==="fall"?clamp((2.8-d.timer)/2.4,0,1):d.mode==="fallen"?1:0;
+      const fall=d.mode==="fall"?clamp((4-d.timer)/2.4,0,1):d.mode==="fallen"?1:0;
       const arrival=d.mode==="arrival"?clamp(d.timer/2.3,0,1):0;
       const x=d.x+arrival*arrival*245,y=d.y-Math.sin(arrival*Math.PI)*41;
       const wingBeat=Math.sin(ice.clock*(arrival?7:1.7))*(arrival?22:3);
-      const open=["warn","blast","superWarn","bridge"].includes(d.mode);
+      const open=["warn","blast","superWarn","superBlast"].includes(d.mode);
       oval(x-6,y+22,147,21,"#25466c4d");oval(x-8,y+22,94,12,"#23436733");
       ctx.save();ctx.translate(x,y+fall*20);ctx.rotate(-fall*.91);
       if(d.flash>0&&Math.floor(ice.clock*17)%2)ctx.globalAlpha=.55;
@@ -668,6 +744,9 @@
       ctx.beginPath();ctx.moveTo(-68,-8);ctx.bezierCurveTo(-91,-26,-86,-62,-111,-72);
       ctx.strokeStyle="#c4e4ec";ctx.lineWidth=12;ctx.stroke();
       for(const [px,py] of [[-77,-22],[-83,-35],[-90,-49],[-101,-61]])line(px-6,py+3,px+5,py-2,"#6798b8",2);
+      // The snout turns toward the chosen player; the breath uses this same mouth position.
+      ctx.save();ctx.translate(HEAD_X,HEAD_Y);ctx.rotate(d.headAngle||0);
+      ctx.scale(-(d.headFace||-1),1);ctx.translate(-HEAD_X,-HEAD_Y);
       poly([[-113,-88],[-84,-102],[-66,-123],[-92,-115],[-118,-101]],"#2a4f78");
       poly([[-112,-92],[-88,-108],[-68,-122],[-99,-110]],"#e0f6fa");
       poly([[-98,-82],[-75,-91],[-62,-106],[-88,-99]],"#91c9e4");
@@ -686,6 +765,7 @@
         for(let i=0;i<4;i++)poly([[-161+i*10,-56],[-157+i*10,-47],[-154+i*10,-56]],"#effbff");
         if(d.mode!=="warn")oval(-148,-46,12,5,"#9ae9ff99");
       }else line(-169,-59,-139,-53,"#335b80",2);
+      ctx.restore();
       for(const lx of [-49,36]){
         poly([[lx-11,-9],[lx+16,-8],[lx+19,10],[lx+10,24],[lx+16,34],
           [lx-14,35],[lx-25,29],[lx-20,19]],"#294d74");
@@ -695,47 +775,61 @@
         for(let k=0;k<3;k++)poly([[lx-20+k*10,26],[lx-24+k*10,38],[lx-14+k*10,33]],"#e6f6f6");
       }
       ctx.restore();
-      if(d.mode==="warn"||d.mode==="blast"||d.mode==="superWarn"){
-        const yline=d.mode==="superWarn"?d.bridgeY:d.targetY;
-        ctx.save();ctx.setLineDash([10,11]);
-        line(0,yline+11,x-153,yline+11,"#e4fcff88",2);ctx.setLineDash([]);
-        if(d.mode==="blast"){
-          const yy=yline-30;
-          ctx.beginPath();ctx.moveTo(x-165,y-48);ctx.quadraticCurveTo(x-215,yy,x-285,yy);
-          ctx.lineTo(0,yy);ctx.strokeStyle="#64bcea7a";ctx.lineWidth=43;ctx.stroke();
-          ctx.strokeStyle="#c2f5fc";ctx.lineWidth=24;ctx.stroke();
-          for(let i=0;i<24;i++){
-            const fx=((x-200)-((i*33+ice.clock*400)%(x-195)));
-            const yy2=yy+Math.sin(i*2.1+ice.clock*10)*9;
-            poly([[fx+26,yy2-4],[fx+11,yy2-15],[fx-15,yy2-6],[fx-27,yy2+2],
-              [fx-7,yy2+7],[fx+13,yy2+12]],i%3?"#e2fcff":"#a2dcf6");
-            if(i%3===0)snowflake(fx,yy2,5,"#ffffff");
-          }
-        }else{
-          for(let i=0;i<10;i++)snowflake(i*62+28,yline+7,4,"#d4faff99");
-          iceBall(x-168,y-49,d.mode==="superWarn"?17:8,0,0,false);
-        }
-        ctx.restore();
-      }
-      if(d.mode==="bridge"){
-        const by=d.bridgeY,ex=x-164,ey=y-42,sx=x-510;
-        poly([[sx,by+11],[sx+34,by-5],[ex,ey-8],[ex+8,ey+12],
-          [sx+27,by+33],[sx-5,by+23]],"#528fb6b8");
-        poly([[sx,by+11],[sx+34,by-5],[ex,ey-8],[ex+8,ey+3],[sx+24,by+24]],"#b6eff4de");
-        line(sx+3,by+12,ex,ey-5,"#f4ffff",4);
-        for(let i=1;i<9;i++){
-          const q=i/9,cx=lerp(sx,ex,q),cy=lerp(by+13,ey,q);
-          line(cx,cy-9,cx+17,cy+9,"#79b8d1",1.5);
-          poly([[cx+3,cy+13],[cx+9,cy+29+(i%3)*6],[cx+13,cy+11]],"#c2eff9cc");
-          snowflake(cx-6,cy+4,4,"#f1ffffa6");
-        }
-        if(d.timer<2){ctx.save();ctx.globalAlpha=.45;
-          for(let i=0;i<7;i++)line(sx+45+i*40,by-i*5,sx+51+i*40,by+19-i*5,"#325d83",2);
-          ctx.restore();}
-      }
+      if(["warn","blast","superWarn","superBlast"].includes(d.mode))drawBreath(d);
+      if(d.bridge&&["bridge","retreat","fall"].includes(d.mode))drawBridge(d);
       if(d.mode==="fall"||d.mode==="fallen")for(let i=0;i<11;i++){
         const a=ice.phaseTime*.7+i*.37;
         oval(x-145+i*25,y+15-Math.abs(Math.sin(a))*39,4,3,"#dffaff");
+      }
+    }
+    function drawBreath(d){
+      const r=breathRay(d),firing=["blast","superBlast"].includes(d.mode),supercharged=d.mode.startsWith("super");
+      ctx.save();
+      if(firing){
+        ctx.translate(r.x,r.y);ctx.rotate(Math.atan2(r.dy,r.dx));ctx.lineCap="round";
+        line(0,0,r.length,0,"#62bbe85e",supercharged?64:46);
+        line(0,0,r.length,0,"#acecf5dc",supercharged?40:26);
+        line(0,0,r.length,0,"#efffff",supercharged?16:9);
+        for(let i=0;i<38;i++){
+          const fx=(i*35+ice.clock*420)%r.length,fy=Math.sin(i*2.1+ice.clock*10)*(supercharged?16:10);
+          poly([[fx-20,fy-3],[fx-6,fy-11],[fx+13,fy-8],[fx+29,fy],
+            [fx+7,fy+8],[fx-10,fy+6]],i%3?"#e2fcff":"#95d9f3");
+          if(i%3===0)snowflake(fx,fy,supercharged?7:5,"#ffffff");
+        }
+      }else{
+        ctx.setLineDash(d.locked?[16,6]:[7,11]);
+        line(r.x,r.y,r.x+r.dx*r.length,r.y+r.dy*r.length,d.locked?"#fff2c0cc":"#d5f8ff99",d.locked?3:2);
+        ctx.setLineDash([]);ctx.strokeStyle=d.locked?"#fff1bb":"#e5ffff";ctx.lineWidth=2;
+        ctx.beginPath();ctx.ellipse(d.aim.x,d.aim.y+29,29,10,0,0,Math.PI*2);ctx.stroke();
+        snowflake(d.aim.x,d.aim.y,supercharged?11:7,d.locked?"#fff6d1":"#dbfcff");
+        iceBall(r.x,r.y,supercharged?17:8,0,0,false);
+      }
+      ctx.restore();
+    }
+    function drawBridge(d){
+      const b=d.bridge,dy=b.ey-b.sy,dx=b.ex-b.sx,nx=-dy/b.length,ny=dx/b.length;
+      const sx=b.sx,sy=b.sy+13,ex=b.ex,ey=b.ey+13,width=24;
+      const points=[[sx-nx*width,sy-ny*width],[ex-nx*width,ey-ny*width],
+        [ex+nx*width,ey+ny*width],[sx+nx*width,sy+ny*width]];
+      poly([points[3],points[2],[points[2][0],points[2][1]+13],
+        [points[3][0],points[3][1]+13]],"#528bb9");
+      const iceSurface=ctx.createLinearGradient(sx,sy,ex,ey);
+      iceSurface.addColorStop(0,"#e4feff");iceSurface.addColorStop(.45,"#bdebf8");iceSurface.addColorStop(1,"#eefeff");
+      poly(points,iceSurface);
+      line(...points[0],...points[1],"#f5ffff",3);
+      line(...points[3],...points[2],"#7db8d4",2);
+      for(let i=1;i<12;i++){
+        const q=i/12,cx=lerp(sx,ex,q),cy=lerp(sy,ey,q);
+        line(cx-nx*18,cy-ny*18,cx+nx*18,cy+ny*18,"#94c6dd",1.5);
+        poly([[cx+nx*24-3,cy+ny*24+12],[cx+nx*24+3,cy+ny*24+31+i%3*5],
+          [cx+nx*24+9,cy+ny*24+12]],"#d4f6ffdb");
+        if(i%2)snowflake(cx,cy,4,"#f6ffff");
+      }
+      oval(sx,sy,32,12,"#eeffff77");snowflake(sx,sy,12,"#72a9c7");
+      // The end plate rests directly on the dragon's back, rather than its mouth.
+      oval(ex,ey,29,12,"#e2faff");line(ex-23,ey+5,ex+23,ey+5,"#8bbdd4",2);
+      if(d.mode==="bridge"&&d.timer<2)for(let i=1;i<7;i++){
+        const p=bridgePoint(b,i/7);line(p.x-9,p.y+1,p.x+7,p.y+26,"#527fa7",2);
       }
     }
     function snowflake(x,y,r,color){
@@ -774,11 +868,8 @@
     }
     function drawPlayer(p){
       if(p.dead||p.ghost||p.lives<=0)return;
-      const mounted=ice.dragon?.mount===p.role,d=ice.dragon;
-      const jump=mounted?clamp((ice.clock-d.mountAt)/.36,0,1):0;
-      const x=mounted?lerp(d.fromX??p.x,d.x-54,jump):p.x;
-      const y=mounted?lerp(d.fromY??p.y,d.y-74,jump)-Math.sin(jump*Math.PI)*51:p.y;
-      if(mounted)oval(x,y+18,28,6,"#ffffff88");
+      const x=p.x,y=p.y;
+      if(onBridge(p))oval(x,y+14,28,6,"#ffffff88");
       else oval(x,y+14,24,8,"#41688a50");
       if(p.shieldCharges>0){
         ctx.save();ctx.strokeStyle="#e1fbffcc";ctx.lineWidth=2;
@@ -803,7 +894,8 @@
     draw=function(){
       if(!active())return old.draw();
       ctx.save();background();drawTiles();
-      if(ice.dragon?.mode==="bridge")drawDragon();
+      const bridgeVisible=ice.dragon?.bridge&&["bridge","retreat","fall"].includes(ice.dragon.mode);
+      if(bridgeVisible)drawDragon();
       const actors=state.enemies.map(e=>({y:e.y,paint:()=>drawZombie(e)}));
       for(const e of ice.sinking)actors.push({y:e.y,paint:()=>{
         const a=clamp((ice.clock-e.born)/1.2,0,1);
@@ -818,7 +910,7 @@
       }});
       for(const p of players(true))actors.push({y:p.y,paint:()=>drawPlayer(p)});
       actors.sort((a,b)=>a.y-b.y).forEach(a=>a.paint());
-      if(ice.dragon?.mode!=="bridge")drawDragon();drawProjectiles();drawParticles();ctx.restore();
+      if(!bridgeVisible)drawDragon();drawProjectiles();drawParticles();ctx.restore();
       ctx.save();ctx.textAlign="left";drawHealthBar();ctx.restore();
       box(304,16,352,61,"#1e4966dd");box(304,16,352,3,"#d2f7fc");
       label(ice.dragon?"THE ICE DRAGON":"FROZEN KINGDOM",480,43,20);
@@ -829,8 +921,8 @@
       if(ice.phase==="arrival")label("THE ICE IS SHAKING...",480,111,21);
       if(ice.dragon?.mode==="warn"||ice.dragon?.mode==="superWarn")
         label("DODGE THE ICY BREATH!",480,111,19,"#fff2b7");
-      if(ice.dragon?.mount===role())label("PRESS B TO STRIKE!",480,112,20,"#fff2b7");
-      else if(ice.dragon?.mode==="bridge")label("FOLLOW THE ICE • A: JUMP ON HIS BACK",480,111,17,"#e5ffff");
+      if(onBack())label("ON HIS BACK — PRESS A OR B TO STRIKE!",480,112,18,"#fff2b7");
+      else if(ice.dragon?.mode==="bridge")label("WALK UP THE ICE BRIDGE TO HIS BACK",480,111,18,"#e5ffff");
       if(ice.dragon?.mode==="bridge")label("ICE BRIDGE: "+Math.ceil(ice.dragon.timer)+"s",480,139,15,"#fff0c9");
       if(ice.phase==="won"&&ice.phaseTime>1.9){
         box(311,99,338,64,"#244d6cdd");label("DRAGON DEFEATED!",480,139,27);
