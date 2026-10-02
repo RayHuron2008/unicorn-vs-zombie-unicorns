@@ -353,6 +353,7 @@ window.stopTombMusic = function stopTombMusic() {
           x: Math.round(player.x),
           y: Math.round(player.y),
                    face: player.face || 1,
+          headTimer: Math.max(0, player.headTimer || 0),
           ray: player.ray || 0,
                   catcherTrap: window.__uvzuGetCatcherStatus?.() || null,
           neighborhoodStatus: window.__uvzuGetNeighborhoodStatus?.() || null,
@@ -372,8 +373,12 @@ window.stopTombMusic = function stopTombMusic() {
       });
   };
 
-    window.__uvzuGetRemotePlayer = function() {
+  window.__uvzuGetRemotePlayer = function() {
     if (!firebaseRemotePlayer) return null;
+
+    // Expire the short attack pose even if the next position packet is delayed.
+    const headTimer = Math.max(0, (firebaseRemotePlayer.headTimer || 0) -
+      Math.max(0, Date.now() - (firebaseRemotePlayer.updatedAt || 0)) / 1000);
 
     if (
       firebaseRemoteDrawX !== null &&
@@ -386,12 +391,13 @@ window.stopTombMusic = function stopTombMusic() {
 
       return {
         ...firebaseRemotePlayer,
+        headTimer,
         x: firebaseRemoteDrawX,
         y: firebaseRemoteDrawY
       };
     }
 
-    return firebaseRemotePlayer;
+    return { ...firebaseRemotePlayer, headTimer };
   };
   window.__uvzuMultiplayerEnemyKilled = function(enemyId) {
     if (!firebaseRoomCode || !firebasePlayerRole || enemyId === undefined || enemyId === null) return;
@@ -6496,6 +6502,29 @@ code = window.__uvzuInstallDowntown(code);
      if (typeof window.__uvzuInstallTester === "function") {
        code = window.__uvzuInstallTester(code);
      }
+
+     // Match ICE10's five-pixel headbutt pose in every other player renderer.
+     // Only the artwork moves; player positions and attack hitboxes stay intact.
+     code = code.replace(
+       /drawUnicorn\(\s*(player|remote|p)\.x\s*,\s*\1\.y\s*,\s*([^,]+?)\s*,\s*false\s*,/g,
+       (_, actor, face) => "drawPlayerUnicorn(" + actor + ", " + face.trim() + ","
+     );
+     code = code.replace(
+       "  function drawUnicorn(",
+       `  function drawPlayerUnicorn(p, face, ray, giant) {
+    const shift = p.headTimer > 0 ? face * 5 : 0;
+    drawUnicorn(p.x + shift, p.y, face, false, ray, giant);
+  }
+
+  function drawUnicorn(`
+     );
+     code = code.replace(
+       '        const tombDir = player.tombDir || "up";',
+       `        const tombDir = player.tombDir || "up";
+        if (player.headTimer > 0 && (tombDir === "up" || tombDir === "down")) {
+          ctx.translate(0, tombDir === "up" ? -5 : 5);
+        }`
+     );
 const run = new Function(code + "\n//# sourceURL=graphics-v107.js");
 run();
       
