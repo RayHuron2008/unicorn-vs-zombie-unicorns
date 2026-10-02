@@ -3,10 +3,10 @@
   // Removing its script tag restores the previous music settings for these levels.
   function trialLevelMusicRuntime() {
     const songs = {
-      FRST5: { src: "./forest-storm-trial.mp3?v=2", volume: .45 },
-      HUNT6: { src: "./catchers-chase-trial.mp3?v=2", volume: .45 },
-      LAVA8: { src: "./volcanic-badlands-trial.mp3?v=2", volume: .45 },
-      ICE10: { src: "./frozen-kingdom-trial.mp3?v=2", volume: .45 }
+      FRST5: { src: "./forest-storm-trial.mp3?v=3", volume: .45 },
+      HUNT6: { src: "./catchers-chase-trial.mp3?v=3", volume: .45 },
+      LAVA8: { src: "./volcanic-badlands-trial.mp3?v=3", volume: .45 },
+      ICE10: { src: "./frozen-kingdom-trial.mp3?v=3", volume: .45 }
     };
     const tracks = new Map();
     let enabled = true, pageHidden = false;
