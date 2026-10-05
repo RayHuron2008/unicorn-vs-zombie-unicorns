@@ -499,11 +499,17 @@
         const targets = hunt.phase === "mech" ? [{ id: "mech", box: coreBox() }] :
           hunt.humans.filter(h => h.hp > 0).map(h => ({ id: h.id, box: humanBox(h) }));
         for (let i = state.playerShots.length - 1; i >= 0; i--) {
-          const s = state.playerShots[i], nx = s.x + s.vx * dt;
+          const s = state.playerShots[i];
+          if (!s) continue;
+          const nx = s.x + s.vx * dt;
           const swept = { x: Math.min(s.x, nx) - s.r, y: s.y - s.r, w: Math.abs(nx - s.x) + s.r * 2, h: s.r * 2 };
           const hit = targets.sort((a, b) => Math.abs(a.box.x - s.x) - Math.abs(b.box.x - s.x))
             .find(t => rectsOverlap(swept, t.box));
-          if (hit) { if (!ghost() && !trap) damageTarget(hit.id, "ray"); state.playerShots.splice(i, 1); }
+          if (hit) {
+            state.playerShots.splice(i, 1);
+            if (!ghost() && !trap) damageTarget(hit.id, "ray");
+            if (!fighting()) return;
+          }
         }
       }
       old.updateShots(dt);

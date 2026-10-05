@@ -6503,6 +6503,59 @@ code = window.__uvzuInstallDowntown(code);
        code = window.__uvzuInstallTester(code);
      }
 
+     // A final kill or life reset can clear the projectile arrays mid-update.
+     // Consume the current shot before damage callbacks and never reuse a stale index.
+     code = replaceFunction(code, "updateShots", `  function updateShots(dt) {
+    for (let i = state.playerShots.length - 1; i >= 0; i--) {
+      const b = state.playerShots[i];
+      if (!b) continue;
+      b.x += b.vx * dt;
+      b.life -= dt;
+
+      for (let j = state.enemies.length - 1; j >= 0; j--) {
+        const e = state.enemies[j];
+        if (!e) continue;
+        if (distance(b.x, b.y, e.x, e.y - 25) < b.r + 24) {
+          state.playerShots.splice(i, 1);
+          e.hp -= 1;
+          if (e.hp <= 0) killEnemy(j, "ray");
+          break;
+        }
+      }
+
+      // A hit has already removed this shot; do not remove its neighbor as well.
+      if (state.playerShots[i] === b &&
+          (b.life <= 0 || b.x < -100 || b.x > W + 100)) {
+        state.playerShots.splice(i, 1);
+      }
+    }
+
+    for (let i = state.enemyShots.length - 1; i >= 0; i--) {
+      const b = state.enemyShots[i];
+      if (!b) continue;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.life -= dt;
+
+      if (distance(b.x, b.y, player.x, player.y - 24) < b.r + 48) {
+        state.enemyShots.splice(i, 1);
+        if (b.type === "web") {
+          window.__uvzuApplySpiderWebTrap(player);
+          addParticles(player.x, player.y - 20, "shield");
+        } else {
+          damagePlayerByLaser();
+        }
+        if (state.resetQueued) return;
+        continue;
+      }
+
+      if (b.life <= 0 || b.x < -100 || b.x > W + 100 ||
+          b.y < -100 || b.y > H + 100) {
+        state.enemyShots.splice(i, 1);
+      }
+    }
+  }`);
+
      // Match ICE10's five-pixel headbutt pose in every other player renderer.
      // Only the artwork moves; player positions and attack hitboxes stay intact.
      code = code.replace(
@@ -6663,10 +6716,12 @@ run();
         const box = bossBox(city.boss);
         for (let i = state.playerShots.length - 1; i >= 0; i--) {
           const s = state.playerShots[i];
+          if (!s) continue;
           if (rectsOverlap({ x: s.x + s.vx * dt - s.r, y: s.y - s.r,
             w: s.r * 2, h: s.r * 2 }, box)) {
-            hurtBoss("ray");
             state.playerShots.splice(i, 1);
+            hurtBoss("ray");
+            if (city.ending) return;
           }
         }
       }
