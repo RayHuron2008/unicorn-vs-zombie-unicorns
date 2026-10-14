@@ -1,70 +1,76 @@
-TOY STORE — LEVEL 11
+TOY STORE UPDATE — LEGS, ARMS, HEAD
 Level code: TOY11
 
-UPLOAD THESE FOUR FILES
+UPLOAD TWO REPLACEMENT FILES
 1. Extract this ZIP.
-2. Open RayHuron2008/unicorn-vs-zombie-unicorns on GitHub.
-3. Upload the four game files to the main folder beside your existing game.js:
-   - toy-store-level.js: NEW level file.
-   - clockwork-toybox.mp3: NEW original chiptune soundtrack.
-   - game.js: REPLACE your existing file with this complete updated copy.
-   - index.html: REPLACE your existing file with this complete updated copy.
-4. Commit the upload. Keep all your other level, music, image, and tester files.
-5. Refresh the game and enter TOY11 to test it immediately.
-   Finishing ICE10 also takes you to TOY11 automatically.
+2. In the main folder of RayHuron2008/unicorn-vs-zombie-unicorns, replace:
+   - toy-store-level.js
+   - index.html
+3. Commit the upload, refresh your game, and enter TOY11 to test.
 
-Upload the extracted game files, not the ZIP itself. No code needs to be pasted.
-When the upload is finished, say "Done" so I can check your repository.
+Both files are complete replacements. No code needs to be pasted.
+Your current game.js, clockwork-toybox.mp3, and all other level files stay as they
+are. The updated index loads version 2 of the toy-store file to refresh the cache.
+Upload the extracted files rather than the ZIP itself.
 
-HOW THE LEVEL WORKS
-- Fight the usual zombie unicorns for one minute, then finish any still alive.
-- The central nutcracker steps forward every five seconds. The marked stepping
-  path warns you first, and it crushes zombies as well as the player.
-- An unprotected stomp or fist impact costs one life. A shield absorbs the hit.
-- After the main battle, the nutcracker wakes, follows you, tries three stomps,
-  then aims a fist slam. Watch the warning and move out before the impact.
-- Its grounded fist rests for one second, then its arm lifts slowly. Approach
-  the glowing hand during that first second and move toward its face to climb.
-  At the face, press A or B to land the hit. The unicorn retreats safely afterward.
-- Three successful face hits beat all three rounds. Later rounds move faster,
-  aim sooner, and give you less time on the arm. Missing an opening repeats it.
-- Falling presents open when you approach them. Some contain ordinary toys;
-  others grant fire breath for 5 seconds, a laser for 8 seconds, or an 8-second
-  jetpack with six homing missiles. Hold B to use a power.
-- The jetpack hovers over stomps, but the fist can still hit you. Weapons can
-  stagger the lowered arm once per opening, adding a little climbing time.
-  Reaching and striking the face is still required to defeat each round.
-- Both multiplayer players share the same nutcracker, presents, and victory.
+Say "Done" when you finish, and I will check your upload.
 
-WHERE THE CODE IS — LINE NUMBERS IN THESE INCLUDED FILES
+WHAT CHANGED
+- Falling presents are gone.
+- Defeating a gun zombie grants its gun to the player who killed it, using the
+  same five-second duration as your current game's normal weapon mechanic.
+  Zombies crushed by the statue do not award you a gun.
+- A small toy rocket and toy fire engine sit in the two narrow stock aisles
+  behind the main shop floor. Walk up an aisle and approach its toy to discover
+  a missile jetpack or flamethrower. Ordinary fighting stays below these aisles.
+- Each player can discover each hidden item once per level attempt. The hidden
+  powers last 12 seconds. The jetpack carries six homing missiles. Hold B to fire.
+  A stolen gun does not interrupt hidden equipment that is already active.
+- The jetpack flies above ground stomps and chomps, but grabbing hands can
+  still reach you. Losing a life removes your equipped powers.
+
+THE NEW BOSS FIGHT
+1. LEGS: Attack either leg while avoiding his marked stomps. Each leg breaks
+   separately. Once both are destroyed, his body drops to the floor.
+2. ARMS: His fallen body swivels and slithers toward you. His remaining hands
+   try to grab you. Destroy both arms. A successful grab hurts and briefly holds
+   you, then releases; a shield blocks the grab and breaks instead.
+3. HEAD: With no limbs left, he lunges and chomps along his aimed path. Dodge
+   three chomps. He then becomes exhausted, and his head becomes vulnerable.
+   Attack the head during that pause. If he survives, the sequence repeats.
+
+Use A to headbutt and the existing dodge controls to evade. B fires your weapon.
+The fight can be completed without either secret item. Weapons can damage the
+currently attackable part, but they cannot bypass the head's exhausted opening.
+The one-minute main battle and the statue's five-second step remain. Any zombies
+still alive after the timer must be defeated before the boss wakes up.
+
+CODE LOCATIONS — LINE NUMBERS IN THE INCLUDED FILES
 toy-store-level.js:
-  Line 4: level code, one-minute duration, five-second step interval, three rounds.
-  Line 5: one-second fist rest, climbing speed, and soundtrack filename.
-  Line 6: power-up durations.
-  Line 7: Easy, Normal, and Hard settings.
-  Line 145: falling presents and the power-up selection cycle.
-  Line 203: the statue's step during the main battle.
-  Line 234: the climbable arm and recovery opening.
-  Line 263: boss movement, stomps, fist attacks, and round transitions.
-  Line 458: automatic progression from ICE10.
-  Line 620: the nutcracker artwork.
-game.js:
-  Line 361: multiplayer player status for this level.
-  Line 514: multiplayer level state.
-  Line 1191: multiplayer level-code validation.
-  Line 1584: solo TOY11 code validation.
-  Line 6510: installs the new level.
+  Line 4: level code, main-battle duration, statue interval, and three stages.
+  Line 6: hidden equipment duration and the normal gun-duration reference.
+  Line 7: difficulty settings, limb health, head health, and exhausted pause.
+  Line 30: hidden item types and positions.
+  Line 43: the narrow background aisle boundaries.
+  Line 141: enemy defeat and gun reward.
+  Line 159: discovering the hidden equipment.
+  Line 222: damage to individual parts and legs-to-arms-to-head transitions.
+  Line 293: boss movement, stomps, grabs, chomps, and exhaustion.
+  Line 398: grab release handling.
+  Line 449: player damage, shields, and chomping collisions.
+  Line 686: the fallen, swiveling nutcracker artwork.
 index.html:
-  Line 233: loads toy-store-level.js.
-  Line 234: loads the updated game.js, version 127.
+  Line 233: loads toy-store-level.js?v=2.
 
 CHECKS COMPLETED
-The assembled game passed automated full playthroughs on all three difficulty
-settings, solo and multiplayer boss checks, delayed multiplayer input checks,
-ICE10 progression, shield/life-loss handling, and music lifecycle checks.
-The level also passed with tester-mode.js omitted. Existing freeze and Halloween
-regression checks passed. Canvas artwork was rendered and inspected.
-These were automated simulations, not a live phone or Firebase session.
+Automated complete playthroughs passed on Easy, Normal, and Hard without finding
+the hidden equipment. Solo and multiplayer checks covered all five body parts,
+weapon rewards, both secrets, shields, grab release, life loss, victory, and retry.
+Guest attacks passed with 150 ms and 250 ms of simulated delay each way.
+The level passed with the temporary tester file omitted. ICE10 progression,
+soundtrack controls, the existing freeze fixes, and Halloween checks passed.
+The artwork was rendered and inspected. These checks used the assembled game
+in an automated simulation, not a live phone or Firebase session.
 
-Based on main commit 49d9327963ed243634ccc684a970ded7e5aa38b4, checked again
-on October 13, 2026. The existing level files stay separate and unchanged.
+Prepared from main commit 4ff8add4c281203065c63ff7bece9a321f54d8e1,
+verified on October 14, 2026.
