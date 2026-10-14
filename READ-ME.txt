@@ -1,0 +1,70 @@
+TOY STORE — LEVEL 11
+Level code: TOY11
+
+UPLOAD THESE FOUR FILES
+1. Extract this ZIP.
+2. Open RayHuron2008/unicorn-vs-zombie-unicorns on GitHub.
+3. Upload the four game files to the main folder beside your existing game.js:
+   - toy-store-level.js: NEW level file.
+   - clockwork-toybox.mp3: NEW original chiptune soundtrack.
+   - game.js: REPLACE your existing file with this complete updated copy.
+   - index.html: REPLACE your existing file with this complete updated copy.
+4. Commit the upload. Keep all your other level, music, image, and tester files.
+5. Refresh the game and enter TOY11 to test it immediately.
+   Finishing ICE10 also takes you to TOY11 automatically.
+
+Upload the extracted game files, not the ZIP itself. No code needs to be pasted.
+When the upload is finished, say "Done" so I can check your repository.
+
+HOW THE LEVEL WORKS
+- Fight the usual zombie unicorns for one minute, then finish any still alive.
+- The central nutcracker steps forward every five seconds. The marked stepping
+  path warns you first, and it crushes zombies as well as the player.
+- An unprotected stomp or fist impact costs one life. A shield absorbs the hit.
+- After the main battle, the nutcracker wakes, follows you, tries three stomps,
+  then aims a fist slam. Watch the warning and move out before the impact.
+- Its grounded fist rests for one second, then its arm lifts slowly. Approach
+  the glowing hand during that first second and move toward its face to climb.
+  At the face, press A or B to land the hit. The unicorn retreats safely afterward.
+- Three successful face hits beat all three rounds. Later rounds move faster,
+  aim sooner, and give you less time on the arm. Missing an opening repeats it.
+- Falling presents open when you approach them. Some contain ordinary toys;
+  others grant fire breath for 5 seconds, a laser for 8 seconds, or an 8-second
+  jetpack with six homing missiles. Hold B to use a power.
+- The jetpack hovers over stomps, but the fist can still hit you. Weapons can
+  stagger the lowered arm once per opening, adding a little climbing time.
+  Reaching and striking the face is still required to defeat each round.
+- Both multiplayer players share the same nutcracker, presents, and victory.
+
+WHERE THE CODE IS — LINE NUMBERS IN THESE INCLUDED FILES
+toy-store-level.js:
+  Line 4: level code, one-minute duration, five-second step interval, three rounds.
+  Line 5: one-second fist rest, climbing speed, and soundtrack filename.
+  Line 6: power-up durations.
+  Line 7: Easy, Normal, and Hard settings.
+  Line 145: falling presents and the power-up selection cycle.
+  Line 203: the statue's step during the main battle.
+  Line 234: the climbable arm and recovery opening.
+  Line 263: boss movement, stomps, fist attacks, and round transitions.
+  Line 458: automatic progression from ICE10.
+  Line 620: the nutcracker artwork.
+game.js:
+  Line 361: multiplayer player status for this level.
+  Line 514: multiplayer level state.
+  Line 1191: multiplayer level-code validation.
+  Line 1584: solo TOY11 code validation.
+  Line 6510: installs the new level.
+index.html:
+  Line 233: loads toy-store-level.js.
+  Line 234: loads the updated game.js, version 127.
+
+CHECKS COMPLETED
+The assembled game passed automated full playthroughs on all three difficulty
+settings, solo and multiplayer boss checks, delayed multiplayer input checks,
+ICE10 progression, shield/life-loss handling, and music lifecycle checks.
+The level also passed with tester-mode.js omitted. Existing freeze and Halloween
+regression checks passed. Canvas artwork was rendered and inspected.
+These were automated simulations, not a live phone or Firebase session.
+
+Based on main commit 49d9327963ed243634ccc684a970ded7e5aa38b4, checked again
+on October 13, 2026. The existing level files stay separate and unchanged.
